@@ -1,0 +1,149 @@
+#!/bin/sh
+
+# core.hooksPath must be set to .githooks in the local repository configuration (.git/config).
+# Run: git config --local core.hooksPath .githooks
+
+# Pre-push hook that enforces protection rules defined in configuration files
+# Rules are loaded from the following files (in order):
+#   - pre-push-protected-repos: Core protected repositories list (synced between repos)
+#   - pre-push-protected-repos.extended: Extended protected repositories (optional)
+#   - pre-push-blocked-branches: Core blocked branch patterns (synced between repos)
+#   - pre-push-blocked-branches.extended: Extended blocked branch patterns (optional)
+# Pushes to protected repositories' blocked branches are prevented; other branches and tags are allowed
+
+set -eu
+
+# Get the directory where this hook is located
+# Use POSIX parameter expansion instead of dirname command
+hook_dir="${0%/*}"
+
+# Source lib.sh for error function
+# Calculate path from .githooks/ to scripts/
+scripts_dir="${hook_dir}/../scripts"
+__LIB_DIR="${scripts_dir}"
+# shellcheck disable=SC1091
+. "${scripts_dir}/lib.sh" || {
+    echo "ERROR: Failed to source lib.sh from ${scripts_dir}/lib.sh" >&2
+    exit 1
+}
+
+# Don't use require_cmds from lib.sh because it exits non-zero when commands are missing.
+# Instead, check for required commands and allow push to proceed if any are missing.
+required_cmds="grep sed"
+for _pre_push_cmd in ${required_cmds}; do
+    if ! command -v "${_pre_push_cmd}" > /dev/null 2>&1; then
+        echo "pre-push: skipping (${_pre_push_cmd} not found)" >&2
+        exit 0
+    fi
+done
+
+remote="$1"
+url="$2"
+
+# Load protected repositories list (core and extended)
+protected_repos_file="${hook_dir}/pre-push-protected-repos"
+protected_repos_extended_file="${hook_dir}/pre-push-protected-repos.extended"
+blocked_branches_file="${hook_dir}/pre-push-blocked-branches"
+blocked_branches_extended_file="${hook_dir}/pre-push-blocked-branches.extended"
+is_protected_repo=false
+owner_repo=""
+
+# Extract owner/repo from URL (format: owner/repo)
+case "${url}" in
+    git@github.com:*)
+        owner_repo=$(echo "${url}" | sed 's|git@github.com:||; s|\.git$||')
+        ;;
+    https://github.com/* | http://github.com/*)
+        owner_repo=$(echo "${url}" | sed 's|https\?://github.com/||; s|\.git$||')
+        ;;
+esac
+
+# Check if owner/repo is in the protected list (only for github.com)
+# Check both core and extended files (extended is optional)
+if [ -n "${owner_repo}" ]; then
+    # Check core file
+    if [ -f "${protected_repos_file}" ]; then
+        if grep -v '^[[:space:]]*#' "${protected_repos_file}" | grep -Fxq "${owner_repo}"; then
+            is_protected_repo=true
+        fi
+    fi
+    # Check extended file (if exists)
+    if [ "${is_protected_repo}" != "true" ] && [ -f "${protected_repos_extended_file}" ]; then
+        if grep -v '^[[:space:]]*#' "${protected_repos_extended_file}" | grep -Fxq "${owner_repo}"; then
+            is_protected_repo=true
+        fi
+    fi
+fi
+
+# Helper function to check if a branch matches blocked patterns in a file.
+# Variables use single _ namespacing (non-library POSIX sh convention per style guide).
+check_blocked_patterns() {
+    _check_blocked_patterns_file="$1"
+    _check_blocked_patterns_branch="$2"
+    if [ -f "${_check_blocked_patterns_file}" ]; then
+        while IFS= read -r _check_blocked_patterns_pattern || [ -n "${_check_blocked_patterns_pattern}" ]; do
+            # Skip comments and empty lines
+            case "${_check_blocked_patterns_pattern}" in
+                "" | \#*)
+                    continue
+                    ;;
+            esac
+            # Check if branch matches pattern using case statement
+            # shellcheck disable=SC2254  # Intentional glob matching for patterns like release-v*
+            case "${_check_blocked_patterns_branch}" in
+                ${_check_blocked_patterns_pattern})
+                    return 0
+                    ;;
+            esac
+        done < "${_check_blocked_patterns_file}"
+    fi
+    return 1
+}
+
+# Check if pushing to protected repository
+if [ "${is_protected_repo}" = "true" ]; then
+    # Read the refs being pushed
+    # shellcheck disable=SC2034  # local_ref, local_oid, remote_oid unused (git hook protocol); remote_ref is used
+    while read -r local_ref local_oid remote_ref remote_oid; do
+        # Check if this branch is blocked
+        # Only check refs/heads/* (branches), allow tags and other refs
+        blocked_branch=""
+        branch_name=""
+        case "${remote_ref}" in
+            refs/heads/*)
+                branch_name="${remote_ref#refs/heads/}"
+                ;;
+            *)
+                # Allow tags and other refs
+                ;;
+        esac
+
+        # Check if branch matches any blocked pattern
+        # Check both core and extended files (extended is optional)
+        if [ -n "${branch_name}" ]; then
+            # Check core file first
+            if check_blocked_patterns "${blocked_branches_file}" "${branch_name}"; then
+                blocked_branch="${branch_name}"
+            fi
+            # Check extended file (if exists)
+            if [ -z "${blocked_branch}" ] && check_blocked_patterns "${blocked_branches_extended_file}" "${branch_name}"; then
+                blocked_branch="${branch_name}"
+            fi
+        fi
+
+        # If branch is blocked, show error and exit
+        if [ -n "${blocked_branch}" ]; then
+            error "Push to '${blocked_branch}' on remote '${remote}' is blocked!"
+            error ""
+            error "  This branch is protected on ${remote}."
+            error "  To contribute:"
+            error "  1. Create a branch with the changes: git checkout -b <your-branch-name>"
+            error "  2. Push to your fork: git push <your-fork-remote> <your-branch-name>"
+            error "  3. Open a pull request on GitHub from your fork targeting ${remote}/${blocked_branch}"
+            error "  See docs/contributing/overview.md for the contribution guide."
+            exit 1
+        fi
+    done
+fi
+
+exit 0
