@@ -555,6 +555,8 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+      - name: "System Info"
+        run: ./scripts/system-info.sh --all
       - name: "Environment Variables"
         run: |
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
@@ -562,10 +564,39 @@ jobs:
           fi
           LINUX_ID=$(grep -Pom1 '^ID=\K.*' /etc/os-release)
           echo "LINUX_ID=${LINUX_ID}" >> ${GITHUB_ENV}
+          VERSION_CODENAME=$(grep -Pom1 '^VERSION_CODENAME=\K.*' /etc/os-release 2> /dev/null || echo "")
+          echo "VERSION_CODENAME=${VERSION_CODENAME}" >> ${GITHUB_ENV}
       - name: "Disable Unattended Upgrades (Ubuntu only)"
         if: ${{ env.LINUX_ID == 'ubuntu' }}
         run: ./scripts/disable-unattended-upgrades.sh --timeout 5
         continue-on-error: true
+      # NOTE: To remove when AMIs are updated accordingly.
+      - name: "Fix EOL Ubuntu Repositories (Lunar/Mantic)"
+        if: ${{ env.LINUX_ID == 'ubuntu' && (env.VERSION_CODENAME == 'lunar' || env.VERSION_CODENAME == 'mantic') }}
+        run: |
+          set -e
+          ARCH=$(uname -m)
+          if [[ "${ARCH}" == "aarch64" ]] || [[ "${ARCH}" == "arm64" ]]; then
+            # For aarch64/arm64: ports repositories → old-releases ubuntu (not ubuntu-ports)
+            sed -i 's|http://.*ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+            sed -i 's|http://.*\.ec2\.ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+            sed -i 's|http://.*ec2\.ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+          else
+            # For x86_64: archive repositories → old-releases ubuntu
+            sed -i 's|http://.*archive\.ubuntu\.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+            sed -i 's|http://security\.ubuntu\.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+          fi
+        continue-on-error: true
+      # NOTE: Use this step when AMIs are not updated with the latest tooling.
+      # Comment it after new AMIs are released.
+      - name: "Install Tooling"
+        id: install-tooling
+        run: |
+          ./scripts/installation/install-clang.sh
+      # NOTE: Show Tooling Info again to verify on-the-fly changes made during workflow execution.
+      - name: "Tooling Info (After Installations and Configurations)"
+        if: always() && steps.install-tooling.outcome == 'success'
+        run: ./scripts/system-info.sh --tooling
       # - name: "Prepare Image (Fix AMIs)"
       #   run: ./tests/e2e-install-deps.sh
       - name: Pull test images

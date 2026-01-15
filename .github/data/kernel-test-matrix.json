@@ -45,8 +45,9 @@
         "arch": "x86_64"
     },
     {
-        "name": "Focal 5.13 aarch64",
-        "ami": "08f88e2a2bd1b72a7",
+        "name": "Ubuntu 20.04 generic (5.13.0-52) [aarch64]",
+        "ami_name": "ubuntu-20.04-generic-5.13.0-52-aarch64",
+        "ami": "07872810c50fe4ac1",
         "arch": "aarch64"
     },
     {
