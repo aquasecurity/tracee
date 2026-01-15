@@ -1431,6 +1431,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="POLICY FILE FORMAT">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-crd-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes CRD Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plain-yaml-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plain YAML Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -8009,6 +8037,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="POLICY FILE FORMAT">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-crd-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes CRD Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plain-yaml-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plain YAML Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -8048,7 +8104,7 @@
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--policy</strong> flag allows you to specify one or more policy files or directories containing policy files to load into Tracee.</p>
 <p>Policies define which events to trace and how to filter them. When using the <strong>--policy</strong> flag, you cannot use the <strong>--scope</strong> or <strong>--events</strong> flags together, as they serve different purposes for event selection.</p>
-<p>Policy files are YAML files that follow the Tracee Policy API specification. They define:</p>
+<p>Policy files are YAML files that follow the Tracee Policy API specification. Tracee supports two formats: <strong>Kubernetes CRD format</strong> and <strong>Plain YAML format</strong>. Both formats are fully interchangeable and Tracee automatically detects the format when loading policies. They define:</p>
 <ul>
 <li><strong>Scope</strong>: Which workloads to trace (e.g., global, specific containers, processes)</li>
 <li><strong>Rules</strong>: Which events to trace and optional filters to apply</li>
@@ -8081,7 +8137,8 @@
 <div class="highlight"><pre><span></span><code><span class="go">tracee --policy ./security-policy.yaml --output json:events.json</span>
 </code></pre></div>
 <h2 id="policy-file-format">POLICY FILE FORMAT<a class="headerlink" href="#policy-file-format" title="Permanent link">&para;</a></h2>
-<p>Policy files use YAML format and follow this structure:</p>
+<p>Policy files use YAML format. Tracee supports two formats:</p>
+<h3 id="kubernetes-crd-format">Kubernetes CRD Format<a class="headerlink" href="#kubernetes-crd-format" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tracee.aquasec.com/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Policy</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -8096,7 +8153,19 @@
 <span class="w">      </span><span class="nt">filters</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter_expression</span>
 </code></pre></div>
-<p>For more information about policy file format and options, refer to the Tracee Policy documentation.</p>
+<h3 id="plain-yaml-format">Plain YAML Format<a class="headerlink" href="#plain-yaml-format" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy-name</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Policy description</span>
+<span class="nt">scope</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">event_name</span>
+<span class="w">    </span><span class="nt">filters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">filter_expression</span>
+</code></pre></div>
+<p>Tracee automatically detects the format when loading policies. Both formats are fully interchangeable and produce identical results.</p>
+<p>For more information about policy file formats and options, refer to the <a href="../../policies/">Policy Documentation</a>.</p>
 <h2 id="notes">NOTES<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li>If multiple policies are loaded, they are combined and all matching events from any policy will be traced</li>

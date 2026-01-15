@@ -18,6 +18,10 @@ serve different purposes for event selection.
 .PP
 Policy files are YAML files that follow the Tracee Policy API
 specification.
+Tracee supports two formats: \f[B]Kubernetes CRD format\f[R] and
+\f[B]Plain YAML format\f[R].
+Both formats are fully interchangeable and Tracee automatically detects
+the format when loading policies.
 They define:
 .IP \[bu] 2
 \f[B]Scope\f[R]: Which workloads to trace (e.g., global, specific
@@ -71,7 +75,9 @@ tracee \-\-policy ./security\-policy.yaml \-\-output json:events.json
 .EE
 .RE
 .SS POLICY FILE FORMAT
-Policy files use YAML format and follow this structure:
+Policy files use YAML format.
+Tracee supports two formats:
+.SS Kubernetes CRD Format
 .IP
 .EX
 apiVersion\f[B]:\f[R] tracee.aquasec.com/v1beta1
@@ -88,9 +94,25 @@ spec\f[B]:\f[R]
       filters\f[B]:\f[R]
         \f[B]\-\f[R] filter_expression
 .EE
+.SS Plain YAML Format
+.IP
+.EX
+type\f[B]:\f[R] policy
+name\f[B]:\f[R] policy\-name
+description\f[B]:\f[R] Policy description
+scope\f[B]:\f[R]
+  \f[B]\-\f[R] global
+rules\f[B]:\f[R]
+  \f[B]\-\f[R] event\f[B]:\f[R] event_name
+    filters\f[B]:\f[R]
+      \f[B]\-\f[R] filter_expression
+.EE
 .PP
-For more information about policy file format and options, refer to the
-Tracee Policy documentation.
+Tracee automatically detects the format when loading policies.
+Both formats are fully interchangeable and produce identical results.
+.PP
+For more information about policy file formats and options, refer to the
+Policy Documentation.
 .SS NOTES
 .IP \[bu] 2
 If multiple policies are loaded, they are combined and all matching

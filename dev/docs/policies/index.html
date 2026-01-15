@@ -1598,6 +1598,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#policy-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Formats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Policy Formats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-crd-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes CRD Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plain-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plain Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#related-topics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7904,6 +7943,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#policy-formats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Policy Formats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Policy Formats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kubernetes-crd-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Kubernetes CRD Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#plain-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Plain Format
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#related-topics" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7934,7 +8012,11 @@
 <h1 id="policies">Policies<a class="headerlink" href="#policies" title="Permanent link">&para;</a></h1>
 <p>Policies allow users to specify which <a href="../events/">events</a> to trace in which workloads. The policy <code>scope</code> defines which workloads this policy is limited to. The policy can define multiple <code>rules</code> that specify the events to trace. Policies are used both for the <a href="usage/cli/">Tracee CLI</a> and for the <a href="usage/kubernetes/">Tracee Kubernetes</a> installation. This makes it easier to share policies across use cases and environments.</p>
 <p>It is possible to load up to 64 policies into Tracee.</p>
-<p>Here is an example policy:</p>
+<h2 id="policy-formats">Policy Formats<a class="headerlink" href="#policy-formats" title="Permanent link">&para;</a></h2>
+<p>Tracee supports two policy formats: <strong>Kubernetes CRD format</strong> and <strong>Plain format</strong> (YAML or JSON). Both formats are fully interchangeable and produce identical results. Tracee automatically detects the format when loading policies.</p>
+<h3 id="kubernetes-crd-format">Kubernetes CRD Format<a class="headerlink" href="#kubernetes-crd-format" title="Permanent link">&para;</a></h3>
+<p>The Kubernetes CRD format follows the standard Kubernetes Custom Resource Definition structure. Use this format for Kubernetes deployments or when managing policies as Kubernetes resources.</p>
+<p><strong>Example:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tracee.aquasec.com/v1beta1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Policy</span>
 <span class="nt">metadata</span><span class="p">:</span>
@@ -7950,7 +8032,21 @@
 <span class="w">      </span><span class="nt">filters</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.pathname=/tmp/*</span>
 </code></pre></div>
-<p>This policy applies to any workload (<code>global</code>) and will log the <code>dropped_executable</code>, and <code>security_file_open</code> events. A data filter (<code>data.pathname</code>) is set on the <code>security_file_open</code> event to log only files which were opened from the <code>/tmp</code> directory.</p>
+<h3 id="plain-format">Plain Format<a class="headerlink" href="#plain-format" title="Permanent link">&para;</a></h3>
+<p>The plain format provides a simpler, more concise syntax. Use this format for local development, testing, or non-Kubernetes environments.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">policy</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">overview-policy</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sample overview policy</span>
+<span class="nt">scope</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">global</span>
+<span class="nt">rules</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dropped_executable</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">event</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">security_file_open</span>
+<span class="w">    </span><span class="nt">filters</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data.pathname=/tmp/*</span>
+</code></pre></div>
+<p>Both formats support the same functionality. Tracee automatically detects the format by checking for <code>type: policy</code> (plain format) or <code>apiVersion</code> and <code>kind</code> fields (K8s CRD format). You can mix both formats in the same directory - Tracee will detect and load them correctly.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Each event type can only be defined once in a policy</p>
