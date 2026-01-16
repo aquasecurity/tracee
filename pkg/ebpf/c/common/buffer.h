@@ -134,13 +134,18 @@ statfunc int save_to_submit_buf(args_buffer_t *buf, void *ptr, u32 size, u8 inde
 #define ARGS_BUFFER_SIZE_FIELD_OFFSET ARGS_BUFFER_INDEX_FIELD_SIZE
 #define ARGS_BUFFER_DATA_FIELD_OFFSET ARGS_BUFFER_HEADER_SIZE
 
-// ENSURE_ARGS_BUFFER_SPACE checks if buffer has space for header + data.
+// ENSURE_ARGS_BUFFER_SPACE checks if the buffer has space for header + data at the given offset.
 // Must be called before each buffer write as verifier loses bounds tracking after memory
 // operations.
-// Uses max_size (not actual size) so BPF verifier can prove worst-case bounds.
-#define ENSURE_ARGS_BUFFER_SPACE(_buf, _data_size)                                                 \
+// Parameters:
+//   _offset: The current buffer write position (offset), passed as a register variable
+//            to preserve bounds tracking across helper calls. Reading buffer->offset from memory
+//            after helper calls causes the verifier to lose bounds, so use a local variable.
+//   _max_data_size: Maximum data size (not actual size) so BPF verifier can prove worst-case
+//   bounds.
+#define ENSURE_ARGS_BUFFER_SPACE(_offset, _max_data_size)                                          \
     ({                                                                                             \
-        if ((_buf)->offset > ARGS_BUF_SIZE - (ARGS_BUFFER_HEADER_SIZE + (_data_size)))             \
+        if ((_offset) > ARGS_BUF_SIZE - (ARGS_BUFFER_HEADER_SIZE + (_max_data_size)))              \
             return 0;                                                                              \
     })
 
@@ -170,28 +175,29 @@ statfunc int save_bytes_to_buf_max(args_buffer_t *buf, void *ptr, u32 size, u32 
         rsize = max_size - 1;
     }
 
+    // Store buf->offset in a local variable to ease verifier's work.
+    u32 offset = buf->offset;
+
     // Save argument index
-    ENSURE_ARGS_BUFFER_SPACE(buf, max_size);
-    buf->args[buf->offset] = index;
+    ENSURE_ARGS_BUFFER_SPACE(offset, max_size);
+    buf->args[offset] = index;
 
     // Save size field
-    ENSURE_ARGS_BUFFER_SPACE(buf, max_size);
-    if (bpf_probe_read(
-            &(buf->args[buf->offset + ARGS_BUFFER_SIZE_FIELD_OFFSET]), sizeof(u32), &rsize) != 0)
+    ENSURE_ARGS_BUFFER_SPACE(offset, max_size);
+    if (bpf_probe_read(&(buf->args[offset + ARGS_BUFFER_SIZE_FIELD_OFFSET]), sizeof(u32), &rsize) !=
+        0)
         return 0;
+
+    // Re-establish tracking of bounds on rsize after helper call.
+    update_min(rsize, max_size - 1);
 
     // Save data
-    ENSURE_ARGS_BUFFER_SPACE(buf, max_size);
-    if (rsize >= max_size) {
-        // Help older verifiers (kernel 5.4) to prove bounds correctly by checking it again.
-        // TODO: remove this additional check once older kernels are no longer supported.
-        return 0;
-    }
-    if (bpf_probe_read(&(buf->args[buf->offset + ARGS_BUFFER_DATA_FIELD_OFFSET]), rsize, ptr) != 0)
+    ENSURE_ARGS_BUFFER_SPACE(offset, max_size);
+    if (bpf_probe_read(&(buf->args[offset + ARGS_BUFFER_DATA_FIELD_OFFSET]), rsize, ptr) != 0)
         return 0;
 
-    // Update offset
-    buf->offset += ARGS_BUFFER_HEADER_SIZE + rsize;
+    // Update buf->offset and argnum only after all writes succeed
+    buf->offset = offset + ARGS_BUFFER_HEADER_SIZE + rsize;
     buf->argnum++;
 
     return 1;

@@ -66,15 +66,15 @@ statfunc int strncmp(char *str1, char *str2, int n)
     list_entry_ebpf(BPF_CORE_READ(ptr, next), type, member)
 
 #ifndef update_min
-    // update_min sets __var as __max_const if __var is greater than __max_const.
+    // update_min sets __value as __max_value if __value is greater than __max_value.
     // It forces the check to be done via a register, which is sometimes necessary
     // to satisfy the eBPF verifier.
-    #define update_min(__var, __max_const)                                                         \
+    #define update_min(__value, __max_value)                                                       \
         ({                                                                                         \
             asm volatile("if %[size] <= %[max_size] goto +1;\n"                                    \
                          "%[size] = %[max_size];\n"                                                \
-                         : [size] "+r"(__var)                                                      \
-                         : [max_size] "r"(__max_const));                                           \
+                         : [size] "+r"(__value)                                                    \
+                         : [max_size] "r"(__max_value));                                           \
         })
 #endif
 
