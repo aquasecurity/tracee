@@ -8056,7 +8056,7 @@
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--stores</strong> - Configure data stores for DNS cache and process tree</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--stores</strong> [dns|dns.max-entries=<em>size</em>|process|process.max-processes=<em>size</em>|process.max-threads=<em>size</em>|process.use-procfs] [<strong>--stores</strong> ...]</p>
+<p>tracee <strong>--stores</strong> [dns|dns.max-entries=<em>size</em>|process|process.max-processes=<em>size</em>|process.max-threads=<em>size</em>] [<strong>--stores</strong> ...]</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--stores</strong> flag allows you to configure data stores for DNS cache and process tree functionality.</p>
 <h3 id="dns-store-options">DNS Store Options<a class="headerlink" href="#dns-store-options" title="Permanent link">&para;</a></h3>
@@ -8079,13 +8079,8 @@
 <li>
 <p><strong>process.max-threads</strong>=<em>size</em>: Enable the process tree store and set the maximum number of threads to cache in the process tree. Default is 0 (thread tracking disabled to save memory). This is an LRU cache that will evict least recently accessed entries when full. <strong>Note</strong>: Using this option automatically enables process, so you don't need to also specify <code>--stores process</code>.</p>
 </li>
-<li>
-<p><strong>process.use-procfs</strong>: Enable the process tree store and enable procfs initialization and querying. When enabled, Tracee will:</p>
-</li>
-<li>Scan procfs during initialization to fill all existing processes and threads.</li>
-<li>Query specific processes at runtime in case of missing information caused by missing events.</li>
 </ul>
-<p><strong>Note</strong>: Using this option automatically enables process, so you don't need to also specify <code>--stores process</code>. The procfs query might increase the feature toll on CPU and memory. The runtime query might have a snowball effect on lost events, as it will reduce the system resources in the processes of filling missing information.</p>
+<p><strong>Note</strong>: Procfs initialization happens automatically when the process tree is enabled. At startup, Tracee scans <code>/proc</code> to populate the process tree with all existing processes and threads, ensuring complete process ancestry information is available.</p>
 <h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <ol>
 <li>
@@ -8114,12 +8109,6 @@
 </ol>
 <p>Note: <code>process.max-processes</code> and <code>process.max-threads</code> automatically enable process, so <code>--stores process</code> is not needed.</p>
 <ol>
-<li>Enable process tree with procfs support:
-   <div class="highlight"><pre><span></span><code><span class="go">--stores process.use-procfs</span>
-</code></pre></div></li>
-</ol>
-<p>Note: <code>process.use-procfs</code> automatically enables process, so <code>--stores process</code> is not needed.</p>
-<ol>
 <li>Combine DNS and process stores:
    <div class="highlight"><pre><span></span><code><span class="go">--stores dns.max-entries=5000 --stores process.max-processes=8192</span>
 </code></pre></div></li>
@@ -8127,7 +8116,7 @@
 <p>Note: Since <code>dns.max-entries</code> automatically enables DNS and <code>process.max-processes</code> automatically enables process, you don't need <code>--stores dns</code> or <code>--stores process</code>.</p>
 <ol>
 <li>Complete configuration example:
-   <div class="highlight"><pre><span></span><code><span class="go">--stores dns.max-entries=5000 --stores process.max-processes=8192 --stores process.max-threads=16384 --stores process.use-procfs</span>
+   <div class="highlight"><pre><span></span><code><span class="go">--stores dns.max-entries=5000 --stores process.max-processes=8192 --stores process.max-threads=16384</span>
 </code></pre></div></li>
 </ol>
 <p>Note: All process options automatically enable process, and <code>dns.max-entries</code> automatically enables DNS, so you don't need <code>--stores dns</code> or <code>--stores process</code>.</p>
