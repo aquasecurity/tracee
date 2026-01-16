@@ -597,8 +597,6 @@ jobs:
       - name: "Tooling Info (After Installations and Configurations)"
         if: always() && steps.install-tooling.outcome == 'success'
         run: ./scripts/system-info.sh --tooling
-      # - name: "Prepare Image (Fix AMIs)"
-      #   run: ./tests/e2e-install-deps.sh
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
       - name: "Sync System Time"
