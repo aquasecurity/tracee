@@ -178,7 +178,7 @@ output:
     #     exec-hash: dev-inode     # Options: none, inode, dev-inode, digest-inode
     #     parse-arguments: true
     #     parse-arguments-fds: false
-    #     sort-events: false
+    # sort-events: false
 
 # Signatures directory for custom signatures
 signatures-dir: ""

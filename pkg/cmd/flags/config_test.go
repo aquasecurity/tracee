@@ -269,7 +269,7 @@ output:
     - option:exec-hash=dev-inode
     - option:parse-arguments
     - option:parse-arguments-fds
-    - option:sort-events
+    - sort-events
     - table:file1
     - json:file2    
     - gotemplate=template1:file3,file4    
@@ -282,7 +282,7 @@ output:
 				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
-				"option:sort-events",
+				"sort-events",
 				"table:file1",
 				"json:file2",
 				"gotemplate=template1:file3,file4",

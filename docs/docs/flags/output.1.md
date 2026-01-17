@@ -11,7 +11,7 @@ tracee **\-\-output** - Control how and where output is printed
 
 ## SYNOPSIS
 
-tracee **\-\-output** destinations.*name*.*field*=*value* | option:{stack-addresses,exec-env,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds,sort-events}
+tracee **\-\-output** destinations.*name*.*field*=*value* | option:{stack-addresses,exec-env,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds} | sort-events
 
 
 ## DESCRIPTION
@@ -37,7 +37,7 @@ Output destinations are configured using the format: `--output destinations.<nam
 
 ### Output Options
 
-- **option:{stack-addresses,exec-env,exec-hash,parse-arguments,parse-arguments-fds,sort-events}**: Augment output according to the given options. Multiple options can be specified, separated by commas.
+- **option:{stack-addresses,exec-env,exec-hash,parse-arguments,parse-arguments-fds}**: Augment output according to the given options. Multiple options can be specified, separated by commas.
 
   - **stack-addresses**: Include stack memory addresses for each event.
   - **exec-env**: When tracing execve/execveat, show the environment variables that were used for execution.
@@ -48,7 +48,8 @@ Output destinations are configured using the format: `--output destinations.<nam
     - **digest-inode**: Most efficient, keys hash to container image digest and inode pair. Requires container enrichment.
   - **parse-arguments**: Parse event arguments into human-readable strings instead of raw machine-readable values.
   - **parse-arguments-fds**: Enable parse-arguments and enrich file descriptors with file path translation. May cause pipeline slowdowns.
-  - **sort-events**: Enable sorting events before passing them to output. May decrease overall program efficiency.
+
+- **sort-events**: Enable sorting events before passing them to output. May decrease overall program efficiency.
 
 ## EXAMPLES
 

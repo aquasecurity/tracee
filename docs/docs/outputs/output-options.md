@@ -107,13 +107,12 @@ See the [Sorting Events](./sorting-events.md) documentation for details on how t
 **Configuration:**
 ```yaml
 output:
-  options:
-    sort-events: true
+  sort-events: true
 ```
 
 **CLI:**
 ```bash
-tracee --output option:sort-events
+tracee --output sort-events
 ```
 
 ## See Also

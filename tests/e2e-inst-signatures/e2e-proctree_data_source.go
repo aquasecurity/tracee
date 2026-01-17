@@ -83,7 +83,7 @@ func (sig *e2eProcessTreeDataSource) OnEvent(event protocol.Event) error {
 		// ATTENTION: In order to have all the information in the data source,
 		// this signature needs to have tracee running with the following flags:
 		//
-		// * --output option:sort-events
+		// * --output sort-events
 		// * --stores process
 		// * --events PROCTREE_DATA_SOURCE
 

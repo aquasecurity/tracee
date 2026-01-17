@@ -117,7 +117,7 @@ output:
     exec-hash: dev-inode
     parse-arguments: true
     parse-arguments-fds: true
-    sort-events: true
+  sort-events: true
   destinations:
     - name: stdout
       format: json
