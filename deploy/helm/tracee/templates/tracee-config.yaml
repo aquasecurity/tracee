@@ -151,7 +151,7 @@ data:
             stack-addresses: {{ .Values.config.output.options.stackAddresses }}
             exec-env: {{ .Values.config.output.options.execEnv }}
             exec-hash: {{ .Values.config.output.options.execHash }}
-            sort-events: {{ .Values.config.output.options.sortEvents }}
+        sort-events: {{ .Values.config.output.sortEvents }}
         {{- with .Values.config.output.webhook }}
         webhook:
             - {{ .name | default "webhook1" }}:

@@ -404,7 +404,7 @@ func TestPrepareOutput(t *testing.T) {
 		},
 		{
 			testName:    "option sort-events",
-			outputSlice: []string{"option:sort-events"},
+			outputSlice: []string{"sort-events"},
 			expectedOutput: config.OutputConfig{
 				ParseArguments: true,
 				EventsSorting:  true,
@@ -427,7 +427,7 @@ func TestPrepareOutput(t *testing.T) {
 				"option:exec-hash=dev-inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
-				"option:sort-events",
+				"sort-events",
 			},
 			expectedOutput: config.OutputConfig{
 				StackAddresses:    true,
@@ -876,11 +876,9 @@ func TestOutputConfig_flags(t *testing.T) {
 		{
 			name: "sort-events option only",
 			config: OutputConfig{
-				Options: OutputOptsConfig{
-					SortEvents: true,
-				},
+				SortEvents: true,
 			},
-			expected: []string{"option:sort-events"},
+			expected: []string{"sort-events"},
 		},
 		{
 			name: "all options",
@@ -892,8 +890,8 @@ func TestOutputConfig_flags(t *testing.T) {
 					ExecHash:          "inode",
 					ParseArguments:    true,
 					ParseArgumentsFDs: true,
-					SortEvents:        true,
 				},
+				SortEvents: true,
 			},
 			expected: []string{
 				"none",
@@ -902,7 +900,7 @@ func TestOutputConfig_flags(t *testing.T) {
 				"option:exec-hash=inode",
 				"option:parse-arguments",
 				"option:parse-arguments-fds",
-				"option:sort-events",
+				"sort-events",
 			},
 		},
 		{

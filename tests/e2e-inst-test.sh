@@ -330,7 +330,7 @@ print_test_header "START TRACE"
     -t "${TRACEE_STARTUP_TIMEOUT}" \
     -- \
     --signatures-dir "${SIG_DIR}" \
-    --output option:sort-events \
+    --output sort-events \
     --output option:parse-arguments \
     --stores process \
     --stores dns \

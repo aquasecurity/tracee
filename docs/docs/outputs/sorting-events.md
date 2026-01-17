@@ -7,15 +7,14 @@ The sorting feature sorts incoming events from the BPF programs chronologically 
 Enable event sorting using the `sort-events` option:
 
 ```console
-tracee --output option:sort-events
+tracee --output sort-events
 ```
 
 Or in a configuration file:
 
 ```yaml
 output:
-  options:
-    sort-events: true
+  sort-events: true
 ```
 
 !!! Information

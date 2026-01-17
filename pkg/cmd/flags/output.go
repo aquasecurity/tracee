@@ -87,12 +87,12 @@ type OutputOptsConfig struct {
 	ExecHash          string `mapstructure:"exec-hash"`
 	ParseArguments    bool   `mapstructure:"parse-arguments"`
 	ParseArgumentsFDs bool   `mapstructure:"parse-arguments-fds"`
-	SortEvents        bool   `mapstructure:"sort-events"`
 }
 
 // OutputConfig is the config of the output.
 type OutputConfig struct {
 	Options      OutputOptsConfig     `mapstructure:"options"`
+	SortEvents   bool                 `mapstructure:"sort-events"`
 	Destinations []DestinationsConfig `mapstructure:"destinations"`
 	Streams      []StreamConfig       `mapstructure:"streams"`
 }
@@ -120,8 +120,8 @@ func (c *OutputConfig) flags() []string {
 	if c.Options.ParseArgumentsFDs {
 		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, parseArgumentsFDsFlag))
 	}
-	if c.Options.SortEvents {
-		flags = append(flags, fmt.Sprintf("%s:%s", optionFlag, sortEventsFlag))
+	if c.SortEvents {
+		flags = append(flags, sortEventsFlag)
 	}
 
 	// destinations
@@ -214,6 +214,11 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 				return nil, NoneOutputPathError()
 			}
 			destinationMap["stdout"] = "ignore"
+		case sortEventsFlag:
+			if len(outputParts) > 1 {
+				return nil, InvalidOutputFlagError(outputParts[0])
+			}
+			traceeConfig.EventsSorting = true
 		case tableFlag, jsonFlag:
 			err := parseFormat(outputParts, destinationMap)
 			if err != nil {
@@ -545,8 +550,6 @@ func SetOption(cfg *config.OutputConfig, option string) error {
 	case parseArgumentsFDsFlag:
 		cfg.ParseArgumentsFDs = true
 		cfg.ParseArguments = true // no point in parsing file descriptor args only
-	case sortEventsFlag:
-		cfg.EventsSorting = true
 	default:
 		if strings.HasPrefix(option, "exec-hash") {
 			hashExecParts := strings.Split(option, "=")

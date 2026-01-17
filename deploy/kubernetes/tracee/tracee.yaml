@@ -59,7 +59,7 @@ data:
             stack-addresses: false
             exec-env: false
             exec-hash: dev-inode
-            sort-events: false
+        sort-events: false
 ---
 # Source: tracee/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1

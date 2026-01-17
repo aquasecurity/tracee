@@ -133,7 +133,7 @@ config:
       stackAddresses: false
       execEnv: false
       execHash: dev-inode
-      sortEvents: false
+    sortEvents: false
     # uncomment config.output.webhook to enable a single webhook
     # to configure multiple webhooks, use the configFile field
     # webhook:
