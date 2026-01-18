@@ -8496,8 +8496,8 @@
 <span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">file</span>
 <span class="w">      </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
 <span class="w">      </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/var/log/tracee/events.json</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">parse-arguments</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">enrichment</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">decoded-data</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div></p>
 <h2 id="output-components">Output Components<a class="headerlink" href="#output-components" title="Permanent link">&para;</a></h2>
 <h3 id="destinations"><a href="../flags/output.1/">Destinations</a><a class="headerlink" href="#destinations" title="Permanent link">&para;</a></h3>
@@ -8527,13 +8527,8 @@
 <h3 id="sorting-events"><a href="sorting-events/">Sorting Events</a><a class="headerlink" href="#sorting-events" title="Permanent link">&para;</a></h3>
 <p>Learn about event ordering guarantees and how to enable chronological sorting when needed.</p>
 <h3 id="options"><a href="output-options/">Options</a><a class="headerlink" href="#options" title="Permanent link">&para;</a></h3>
-<p>Enrich events with additional context:</p>
+<p>Configure output formatting and behavior:</p>
 <ul>
-<li><code>parse-arguments</code>: Convert raw values to human-readable format</li>
-<li><code>parse-arguments-fds</code>: Show file paths for file descriptor arguments</li>
-<li><code>stack-addresses</code>: Include stack traces in events</li>
-<li><code>exec-env</code>: Include environment variables for process execution events</li>
-<li><code>exec-hash</code>: Include file hashes for executed binaries</li>
 <li><code>sort-events</code>: Enable chronological event ordering</li>
 </ul>
 <h3 id="logging"><a href="logging/">Logging</a><a class="headerlink" href="#logging" title="Permanent link">&para;</a></h3>
@@ -8543,7 +8538,7 @@
 <div class="highlight"><pre><span></span><code><span class="go">tracee --output destinations.file_out.format=json --output destinations.file_out.path=/var/log/tracee.json</span>
 </code></pre></div></p>
 <p><strong>Default table output with parsed arguments:</strong>
-<div class="highlight"><pre><span></span><code><span class="go">tracee --output option:parse-arguments</span>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --enrichment decoded-data</span>
 </code></pre></div></p>
 <p><strong>Send events to webhook:</strong>
 <div class="highlight"><pre><span></span><code><span class="go">tracee --output destinations.webhook1.type=webhook --output destinations.webhook1.url=http://my-webhook:8080</span>

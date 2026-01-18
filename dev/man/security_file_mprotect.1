@@ -24,15 +24,15 @@ protection changes, and associated files.
 The path of the file associated with the memory region (if file\-backed)
 .TP
 \f[B]prot\f[R] (\f[I]int32\f[R])
-The new access protection for the memory region (parsed to string if
-parse\-arguments enabled)
+The new access protection for the memory region (decoded to string if
+decoded\-data enabled)
 .TP
 \f[B]ctime\f[R] (\f[I]uint64\f[R])
 The creation time of the file associated with the memory region
 .TP
 \f[B]prev_prot\f[R] (\f[I]int32\f[R])
-The previous access protection for the memory region (parsed to string
-if parse\-arguments enabled)
+The previous access protection for the memory region (decoded to string
+if decoded\-data enabled)
 .TP
 \f[B]addr\f[R] (\f[I]trace.Pointer\f[R])
 The start of virtual memory address where protection change is requested

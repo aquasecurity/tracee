@@ -8322,7 +8322,7 @@
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--enrichment</strong> - Configure enrichment for container events and other enrichment options</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--enrichment</strong> [container|container.cgroupfs.path=<em>path</em>|container.cgroupfs.force|container.docker.socket=<em>socket_path</em>|container.containerd.socket=<em>socket_path</em>|container.crio.socket=<em>socket_path</em>|container.podman.socket=<em>socket_path</em>|resolve-fd|exec-hash|exec-hash.mode=<em>mode</em>|user-stack-trace] [<strong>--enrichment</strong> ...]</p>
+<p>tracee <strong>--enrichment</strong> [container|container.cgroupfs.path=<em>path</em>|container.cgroupfs.force|container.docker.socket=<em>socket_path</em>|container.containerd.socket=<em>socket_path</em>|container.crio.socket=<em>socket_path</em>|container.podman.socket=<em>socket_path</em>|fd-paths|environment|executable-hash|executable-hash.mode=<em>mode</em>|user-stack|decoded-data] [<strong>--enrichment</strong> ...]</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <code>--enrichment</code> flag allows you to configure enrichment options for container events and other enrichment features.</p>
 <h3 id="flags">Flags<a class="headerlink" href="#flags" title="Permanent link">&para;</a></h3>
@@ -8339,7 +8339,7 @@
 <li>
 <p><strong>container.cgroupfs.force</strong>: Force the usage of the provided mountpoint path, skipping auto-detection. <strong>Note</strong>: This option requires <code>container.cgroupfs.path</code> to be set. It cannot be used alone.
   Example:
-  <div class="highlight"><pre><span></span><code><span class="go">--enrichment container.cgroupfs.path=/sys/fs/cgroup container.cgroupfs.force</span>
+  <div class="highlight"><pre><span></span><code><span class="go">--enrichment container.cgroupfs.path=/sys/fs/cgroup --enrichment container.cgroupfs.force</span>
 </code></pre></div></p>
 </li>
 <li>
@@ -8374,26 +8374,37 @@
   - Podman     (<code>podman</code>)</p>
 <ul>
 <li>
-<p><strong>resolve-fd</strong>
-  Enable resolve-fd. Presence of the flag enables it, absence disables it.
+<p><strong>fd-paths</strong>: Enable fd-paths. When enabled, Tracee will resolve file descriptor arguments to show associated file paths instead of just the descriptor number. This enriches file descriptors with file path translation. May cause pipeline slowdowns.
   Example:
-  <div class="highlight"><pre><span></span><code><span class="go">--enrichment resolve-fd</span>
+  <div class="highlight"><pre><span></span><code><span class="go">--enrichment fd-paths</span>
 </code></pre></div></p>
 </li>
 <li>
-<p><strong>exec-hash</strong>: Enable exec-hash with default settings. When enabled, Tracee will compute hash values for executed binaries.</p>
-</li>
-<li>
-<p><strong>exec-hash.mode</strong>=<em>mode</em>: Enable exec-hash and configure the mode for exec-hash. <strong>Note</strong>: Using this option automatically enables exec-hash, so you don't need to also specify <code>--enrichment exec-hash</code>.
+<p><strong>decoded-data</strong>: Enable decoded-data. When enabled, Tracee will decode event arguments into human-readable strings instead of raw machine-readable values. This converts numeric flags, permissions, syscall types, and other raw values into readable format (e.g., <code>O_RDONLY</code> instead of <code>0</code>, <code>PROT_READ</code> instead of <code>1</code>). Recommended for interactive use and readability, but may add processing overhead that impacts performance on high-volume event streams.
   Example:
-  <div class="highlight"><pre><span></span><code><span class="go">--enrichment exec-hash.mode=sha256</span>
+  <div class="highlight"><pre><span></span><code><span class="go">--enrichment decoded-data</span>
 </code></pre></div></p>
 </li>
 <li>
-<p><strong>user-stack-trace</strong>
-  Enable user-stack-trace. Presence of the flag enables it, absence disables it.
+<p><strong>environment</strong>: Enable environment. When enabled, Tracee will include execution environment variables in process execution events (particularly useful for <code>execve</code> events).
   Example:
-  <div class="highlight"><pre><span></span><code><span class="go">--enrichment user-stack-trace</span>
+  <div class="highlight"><pre><span></span><code><span class="go">--enrichment environment</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>executable-hash</strong>: Enable executable-hash with default settings. When enabled, Tracee will compute hash values for executed binaries.</p>
+</li>
+<li>
+<p><strong>executable-hash.mode</strong>=<em>mode</em>: Enable executable-hash and configure the mode for executable-hash. <strong>Note</strong>: Using this option automatically enables executable-hash, so you don't need to also specify <code>--enrichment executable-hash</code>.
+  Example:
+  <div class="highlight"><pre><span></span><code><span class="go">--enrichment executable-hash.mode=sha256</span>
+</code></pre></div></p>
+</li>
+<li>
+<p><strong>user-stack</strong>
+  Enable user-stack. Presence of the flag enables it, absence disables it.
+  Example:
+  <div class="highlight"><pre><span></span><code><span class="go">--enrichment user-stack</span>
 </code></pre></div></p>
 </li>
 </ul>
@@ -8418,20 +8429,20 @@
 </li>
 <li>
 <p>Combine multiple flags:
-   <div class="highlight"><pre><span></span><code><span class="go">--enrichment container.docker.socket=/var/run/docker.sock container.cgroupfs.path=/sys/fs/cgroup</span>
+   <div class="highlight"><pre><span></span><code><span class="go">--enrichment container.docker.socket=/var/run/docker.sock --enrichment container.cgroupfs.path=/sys/fs/cgroup</span>
 </code></pre></div>
    Note: Since <code>container.docker.socket</code> and <code>container.cgroupfs.path</code> automatically enable container, you don't need <code>--enrichment container</code>.</p>
 </li>
 <li>
-<p>Enable resolve-fd and exec-hash:
-   <div class="highlight"><pre><span></span><code><span class="go">--enrichment resolve-fd exec-hash</span>
+<p>Enable fd-paths, environment, and executable-hash:
+   <div class="highlight"><pre><span></span><code><span class="go">--enrichment fd-paths --enrichment environment --enrichment executable-hash</span>
 </code></pre></div></p>
 </li>
 <li>
-<p>Enable exec-hash with custom mode:
-   <div class="highlight"><pre><span></span><code><span class="go">--enrichment exec-hash.mode=sha256</span>
+<p>Enable executable-hash with custom mode:
+   <div class="highlight"><pre><span></span><code><span class="go">--enrichment executable-hash.mode=sha256</span>
 </code></pre></div>
-   Note: <code>exec-hash.mode</code> automatically enables exec-hash, so <code>--enrichment exec-hash</code> is not needed.</p>
+   Note: <code>executable-hash.mode</code> automatically enables executable-hash, so <code>--enrichment executable-hash</code> is not needed.</p>
 </li>
 </ol>
 <p>Please refer to the <a href="../../install/container-engines/">documentation</a> for more information on container events enrichment.</p>

@@ -8249,7 +8249,7 @@ file will be captured. I/O files can be filtered using 3 optional filters:
 <span class="go">   --output json \</span>
 <span class="go">   --scope comm=bash \</span>
 <span class="go">   --scope follow \</span>
-<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --enrichment decoded-data \</span>
 <span class="go">   --artifacts dir.path=/tmp/tracee \</span>
 <span class="go">   --artifacts file-write.filters=path=/tmp/*</span>
 </code></pre></div></p>
@@ -8271,7 +8271,7 @@ file will be captured. I/O files can be filtered using 3 optional filters:
 <span class="go">   --output json \</span>
 <span class="go">   --scope comm=bash \</span>
 <span class="go">   --scope follow \</span>
-<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --enrichment decoded-data \</span>
 <span class="go">   --artifacts dir.path=/tmp/tracee \</span>
 <span class="go">   --artifacts file-read.filters=type=pipe \</span>
 <span class="go">   --artifacts file-read.filters=fd=stdin</span>
@@ -8300,7 +8300,7 @@ same binary is executed multiple times, it will be captured just once.</p>
 <span class="go">   --output json \</span>
 <span class="go">   --scope comm=bash \</span>
 <span class="go">   --scope follow \</span>
-<span class="go">   --output option:parse-arguments \</span>
+<span class="go">   --enrichment decoded-data \</span>
 <span class="go">   --artifacts dir.path=/tmp/tracee \</span>
 <span class="go">   --artifacts executable</span>
 </code></pre></div>

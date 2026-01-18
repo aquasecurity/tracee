@@ -8406,7 +8406,7 @@
 <p><strong>none</strong></p>
 <h2 id="data-fields">DATA FIELDS<a class="headerlink" href="#data-fields" title="Permanent link">&para;</a></h2>
 <p><strong>syscall</strong> (<em>int32</em>)
-: The syscall which was invoked while the stack pointer was outside the stack. The syscall name is parsed if the <code>parse-arguments</code> option is specified. This argument is also used as a parameter to select which syscalls should be checked.</p>
+: The syscall which was invoked while the stack pointer was outside the stack. The syscall name is decoded if the <code>decoded-data</code> option is specified. This argument is also used as a parameter to select which syscalls should be checked.</p>
 <p><strong>sp</strong> (<em>trace.Pointer</em>)
 : The stack pointer value at the time of syscall invocation</p>
 <p><strong>vma_type</strong> (<em>string</em>)
@@ -8416,7 +8416,7 @@
 <p><strong>vma_size</strong> (<em>uint64</em>)
 : Size of the memory region containing the stack pointer</p>
 <p><strong>vma_flags</strong> (<em>uint64</em>)
-: Memory region flags (parsed if <code>parse-arguments</code> is enabled)</p>
+: Memory region flags (decoded if <code>decoded-data</code> is enabled)</p>
 <h2 id="dependencies">DEPENDENCIES<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
 <p><strong>Thread Tracking:</strong></p>
 <ul>

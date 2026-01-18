@@ -10079,8 +10079,8 @@
 </code></pre></div>
 <p><strong>Available enrichments</strong>:</p>
 <ul>
-<li><code>exec-env</code> - Execution environment variables</li>
-<li><code>exec-hash</code> - Executable file hashes (Config: "inode", "dev-inode", "digest-inode")</li>
+<li><code>environment</code> - Execution environment variables</li>
+<li><code>executable-hash</code> - Executable file hashes (Config: "inode", "dev-inode", "digest-inode")</li>
 <li><code>container</code> - Container metadata fields in Event struct (Name, Image, Pod info)</li>
 </ul>
 <p><strong>Example</strong>:</p>
@@ -10089,7 +10089,7 @@
 <span class="w">    </span><span class="nx">Requirements</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorRequirements</span><span class="p">{</span>
 <span class="w">        </span><span class="nx">Enrichments</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentRequirement</span><span class="p">{</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;exec-hash&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;executable-hash&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Config</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;digest-inode&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
 <span class="w">            </span><span class="p">},</span>
@@ -10183,12 +10183,12 @@
 <span class="w">        </span><span class="c1">// Enrichment requirements</span>
 <span class="w">        </span><span class="nx">Enrichments</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentRequirement</span><span class="p">{</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;exec-hash&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;executable-hash&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Config</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;digest-inode&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;exec-env&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;environment&quot;</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyOptional</span><span class="p">,</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">        </span><span class="p">},</span>

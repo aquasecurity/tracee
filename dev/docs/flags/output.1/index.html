@@ -8366,7 +8366,7 @@
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--output</strong> - Control how and where output is printed</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--output</strong> destinations.<em>name</em>.<em>field</em>=<em>value</em> | option:{stack-addresses,exec-env,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds} | sort-events</p>
+<p>tracee <strong>--output</strong> destinations.<em>name</em>.<em>field</em>=<em>value</em> | sort-events</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--output</strong> flag allows you to control how and where the output is printed using destinations and output options.</p>
 <h3 id="destination-configuration">Destination Configuration<a class="headerlink" href="#destination-configuration" title="Permanent link">&para;</a></h3>
@@ -8386,28 +8386,12 @@
 </ul>
 <h3 id="output-options">Output Options<a class="headerlink" href="#output-options" title="Permanent link">&para;</a></h3>
 <ul>
-<li>
-<p><strong>option:{stack-addresses,exec-env,exec-hash,parse-arguments,parse-arguments-fds}</strong>: Augment output according to the given options. Multiple options can be specified, separated by commas.</p>
-</li>
-<li>
-<p><strong>stack-addresses</strong>: Include stack memory addresses for each event.</p>
-</li>
-<li><strong>exec-env</strong>: When tracing execve/execveat, show the environment variables that were used for execution.</li>
-<li><strong>exec-hash</strong>: When tracing file related events, show the file hash (sha256).<ul>
-<li>Affected events: <em>sched_process_exec</em>, <em>shared_object_loaded</em></li>
-<li><strong>inode</strong>: Recalculates the file hash if the inode's creation time (ctime) differs. Performant but not recommended; use only if container enrichment can't be enabled.</li>
-<li><strong>dev-inode</strong> (default): Better performance by associating ctime with device and inode pair. Recommended if correctness is preferred over performance without container enrichment.</li>
-<li><strong>digest-inode</strong>: Most efficient, keys hash to container image digest and inode pair. Requires container enrichment.</li>
+<li><strong>sort-events</strong>: Enable sorting events before passing them to output. May decrease overall program efficiency.</li>
 </ul>
-</li>
-<li><strong>parse-arguments</strong>: Parse event arguments into human-readable strings instead of raw machine-readable values.</li>
-<li>
-<p><strong>parse-arguments-fds</strong>: Enable parse-arguments and enrich file descriptors with file path translation. May cause pipeline slowdowns.</p>
-</li>
-<li>
-<p><strong>sort-events</strong>: Enable sorting events before passing them to output. May decrease overall program efficiency.</p>
-</li>
-</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The enrichment <code>decoded-data</code> option is automatically enabled when using table format output. It does not need to be specified separately via <code>--enrichment decoded-data</code>.</p>
+</div>
 <h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <ul>
 <li>To output events as JSON to stdout using a destination named <code>stdout_json</code>:</li>
@@ -8423,11 +8407,6 @@
 <li>To output events using a Go template:</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="go">--output destinations.template_out.format=gotemplate=/path/to/my.tmpl</span>
-</code></pre></div>
-<ul>
-<li>To output events as a table with stack addresses:</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="go">--output destinations.stdout_table.format=table --output option:stack-addresses</span>
 </code></pre></div>
 <ul>
 <li>To send events via the Forward protocol to a FluentBit receiver:</li>

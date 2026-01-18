@@ -6771,61 +6771,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#stack-addresses" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        stack-addresses
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        parse-arguments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exec-env" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        exec-env
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exec-hash" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        exec-hash
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-arguments-fds" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        parse-arguments-fds
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#sort-events" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8287,61 +8232,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#stack-addresses" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        stack-addresses
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        parse-arguments
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exec-env" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        exec-env
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#exec-hash" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        exec-hash
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#parse-arguments-fds" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        parse-arguments-fds
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#sort-events" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -8387,72 +8277,7 @@
 
 <h1 id="output-options">Output Options<a class="headerlink" href="#output-options" title="Permanent link">&para;</a></h1>
 <p>Tracee supports different output options for enriching events with additional context and information.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>These options will be migrated to the <code>--enrichment</code> flag in a future release.</p>
-</div>
 <h2 id="available-options">Available Options<a class="headerlink" href="#available-options" title="Permanent link">&para;</a></h2>
-<h3 id="stack-addresses">stack-addresses<a class="headerlink" href="#stack-addresses" title="Permanent link">&para;</a></h3>
-<p>Include stack memory addresses in events for debugging and analysis.</p>
-<p><strong>Configuration:</strong>
-<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">stack-addresses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div></p>
-<p><strong>CLI:</strong>
-<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>option:stack-addresses
-</code></pre></div></p>
-<h3 id="parse-arguments">parse-arguments<a class="headerlink" href="#parse-arguments" title="Permanent link">&para;</a></h3>
-<p>Parse event arguments into human-readable format instead of raw values. Recommended for interactive use and readability, but may add processing overhead that impacts performance on high-volume event streams.</p>
-<p><strong>Configuration:</strong>
-<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">parse-arguments</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div></p>
-<p><strong>CLI:</strong>
-<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>option:parse-arguments
-</code></pre></div></p>
-<h3 id="exec-env">exec-env<a class="headerlink" href="#exec-env" title="Permanent link">&para;</a></h3>
-<p>Include execution environment variables in process execution events (particularly useful for <code>execve</code> events).</p>
-<p><strong>Configuration:</strong>
-<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">exec-env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div></p>
-<p><strong>CLI:</strong>
-<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>option:exec-env
-</code></pre></div></p>
-<h3 id="exec-hash">exec-hash<a class="headerlink" href="#exec-hash" title="Permanent link">&para;</a></h3>
-<p>Include file SHA256 hashes and process creation time (ctime) in <code>sched_process_exec</code> events. Useful for comparing executed binaries against known hash lists.</p>
-<p>The option controls the hash caching strategy for performance and correctness tradeoffs.</p>
-<p><strong>Configuration:</strong>
-<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">exec-hash</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev-inode</span>
-</code></pre></div></p>
-<p><strong>CLI:</strong>
-<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>option:exec-hash<span class="o">=</span>dev-inode
-</code></pre></div></p>
-<p><strong>Available modes:</strong></p>
-<ul>
-<li><code>inode</code> - Recalculate hash if inode's ctime differs (performant, may miss changes)</li>
-<li><code>dev-inode</code> - Key by device+inode pair (recommended: good balance of performance and correctness)</li>
-<li><code>digest-inode</code> - Key by container image digest+inode (most efficient, requires container enrichment)</li>
-</ul>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>All modes calculate SHA256 hashes. The mode only affects the caching strategy used to avoid recalculating hashes for the same binary.</p>
-</div>
-<h3 id="parse-arguments-fds">parse-arguments-fds<a class="headerlink" href="#parse-arguments-fds" title="Permanent link">&para;</a></h3>
-<p>Parse file descriptor arguments to show associated file paths instead of just the descriptor number.</p>
-<p><strong>Configuration:</strong>
-<div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">parse-arguments-fds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-</code></pre></div></p>
-<p><strong>CLI:</strong>
-<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--output<span class="w"> </span>option:parse-arguments-fds
-</code></pre></div></p>
 <h3 id="sort-events">sort-events<a class="headerlink" href="#sort-events" title="Permanent link">&para;</a></h3>
 <p>Enable chronological sorting of events. On busy systems, events may be received out of order. This option ensures events are output in the order they occurred.</p>
 <p>See the <a href="../sorting-events/">Sorting Events</a> documentation for details on how this works.</p>

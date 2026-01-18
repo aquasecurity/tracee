@@ -8492,7 +8492,7 @@
 <p><strong>derived</strong>, <strong>security_alert</strong></p>
 <h2 id="data-fields">DATA FIELDS<a class="headerlink" href="#data-fields" title="Permanent link">&para;</a></h2>
 <p><strong>syscall</strong> (<em>int32</em>)
-: The system call number invoked from the unusual location (parsed to name if parse-arguments enabled)</p>
+: The system call number invoked from the unusual location (decoded to name if decoded-data enabled)</p>
 <p><strong>ip</strong> (<em>trace.Pointer</em>)
 : The instruction pointer address from which the syscall was invoked</p>
 <p><strong>vma_type</strong> (<em>string</em>)
@@ -8502,7 +8502,7 @@
 <p><strong>vma_size</strong> (<em>uint64</em>)
 : Size of the VMA containing the triggering code</p>
 <p><strong>vma_flags</strong> (<em>uint64</em>)
-: VMA flags (parsed to names if parse-arguments enabled)</p>
+: VMA flags (decoded to names if decoded-data enabled)</p>
 <h2 id="dependencies">DEPENDENCIES<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h2>
 <p><strong>Kernel Probes:</strong></p>
 <ul>
