@@ -8366,7 +8366,7 @@
 <h2 id="name">NAME<a class="headerlink" href="#name" title="Permanent link">&para;</a></h2>
 <p>tracee <strong>--output</strong> - Control how and where output is printed</p>
 <h2 id="synopsis">SYNOPSIS<a class="headerlink" href="#synopsis" title="Permanent link">&para;</a></h2>
-<p>tracee <strong>--output</strong> destinations.<em>name</em>.<em>field</em>=<em>value</em> | option:{stack-addresses,exec-env,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds,sort-events}</p>
+<p>tracee <strong>--output</strong> destinations.<em>name</em>.<em>field</em>=<em>value</em> | option:{stack-addresses,exec-env,exec-hash[={inode,dev-inode,digest-inode}],parse-arguments,parse-arguments-fds} | sort-events</p>
 <h2 id="description">DESCRIPTION<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
 <p>The <strong>--output</strong> flag allows you to control how and where the output is printed using destinations and output options.</p>
 <h3 id="destination-configuration">Destination Configuration<a class="headerlink" href="#destination-configuration" title="Permanent link">&para;</a></h3>
@@ -8387,7 +8387,7 @@
 <h3 id="output-options">Output Options<a class="headerlink" href="#output-options" title="Permanent link">&para;</a></h3>
 <ul>
 <li>
-<p><strong>option:{stack-addresses,exec-env,exec-hash,parse-arguments,parse-arguments-fds,sort-events}</strong>: Augment output according to the given options. Multiple options can be specified, separated by commas.</p>
+<p><strong>option:{stack-addresses,exec-env,exec-hash,parse-arguments,parse-arguments-fds}</strong>: Augment output according to the given options. Multiple options can be specified, separated by commas.</p>
 </li>
 <li>
 <p><strong>stack-addresses</strong>: Include stack memory addresses for each event.</p>
@@ -8401,8 +8401,12 @@
 </ul>
 </li>
 <li><strong>parse-arguments</strong>: Parse event arguments into human-readable strings instead of raw machine-readable values.</li>
-<li><strong>parse-arguments-fds</strong>: Enable parse-arguments and enrich file descriptors with file path translation. May cause pipeline slowdowns.</li>
-<li><strong>sort-events</strong>: Enable sorting events before passing them to output. May decrease overall program efficiency.</li>
+<li>
+<p><strong>parse-arguments-fds</strong>: Enable parse-arguments and enrich file descriptors with file path translation. May cause pipeline slowdowns.</p>
+</li>
+<li>
+<p><strong>sort-events</strong>: Enable sorting events before passing them to output. May decrease overall program efficiency.</p>
+</li>
 </ul>
 <h2 id="examples">EXAMPLES<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <ul>

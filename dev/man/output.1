@@ -6,7 +6,8 @@ tracee \f[B]\-\-output\f[R] \- Control how and where output is printed
 .SS SYNOPSIS
 tracee \f[B]\-\-output\f[R]
 destinations.\f[I]name\f[R].\f[I]field\f[R]=\f[I]value\f[R] |
-option:{stack\-addresses,exec\-env,exec\-hash[={inode,dev\-inode,digest\-inode}],parse\-arguments,parse\-arguments\-fds,sort\-events}
+option:{stack\-addresses,exec\-env,exec\-hash[={inode,dev\-inode,digest\-inode}],parse\-arguments,parse\-arguments\-fds} |
+sort\-events
 .SS DESCRIPTION
 The \f[B]\-\-output\f[R] flag allows you to control how and where the
 output is printed using destinations and output options.
@@ -42,7 +43,7 @@ template format
 protocol
 .SS Output Options
 .IP \[bu] 2
-\f[B]option:{stack\-addresses,exec\-env,exec\-hash,parse\-arguments,parse\-arguments\-fds,sort\-events}\f[R]:
+\f[B]option:{stack\-addresses,exec\-env,exec\-hash,parse\-arguments,parse\-arguments\-fds}\f[R]:
 Augment output according to the given options.
 Multiple options can be specified, separated by commas.
 .RS 2
@@ -81,11 +82,11 @@ strings instead of raw machine\-readable values.
 \f[B]parse\-arguments\-fds\f[R]: Enable parse\-arguments and enrich file
 descriptors with file path translation.
 May cause pipeline slowdowns.
+.RE
 .IP \[bu] 2
 \f[B]sort\-events\f[R]: Enable sorting events before passing them to
 output.
 May decrease overall program efficiency.
-.RE
 .SS EXAMPLES
 .IP \[bu] 2
 To output events as JSON to stdout using a destination named

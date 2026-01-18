@@ -8267,12 +8267,11 @@
 <p>The sorting feature sorts incoming events from the BPF programs chronologically to ensure events are output in the order they occurred.</p>
 <h2 id="enabling-sorting">Enabling Sorting<a class="headerlink" href="#enabling-sorting" title="Permanent link">&para;</a></h2>
 <p>Enable event sorting using the <code>sort-events</code> option:</p>
-<div class="highlight"><pre><span></span><code><span class="go">tracee --output option:sort-events</span>
+<div class="highlight"><pre><span></span><code><span class="go">tracee --output sort-events</span>
 </code></pre></div>
 <p>Or in a configuration file:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">output</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">options</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">sort-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">sort-events</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 <div class="admonition information">
 <p class="admonition-title">Information</p>
