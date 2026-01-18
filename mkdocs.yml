@@ -210,7 +210,6 @@ nav:
                 - Streams: docs/outputs/streams.md
                 - Event Structure: docs/outputs/event-structure.md
                 - Sorting Events: docs/outputs/sorting-events.md
-                - Options: docs/outputs/output-options.md
                 - Logging: docs/outputs/logging.md
           - Forensics:
                 - Overview: docs/forensics.md

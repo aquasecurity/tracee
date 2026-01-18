@@ -69,13 +69,6 @@ Understand the structure and fields available in Tracee events for parsing and a
 
 Learn about event ordering guarantees and how to enable chronological sorting when needed.
 
-### [Options](./output-options.md)
-
-Configure output formatting and behavior:
-
-- `sort-events`: Enable chronological event ordering
-
-
 ### [Logging](./logging.md)
 
 Configure Tracee's diagnostic logs (separate from event output) for troubleshooting and monitoring Tracee itself.
