@@ -107,10 +107,10 @@ artifacts:
     #     path: /tmp/tracee
     #     clear: false
 
-# Detectors configuration
+# Detectors configuration - list of paths to search for YAML detectors
 detectors:
-    # yaml-dir:
-    #     - /path/to/detector/dir
+    # - /path/to/detector/dir
+    # - /another/detector/path
 
 # Logging configuration
 logging:

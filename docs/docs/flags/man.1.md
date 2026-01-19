@@ -25,7 +25,8 @@ The **man** command accepts subcommands that correspond to tracee flags:
 - **buffers** - Show manual page for the --buffers flag
 - **capabilities**, **C** - Show manual page for the --capabilities flag
 - **config**, **c** - Show manual page for the --config flag
-- **enrichment** - Show manual page for the --enrichment flag
+- **detectors**, **d** - Show manual page for the --detectors flag
+- **enrichment**, **E** - Show manual page for the --enrichment flag
 - **events**, **e** - Show manual page for the --events flag
 - **list** - Show manual page for the list command
 - **list-events** - Show manual page for the list events subcommand

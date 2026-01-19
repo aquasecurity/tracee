@@ -910,15 +910,14 @@ Specify custom directories using:
 
 **CLI Flag:**
 ```bash
-tracee --detectors yaml-dir=/custom/path
+tracee --detectors /custom/path
 ```
 
 **Config File:**
 ```yaml
 detectors:
-  yaml-dir:
-    - /custom/path1
-    - /custom/path2
+  - /custom/path1
+  - /custom/path2
 ```
 
 ## Validation

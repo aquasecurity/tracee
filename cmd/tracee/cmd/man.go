@@ -55,6 +55,7 @@ func init() {
 		capabilitiesCmd,
 		artifactsCmd,
 		configCmd,
+		detectorsCmd,
 		enrichmentCmd,
 		eventCmd,
 		eventsCmd,
@@ -122,9 +123,18 @@ var configCmd = &cobra.Command{
 	},
 }
 
+var detectorsCmd = &cobra.Command{
+	Use:     "detectors",
+	Aliases: []string{"d"},
+	Short:   "Show manual page for the --detectors flag",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("detectors")
+	},
+}
+
 var enrichmentCmd = &cobra.Command{
 	Use:     "enrichment",
-	Aliases: []string{},
+	Aliases: []string{"E"},
 	Short:   "Show manual page for the --enrichment flag",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("enrichment")

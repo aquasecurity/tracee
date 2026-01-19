@@ -7,7 +7,7 @@ date: 2025/12
 
 ## NAME
 
-tracee **\-\-buffers** - Configure the buffers sizes for kernel and user buffers
+tracee **\-\-buffers** - Set kernel/user buffers size
 
 ## SYNOPSIS
 

@@ -152,8 +152,9 @@ func initCmd() error {
 
 	// Container flags
 
-	rootCmd.Flags().StringArray(
+	rootCmd.Flags().StringArrayP(
 		flags.EnrichmentFlag,
+		"E",
 		[]string{},
 		"[container|resolve-fd...]\t\tConfigure enrichment for container events and other enrichment features",
 	)
@@ -190,10 +191,11 @@ func initCmd() error {
 
 	// Detector flags
 
-	rootCmd.Flags().StringArray(
+	rootCmd.Flags().StringArrayP(
 		flags.DetectorsFlag,
+		"d",
 		[]string{},
-		"[yaml-dir=<dir>]\t\t\tConfigure YAML detector search directories",
+		"[path...]\t\t\t\tConfigure YAML detector search directories",
 	)
 	err = viper.BindPFlag(flags.DetectorsFlag, rootCmd.Flags().Lookup(flags.DetectorsFlag))
 	if err != nil {
@@ -211,7 +213,7 @@ func initCmd() error {
 			fmt.Sprintf("kernel.artifacts=%d", flags.GetDefaultPerfBufferSize()),
 			"pipeline=1000",
 		},
-		"[kernel.events|...]\t\tSize for kernel and user buffers",
+		"[kernel.events|...]\t\tSet buffers size",
 	)
 	err = viper.BindPFlag(flags.BuffersFlag, rootCmd.Flags().Lookup(flags.BuffersFlag))
 	if err != nil {
