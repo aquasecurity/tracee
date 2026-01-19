@@ -10356,13 +10356,12 @@ Level 3: cryptominer_production_alert
 <h3 id="custom-paths">Custom Paths<a class="headerlink" href="#custom-paths" title="Permanent link">&para;</a></h3>
 <p>Specify custom directories using:</p>
 <p><strong>CLI Flag:</strong>
-<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--detectors<span class="w"> </span>yaml-dir<span class="o">=</span>/custom/path
+<div class="highlight"><pre><span></span><code>tracee<span class="w"> </span>--detectors<span class="w"> </span>/custom/path
 </code></pre></div></p>
 <p><strong>Config File:</strong>
 <div class="highlight"><pre><span></span><code><span class="nt">detectors</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">yaml-dir</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/custom/path1</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/custom/path2</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/custom/path1</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/custom/path2</span>
 </code></pre></div></p>
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <p>YAML detectors are validated at load time:</p>
