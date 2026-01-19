@@ -12,7 +12,7 @@ Simple 3-level chain for local testing (no K8s required).
 
 ### Terminal 1: Start Tracee
 ```bash
-sudo tracee --detectors yaml-dir=./examples/detectors/yaml --output json \
+sudo tracee --detectors ./examples/detectors/yaml --output json \
   --enrichment container \
   --events netcat_privileged_alert
 ```

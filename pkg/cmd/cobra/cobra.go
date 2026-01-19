@@ -103,11 +103,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 
 	// Get YAML detector search directories from config or CLI
 	var yamlDetectorDirs []string
-	if viper.IsSet(flags.YAMLDirFlag) {
-		// Config file format: detectors.yaml-dir
-		yamlDetectorDirs = viper.GetStringSlice(flags.YAMLDirFlag)
-	} else if viper.IsSet(flags.DetectorsFlag) {
-		// CLI format: --detectors yaml-dir=/path/to/dir
+	if viper.IsSet(flags.DetectorsFlag) {
 		detectorsFlags, err := flags.GetFlagsFromViper(flags.DetectorsFlag)
 		if err != nil {
 			return runner, err
@@ -116,7 +112,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		if err != nil {
 			return runner, err
 		}
-		yamlDetectorDirs = detectorsConfig.YAMLDirs
+		yamlDetectorDirs = detectorsConfig.Paths
 	}
 
 	// Pre-register detector events in events.Core before policy initialization

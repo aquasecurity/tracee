@@ -21,50 +21,40 @@ func TestPrepareDetectors(t *testing.T) {
 			testName: "default values",
 			flags:    []string{},
 			expectedReturn: DetectorsConfig{
-				YAMLDirs: []string{},
+				Paths: []string{},
 			},
 		},
 		// valid single flag
 		{
-			testName: "valid yaml-dir single",
-			flags:    []string{"yaml-dir=/etc/tracee/detectors"},
+			testName: "valid path single",
+			flags:    []string{"/etc/tracee/detectors"},
 			expectedReturn: DetectorsConfig{
-				YAMLDirs: []string{"/etc/tracee/detectors"},
+				Paths: []string{"/etc/tracee/detectors"},
 			},
 		},
 		// valid multiple flags
 		{
-			testName: "valid yaml-dir multiple",
-			flags:    []string{"yaml-dir=/etc/tracee/detectors", "yaml-dir=/custom/path"},
+			testName: "valid path multiple",
+			flags:    []string{"/etc/tracee/detectors", "/custom/path"},
 			expectedReturn: DetectorsConfig{
-				YAMLDirs: []string{"/etc/tracee/detectors", "/custom/path"},
+				Paths: []string{"/etc/tracee/detectors", "/custom/path"},
 			},
 		},
 		// invalid flags
 		{
-			testName:      "invalid flag format - missing value",
-			flags:         []string{"yaml-dir="},
-			expectedError: invalidDetectorsFlagErrorMsg("yaml-dir="),
+			testName:      "invalid flag format - empty",
+			flags:         []string{""},
+			expectedError: invalidDetectorsFlagErrorMsg(""),
 		},
 		{
-			testName:      "invalid flag format - missing equals",
-			flags:         []string{"yaml-dir"},
-			expectedError: invalidDetectorsFlagErrorMsg("yaml-dir"),
-		},
-		{
-			testName:      "invalid flag format - no name",
+			testName:      "invalid flag format - equals with empty name",
 			flags:         []string{"=/etc/tracee/detectors"},
 			expectedError: invalidDetectorsFlagErrorMsg("=/etc/tracee/detectors"),
 		},
 		{
-			testName:      "invalid flag name",
-			flags:         []string{"invalid-flag=/path"},
-			expectedError: invalidDetectorsFlagErrorMsg("invalid-flag"),
-		},
-		{
 			testName:      "multiple flags with one invalid",
-			flags:         []string{"yaml-dir=/etc/tracee/detectors", "bad-flag=/path"},
-			expectedError: invalidDetectorsFlagErrorMsg("bad-flag"),
+			flags:         []string{"/etc/tracee/detectors", "bad-flag=/path"},
+			expectedError: invalidDetectorsFlagErrorMsg("bad-flag=/path"),
 		},
 	}
 
@@ -97,26 +87,26 @@ func TestDetectorsConfigFlags(t *testing.T) {
 		{
 			testName: "empty config",
 			config: DetectorsConfig{
-				YAMLDirs: []string{},
+				Paths: []string{},
 			},
 			expectedFlags: []string{},
 		},
 		{
-			testName: "single yaml-dir",
+			testName: "single path",
 			config: DetectorsConfig{
-				YAMLDirs: []string{"/etc/tracee/detectors"},
+				Paths: []string{"/etc/tracee/detectors"},
 			},
-			expectedFlags: []string{"yaml-dir=/etc/tracee/detectors"},
+			expectedFlags: []string{"/etc/tracee/detectors"},
 		},
 		{
-			testName: "multiple yaml-dirs",
+			testName: "multiple paths",
 			config: DetectorsConfig{
-				YAMLDirs: []string{"/etc/tracee/detectors", "/custom/path", "./local"},
+				Paths: []string{"/etc/tracee/detectors", "/custom/path", "./local"},
 			},
 			expectedFlags: []string{
-				"yaml-dir=/etc/tracee/detectors",
-				"yaml-dir=/custom/path",
-				"yaml-dir=./local",
+				"/etc/tracee/detectors",
+				"/custom/path",
+				"./local",
 			},
 		},
 	}
