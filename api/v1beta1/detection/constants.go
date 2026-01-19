@@ -7,6 +7,13 @@ const (
 	EnrichmentContainer      = "container"       // Enrich container metadata fields
 )
 
+// Executable hash config types for use in EnrichmentRequirement.Config
+const (
+	ExecutableHashConfigInode       = "inode"        // Recalculate hash if inode ctime differs
+	ExecutableHashConfigDevInode    = "dev-inode"    // Key hash by device and inode pair
+	ExecutableHashConfigDigestInode = "digest-inode" // Key hash by container image digest and inode
+)
+
 // DataStore names for use in DataStoreRequirement
 const (
 	DataStoreProcess   = "process"   // Process tree datastore
