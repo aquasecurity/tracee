@@ -21,11 +21,11 @@ import (
 // parseHashMode converts a string hash mode to digest.CalcHashesOption
 func parseHashMode(mode string) digest.CalcHashesOption {
 	switch mode {
-	case "inode":
+	case detection.ExecutableHashConfigInode:
 		return digest.CalcHashesInode
-	case "dev-inode":
+	case detection.ExecutableHashConfigDevInode:
 		return digest.CalcHashesDevInode
-	case "digest-inode":
+	case detection.ExecutableHashConfigDigestInode:
 		return digest.CalcHashesDigestInode
 	default:
 		return digest.CalcHashesNone

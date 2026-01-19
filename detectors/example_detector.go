@@ -71,7 +71,7 @@ func (d *ExampleDetector) GetDefinition() detection.DetectorDefinition {
 			// 	{
 			// 		Name:       detection.EnrichmentExecutableHash,
 			// 		Dependency: detection.DependencyOptional, // Detector works without hashes
-			// 		// Config:  "inode", // Uncomment to require specific hash mode
+			// 		// Config:  detection.ExecutableHashConfigInode, // Uncomment to require specific hash mode
 			// 	},
 			// 	{
 			// 		Name:       detection.EnrichmentContainer,

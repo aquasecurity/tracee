@@ -481,7 +481,7 @@ DetectorDefinition{
         Enrichments: []detection.EnrichmentRequirement{
             {
                 Name:       detection.EnrichmentExecutableHash,
-                Config:     "digest-inode",
+                Config:     detection.ExecutableHashConfigDigestInode,
                 Dependency: detection.DependencyRequired,
             },
         },
@@ -602,7 +602,7 @@ DetectorDefinition{
         Enrichments: []detection.EnrichmentRequirement{
             {
                 Name:       detection.EnrichmentExecutableHash,
-                Config:     "digest-inode",
+                Config:     detection.ExecutableHashConfigDigestInode,
                 Dependency: detection.DependencyRequired,
             },
             {

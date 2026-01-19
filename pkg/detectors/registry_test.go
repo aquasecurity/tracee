@@ -746,7 +746,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 		{
 			name: "enrichment executable-hash with specific config - inode mode",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: detection.ExecutableHashConfigInode},
 			},
 			enrichOpts: &EnrichmentOptions{
 				Environment:  false,
@@ -757,7 +757,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 		{
 			name: "enrichment executable-hash with specific config - dev-inode mode",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "dev-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: detection.ExecutableHashConfigDevInode},
 			},
 			enrichOpts: &EnrichmentOptions{
 				Environment:  false,
@@ -768,7 +768,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 		{
 			name: "enrichment executable-hash with specific config - digest-inode mode",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "digest-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: detection.ExecutableHashConfigDigestInode},
 			},
 			enrichOpts: &EnrichmentOptions{
 				Environment:  false,
@@ -779,7 +779,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 		{
 			name: "enrichment executable-hash mode mismatch - should fail",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: "digest-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyRequired, Config: detection.ExecutableHashConfigDigestInode},
 			},
 			enrichOpts: &EnrichmentOptions{
 				Environment:  false,
@@ -791,7 +791,7 @@ func TestRegistry_EnrichmentValidation(t *testing.T) {
 		{
 			name: "enrichment executable-hash mode mismatch optional - should not fail",
 			enrichments: []detection.EnrichmentRequirement{
-				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyOptional, Config: "digest-inode"},
+				{Name: detection.EnrichmentExecutableHash, Dependency: detection.DependencyOptional, Config: detection.ExecutableHashConfigDigestInode},
 			},
 			enrichOpts: &EnrichmentOptions{
 				Environment:  false,
