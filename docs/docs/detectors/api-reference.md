@@ -445,8 +445,8 @@ Requirements: detection.DetectorRequirements{
         {Name: "security_file_open"},
     },
     DataStores: []detection.DataStoreRequirement{
-        {Name: "process", Dependency: detection.DependencyRequired},
-        {Name: "container", Dependency: detection.DependencyOptional},
+        {Name: detection.DataStoreProcess, Dependency: detection.DependencyRequired},
+        {Name: detection.DataStoreContainer, Dependency: detection.DependencyOptional},
     },
 }
 ```
@@ -480,7 +480,7 @@ DetectorDefinition{
     Requirements: detection.DetectorRequirements{
         Enrichments: []detection.EnrichmentRequirement{
             {
-                Name:       "executable-hash",
+                Name:       detection.EnrichmentExecutableHash,
                 Config:     "digest-inode",
                 Dependency: detection.DependencyRequired,
             },
@@ -594,19 +594,19 @@ DetectorDefinition{
 
         // Datastore requirements
         DataStores: []detection.DataStoreRequirement{
-            {Name: "process", Dependency: detection.DependencyRequired},
-            {Name: "container", Dependency: detection.DependencyOptional},
+            {Name: detection.DataStoreProcess, Dependency: detection.DependencyRequired},
+            {Name: detection.DataStoreContainer, Dependency: detection.DependencyOptional},
         },
 
         // Enrichment requirements
         Enrichments: []detection.EnrichmentRequirement{
             {
-                Name:       "executable-hash",
+                Name:       detection.EnrichmentExecutableHash,
                 Config:     "digest-inode",
                 Dependency: detection.DependencyRequired,
             },
             {
-                Name:       "environment",
+                Name:       detection.EnrichmentEnvironment,
                 Dependency: detection.DependencyOptional,
             },
         },
