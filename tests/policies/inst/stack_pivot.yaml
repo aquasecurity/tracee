@@ -11,4 +11,4 @@ spec:
     - event: STACK_PIVOT # e2e signature for tracing
     - event: stack_pivot # actual event to pass the parameters
       filters:
-        - args.syscall=exit_group,getpid,write,openat,mmap,execve,fork,clone,recvmsg,gettid,epoll_wait,poll,recvfrom
+        - args.syscall=exit,exit_group,getpid,write,openat,mmap,execve,fork,clone,recvmsg,gettid,epoll_wait,poll,recvfrom

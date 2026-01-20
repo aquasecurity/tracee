@@ -25,15 +25,19 @@ int main()
     int sleep_time = sleep_env ? atoi(sleep_env) : 5; // default to 5 if not set
     sleep(sleep_time);
 
-    // Allocate a block of memory on the heap
-    void *heap_memory = malloc(1024);
-    if (heap_memory == NULL) {
-        perror("malloc failed");
+    // Allocate memory from the main heap (brk) to avoid mmap-based arenas
+    void *heap_memory = sbrk(0);
+    if (heap_memory == (void *) -1) {
+        perror("sbrk failed");
+        return 1;
+    }
+    if (sbrk(1024) == (void *) -1) {
+        perror("sbrk failed");
         return 1;
     }
 
     // Set stack pointer to the allocated heap memory (top of the block)
-    void *new_sp = heap_memory + 1024;
+    void *new_sp = (char *) heap_memory + 1024;
 #if defined(__x86_64__)
     __asm__ volatile("mov %0, %%rsp\n" : : "r"(new_sp));
 #elif defined(__aarch64__)

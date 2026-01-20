@@ -92,6 +92,7 @@ type Tracee struct {
 	defaultProbes   *probes.ProbeGroup
 	extraProbes     map[string]*probes.ProbeGroup
 	dataTypeDecoder bufferdecoder.TypeDecoder
+	kallsymsMutex   sync.Mutex // prevents concurrent UpdateKallsyms calls
 	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
