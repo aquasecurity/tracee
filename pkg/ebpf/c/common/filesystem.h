@@ -207,8 +207,6 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         return 0;
     }
 
-    char slash = '/';
-    int zero = 0;
     struct vfsmount *vfsmnt = BPF_CORE_READ(path, mnt);
     struct mount *mnt_parent_p;
     struct mount *mnt_p = real_mount(vfsmnt);
@@ -255,7 +253,7 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -271,9 +269,9 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
         // Null terminate the path string
-        bpf_probe_read_kernel(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1] = 0;
     }
     return buf_off;
 }
@@ -340,9 +338,6 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
         return 0;
     }
 
-    char slash = '/';
-    int zero = 0;
-
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
 
     for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
@@ -364,7 +359,7 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -381,9 +376,9 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
         // Null terminate the path string
-        bpf_probe_read_kernel(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1] = 0;
     }
 
     return &out_buf->buf[buf_off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
