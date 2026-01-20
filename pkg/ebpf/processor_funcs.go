@@ -126,7 +126,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 	}
 
 	// capture executed files
-	if t.config.Artifacts.Exec || t.config.Output.CalcHashes != digest.CalcHashesNone {
+	if t.config.Artifacts.Exec || t.shouldCalcHashes() {
 		filePath, err := parse.ArgVal[string](event.Args, "pathname")
 		if err != nil {
 			return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -187,7 +187,7 @@ func (t *Tracee) processSchedProcessExec(event *trace.Event) error {
 				}
 			}
 			// check exec'ed hash ?
-			if t.config.Output.CalcHashes != digest.CalcHashesNone {
+			if t.shouldCalcHashes() {
 				dev, err := parse.ArgVal[uint32](event.Args, "dev")
 				if err != nil {
 					return errfmt.Errorf("error parsing sched_process_exec args: %v", err)
@@ -408,7 +408,7 @@ func (t *Tracee) processSharedObjectLoaded(event *trace.Event) error {
 	if containerId == "" {
 		containerId = "host"
 	}
-	if t.config.Output.CalcHashes != digest.CalcHashesNone {
+	if t.shouldCalcHashes() {
 		fileKey := digest.NewKey(filePath, uint32(event.MountNS),
 			digest.WithDevice(dev),
 			digest.WithInode(ino, int64(fileCtime)),

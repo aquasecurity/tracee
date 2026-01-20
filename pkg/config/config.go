@@ -39,27 +39,24 @@ func invalidStreamConfigError(streamName string) error {
 // NOTE: In the future, Tracee config will be changed at run time and will require
 // proper management.
 type Config struct {
-	InitialPolicies   []interface{} // due to circular dependency, policy.Policy cannot be used here
-	Artifacts         *ArtifactsConfig
-	Capabilities      *CapabilitiesConfig
-	Output            *OutputConfig
-	ProcessStore      process.ProcTreeConfig
-	Buffers           BuffersConfig
-	MaxPidsCache      int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BTFObjPath        string
-	BPFObjBytes       []byte
-	BPFObjPath        string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
-	KernelConfig      *environment.KernelConfig
-	OSInfo            *environment.OSInfo
-	Sockets           runtime.Sockets
-	EnrichmentEnabled bool
-	CgroupFSPath      string
-	CgroupFSForce     bool
-	EngineConfig      engine.Config
-	DNSStore          dns.Config
-	MetricsEnabled    bool
-	HealthzEnabled    bool
-	DetectorConfig    DetectorConfig
+	InitialPolicies []interface{} // due to circular dependency, policy.Policy cannot be used here
+	Artifacts       *ArtifactsConfig
+	Capabilities    *CapabilitiesConfig
+	Output          *OutputConfig
+	Enrichment      *EnrichmentConfig
+	ProcessStore    process.ProcTreeConfig
+	Buffers         BuffersConfig
+	MaxPidsCache    int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BTFObjPath      string
+	BPFObjBytes     []byte
+	BPFObjPath      string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
+	KernelConfig    *environment.KernelConfig
+	OSInfo          *environment.OSInfo
+	EngineConfig    engine.Config
+	DNSStore        dns.Config
+	MetricsEnabled  bool
+	HealthzEnabled  bool
+	DetectorConfig  DetectorConfig
 }
 
 // Validate does static validation of the configuration
@@ -170,12 +167,6 @@ type CapabilitiesConfig struct {
 //
 
 type OutputConfig struct {
-	UserStack   bool
-	Environment bool
-	CalcHashes  digest.CalcHashesOption
-
-	DecodedData   bool
-	FdPaths       bool
 	EventsSorting bool
 
 	Streams []Stream
@@ -235,13 +226,127 @@ type DetectorConfig struct {
 
 // BuffersConfig is a struct containing the buffers sizes
 type BuffersConfig struct {
-	Kernel   KernelBuffersConfig `mapstructure:"kernel"`
-	Pipeline int                 `mapstructure:"pipeline"`
+	Kernel   KernelBuffersConfig
+	Pipeline int
 }
 
 // KernelBuffersConfig holds kernel buffer sizes
 type KernelBuffersConfig struct {
-	Events       int `mapstructure:"events"`
-	Artifacts    int `mapstructure:"artifacts"`
-	ControlPlane int `mapstructure:"control-plane"`
+	Events       int
+	Artifacts    int
+	ControlPlane int
+}
+
+//
+// Enrichment
+//
+
+// EnrichmentConfig is the configuration for enrichment
+type EnrichmentConfig struct {
+	Container   ContainerEnrichmentConfig
+	FdPaths     bool
+	Environment bool
+	UserStack   bool
+	DecodedData bool
+	CalcHashes  digest.CalcHashesOption
+	Sockets     runtime.Sockets
+}
+
+// EnrichUserStack returns whether user stack enrichment is enabled, false if enrichment is nil
+func (e *EnrichmentConfig) EnrichUserStack() bool {
+	if e == nil {
+		return false
+	}
+	return e.UserStack
+}
+
+// EnrichEnvironment returns whether environment enrichment is enabled, false if enrichment is nil
+func (e *EnrichmentConfig) EnrichEnvironment() bool {
+	if e == nil {
+		return false
+	}
+	return e.Environment
+}
+
+// EnrichFDPaths returns whether FD paths enrichment is enabled, false if enrichment is nil
+func (e *EnrichmentConfig) EnrichFDPaths() bool {
+	if e == nil {
+		return false
+	}
+	return e.FdPaths
+}
+
+// EnrichDecodedData returns whether decoded data enrichment is enabled, false if enrichment is nil
+func (e *EnrichmentConfig) EnrichDecodedData() bool {
+	if e == nil {
+		return false
+	}
+	return e.DecodedData
+}
+
+// EnrichContainers returns whether container enrichment is enabled, false if enrichment is nil
+func (e *EnrichmentConfig) EnrichContainers() bool {
+	if e == nil {
+		return false
+	}
+	return e.Container.Enabled
+}
+
+// GetCalcHashes returns CalcHashes enrichment option, CalcHashesNone if enrichment is nil
+func (e *EnrichmentConfig) GetCalcHashes() digest.CalcHashesOption {
+	if e == nil {
+		return digest.CalcHashesNone
+	}
+	return e.CalcHashes
+}
+
+// GetSockets returns Sockets, empty Sockets if enrichment is nil
+func (e *EnrichmentConfig) GetSockets() runtime.Sockets {
+	if e == nil {
+		return runtime.Sockets{}
+	}
+	return e.Sockets
+}
+
+// GetCgroupFSPath returns CgroupFSPath, empty string if enrichment is nil
+func (e *EnrichmentConfig) GetCgroupFSPath() string {
+	if e == nil {
+		return ""
+	}
+	return e.Container.Cgroupfs.Path
+}
+
+// GetCgroupFSForce returns CgroupFSForce, false if enrichment is nil
+func (e *EnrichmentConfig) GetCgroupFSForce() bool {
+	if e == nil {
+		return false
+	}
+	return e.Container.Cgroupfs.Force
+}
+
+// ContainerEnrichmentConfig is the container enrichment configuration
+type ContainerEnrichmentConfig struct {
+	Enabled          bool
+	Cgroupfs         ContainerCgroupfsConfig
+	DockerSocket     string
+	ContainerdSocket string
+	CrioSocket       string
+	PodmanSocket     string
+}
+
+// ContainerCgroupfsConfig is the container cgroupfs configuration
+type ContainerCgroupfsConfig struct {
+	Path  string
+	Force bool
+}
+
+// ExecutableHashConfig is the executable hash configuration
+type ExecutableHashConfig struct {
+	Enabled bool
+	Mode    string
+}
+
+// EnableDecodedData enables the decoded-data enrichment option.
+func (e *EnrichmentConfig) EnableDecodedData() {
+	e.DecodedData = true
 }
