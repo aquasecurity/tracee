@@ -32,6 +32,7 @@ nav:
                             - buffers: docs/flags/buffers.1.md
                             - capabilities: docs/flags/capabilities.1.md
                             - config: docs/flags/config.1.md
+                            - detectors: docs/flags/detectors.1.md
                             - enrichment: docs/flags/enrichment.1.md
                             - events: docs/flags/events.1.md
                             - logging: docs/flags/logging.1.md
