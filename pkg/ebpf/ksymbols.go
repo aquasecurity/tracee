@@ -16,6 +16,14 @@ var maxKsymNameLen = 64 // Most match the constant in the bpf code
 var globalSymbolOwner = "system"
 
 func (t *Tracee) UpdateKallsyms() error {
+	// Prevent concurrent UpdateKallsyms calls which can cause BPF map update
+	// to block indefinitely on some platforms (ARM64/kernel 5.13).
+	// Use TryLock to skip if another call is in progress.
+	if !t.kallsymsMutex.TryLock() {
+		return nil
+	}
+	defer t.kallsymsMutex.Unlock()
+
 	// NOTE: Make sure to refresh the kernel symbols table before updating the eBPF map.
 
 	// Find the eBPF map.
