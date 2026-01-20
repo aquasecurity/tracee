@@ -85,6 +85,5 @@ Output destinations are configured using the format: `--output destinations.<nam
 For comprehensive information about output configuration:
 
 - **Output Formats**: See [Output Formats](../outputs/output-formats.md) for detailed format options
-- **Output Options**: See [Output Options](../outputs/output-options.md) for all available output options
 - **Event Structure**: See [Event Structure](../outputs/event-structure.md) for understanding event data
 - **Outputs Overview**: See [Outputs Overview](../outputs/index.md) for complete output documentation
