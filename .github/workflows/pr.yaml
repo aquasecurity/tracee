@@ -165,169 +165,12 @@ jobs:
           make clean
           make e2e-inst-signatures
   #
-  # CHANGE DETECTION (CENTRALIZED)
-  #
-  detect-changes:
-    name: Detect Changes
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
-    outputs:
-      main: ${{ steps.detect.outputs.main }}
-      types: ${{ steps.detect.outputs.types }}
-      common: ${{ steps.detect.outputs.common }}
-      api: ${{ steps.detect.outputs.api }}
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-      - name: Detect Changes
-        id: detect
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "Running via workflow_dispatch - setting all modules to true"
-            echo "main=true" >> ${GITHUB_OUTPUT}
-            echo "types=true" >> ${GITHUB_OUTPUT}
-            echo "common=true" >> ${GITHUB_OUTPUT}
-            echo "api=true" >> ${GITHUB_OUTPUT}
-            exit 0
-          fi
-          
-          # Get changed files using git (conventional approach)
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-          echo "Changed files:"
-          echo "$CHANGED_FILES"
-          # Check if main module changed (anything outside types/, common/, api/)
-          if echo "$CHANGED_FILES" | grep -qvE '^(types|common|api)/'; then
-            echo "main=true" >> $GITHUB_OUTPUT
-            echo "Main module changed"
-          else
-            echo "main=false" >> $GITHUB_OUTPUT
-            echo "No main module changes"
-          fi
-          # Check individual modules
-          if echo "$CHANGED_FILES" | grep -q "^types/"; then
-            echo "types=true" >> $GITHUB_OUTPUT
-            echo "Types module changed"
-          else
-            echo "types=false" >> $GITHUB_OUTPUT
-          fi
-          if echo "$CHANGED_FILES" | grep -q "^common/"; then
-            echo "common=true" >> $GITHUB_OUTPUT
-            echo "Common module changed"
-          else
-            echo "common=false" >> $GITHUB_OUTPUT
-          fi
-          if echo "$CHANGED_FILES" | grep -q "^api/"; then
-            echo "api=true" >> $GITHUB_OUTPUT
-            echo "API module changed"
-          else
-            echo "api=false" >> $GITHUB_OUTPUT
-          fi
-  #
-  # MODULE TESTS
-  #
-  test-modules:
-    name: Go Modules Unit Tests (x86_64)
-    needs:
-      - detect-changes
-    if: needs.detect-changes.outputs.main != 'true'
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
-      - name: Test Types Module
-        if: needs.detect-changes.outputs.types == 'true'
-        uses: ./.github/actions/test-go-module
-        with:
-          module-name: 'types'
-          working-directory: './types'
-
-      - name: Test Common Module
-        if: needs.detect-changes.outputs.common == 'true'
-        uses: ./.github/actions/test-go-module
-        with:
-          module-name: 'common'
-          working-directory: './common'
-
-      - name: Test API Module
-        if: needs.detect-changes.outputs.api == 'true'
-        uses: ./.github/actions/test-go-module
-        with:
-          module-name: 'api'
-          working-directory: './api'
-
-  test-modules-arm64:
-    name: Go Modules Unit Tests (ARM64)
-    needs:
-      - detect-changes
-    if: needs.detect-changes.outputs.main != 'true'
-    runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
-      volumes:
-        - /opt:/opt:rw,rshared
-        # The following volume mounts are a workaround for GitHub Actions runner limitations.
-        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20 or /__e/node24, which is not present in the base container.
-        # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
-        # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
-        # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
-        - /opt:/__e/node20:ro,rshared
-        - /opt:/__e/node24:ro,rshared
-    steps:
-      - name: Allow Linux musl containers on ARM64 runners
-        run: |
-          sed -i "/^ID=/s/alpine/NotpineForGHA/" /etc/os-release
-          apk add nodejs --update-cache
-          mkdir -p /opt/bin
-          ln -s /usr/bin/node /opt/bin/node
-        shell: sh
-      - name: Checkout Code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-        with:
-          ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
-      - name: Test Types Module
-        if: needs.detect-changes.outputs.types == 'true'
-        uses: ./.github/actions/test-go-module
-        with:
-          module-name: 'types (ARM64)'
-          working-directory: './types'
-
-      - name: Test Common Module
-        if: needs.detect-changes.outputs.common == 'true'
-        uses: ./.github/actions/test-go-module
-        with:
-          module-name: 'common (ARM64)'
-          working-directory: './common'
-
-      - name: Test API Module
-        if: needs.detect-changes.outputs.api == 'true'
-        uses: ./.github/actions/test-go-module
-        with:
-          module-name: 'api (ARM64)'
-          working-directory: './api'
-
-  #
   # CODE TESTS
   #
   unit-tests:
-    name: Full Unit Tests (x86_64)
+    name: Unit Tests (x86_64)
     needs:
       - verify-analyze-code
-      - detect-changes
-    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
@@ -346,11 +189,9 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
   unit-tests-arm64:
-    name: Full Unit Tests (ARM64)
+    name: Unit Tests (ARM64)
     needs:
       - verify-analyze-code
-      - detect-changes
-    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
@@ -390,8 +231,6 @@ jobs:
     name: Integration Tests (x86_64)
     needs:
       - verify-analyze-code
-      - detect-changes
-    if: needs.detect-changes.outputs.main == 'true'
     runs-on:
       - graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12.62 x86_64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
@@ -440,8 +279,6 @@ jobs:
     name: Integration Tests (ARM64)
     needs:
       - verify-analyze-code
-      - detect-changes
-    if: needs.detect-changes.outputs.main == 'true'
     runs-on:
       - graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
@@ -493,8 +330,6 @@ jobs:
     name: Performance Tests
     needs:
       - verify-analyze-code
-      - detect-changes
-    if: needs.detect-changes.outputs.main == 'true'
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
@@ -515,10 +350,7 @@ jobs:
   #
   generate-matrix:
     name: Generate Test Matrix
-    needs:
-      - detect-changes
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
-    if: needs.detect-changes.outputs.main == 'true'
     outputs:
       matrix01: ${{ steps.generate.outputs.matrix }}
     steps:
