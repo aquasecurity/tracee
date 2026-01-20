@@ -1205,6 +1205,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../flags/detectors.1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    detectors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../flags/enrichment.1/" class="md-nav__link">
         
   
@@ -10036,8 +10064,8 @@
 <span class="w">        </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;security_file_open&quot;</span><span class="p">},</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">DataStores</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreRequirement</span><span class="p">{</span>
-<span class="w">        </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;process&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;container&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyOptional</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreProcess</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreContainer</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyOptional</span><span class="p">},</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -10061,8 +10089,8 @@
 <span class="w">    </span><span class="nx">Requirements</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DetectorRequirements</span><span class="p">{</span>
 <span class="w">        </span><span class="nx">Enrichments</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentRequirement</span><span class="p">{</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;executable-hash&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">Config</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;digest-inode&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentExecutableHash</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Config</span><span class="p">:</span><span class="w">     </span><span class="nx">detection</span><span class="p">.</span><span class="nx">ExecutableHashConfigDigestInode</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">        </span><span class="p">},</span>
@@ -10148,19 +10176,19 @@
 
 <span class="w">        </span><span class="c1">// Datastore requirements</span>
 <span class="w">        </span><span class="nx">DataStores</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreRequirement</span><span class="p">{</span>
-<span class="w">            </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;process&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">},</span>
-<span class="w">            </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;container&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyOptional</span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreProcess</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="nx">Name</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DataStoreContainer</span><span class="p">,</span><span class="w"> </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyOptional</span><span class="p">},</span>
 <span class="w">        </span><span class="p">},</span>
 
 <span class="w">        </span><span class="c1">// Enrichment requirements</span>
 <span class="w">        </span><span class="nx">Enrichments</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentRequirement</span><span class="p">{</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;executable-hash&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">Config</span><span class="p">:</span><span class="w">     </span><span class="s">&quot;digest-inode&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentExecutableHash</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Config</span><span class="p">:</span><span class="w">     </span><span class="nx">detection</span><span class="p">.</span><span class="nx">ExecutableHashConfigDigestInode</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyRequired</span><span class="p">,</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">            </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="s">&quot;environment&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">Name</span><span class="p">:</span><span class="w">       </span><span class="nx">detection</span><span class="p">.</span><span class="nx">EnrichmentEnvironment</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">Dependency</span><span class="p">:</span><span class="w"> </span><span class="nx">detection</span><span class="p">.</span><span class="nx">DependencyOptional</span><span class="p">,</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">        </span><span class="p">},</span>
