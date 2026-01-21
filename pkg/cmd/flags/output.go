@@ -139,7 +139,8 @@ func (c *OutputConfig) flags() []string {
 }
 
 // PrepareOutput prepares the output config from the given output slice.
-func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*config.OutputConfig, error) {
+// enrichmentConfig may be modified to enable required enrichment options (e.g., DecodedData for table format).
+func PrepareOutput(outputSlice []string, containerMode config.ContainerMode, enrichmentConfig *config.EnrichmentConfig) (*config.OutputConfig, error) {
 	// TODO: decide if we want to separate the configs (cobra and tracee internals), or join them
 	traceeConfig := &config.OutputConfig{}
 
@@ -250,7 +251,7 @@ func PrepareOutput(outputSlice []string, containerMode config.ContainerMode) (*c
 		destinationMap["stdout"] = tableFlag
 	}
 
-	destinationConfigs, err := getDestinationConfigs(destinationMap, traceeConfig, containerMode)
+	destinationConfigs, err := getDestinationConfigs(destinationMap, traceeConfig, containerMode, enrichmentConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -504,7 +505,7 @@ func PreparePrinterConfig(printerKind string, outputPath string) (config.Destina
 
 // getDestinationConfigs returns a slice of printer.Configs based on the given printerMap
 func getDestinationConfigs(printerMap map[string]string, traceeConfig *config.OutputConfig,
-	containerMode config.ContainerMode) ([]config.Destination, error) {
+	containerMode config.ContainerMode, enrichmentConfig *config.EnrichmentConfig) ([]config.Destination, error) {
 	printerConfigs := make([]config.Destination, 0, len(printerMap))
 
 	for outPath, printerKind := range printerMap {
@@ -513,7 +514,8 @@ func getDestinationConfigs(printerMap map[string]string, traceeConfig *config.Ou
 		}
 
 		if printerKind == tableFlag {
-			traceeConfig.DecodedData = true
+			// Table format requires decoded-data enrichment by default
+			enrichmentConfig.EnableDecodedData()
 		}
 
 		printerCfg, err := PreparePrinterConfig(printerKind, outPath)

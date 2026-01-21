@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
+	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 )
 
@@ -114,8 +115,8 @@ func (e *EnrichmentConfig) GetRuntimeSockets() (runtime.Sockets, error) {
 	return sockets, nil
 }
 
-// GetCalcHashesOption converts ExecutableHashConfig to digest.CalcHashesOption
-func (e *EnrichmentConfig) GetCalcHashesOption() digest.CalcHashesOption {
+// getCalcHashesOption converts ExecutableHashConfig to digest.CalcHashesOption
+func (e *EnrichmentConfig) getCalcHashesOption() digest.CalcHashesOption {
 	if !e.ExecutableHash.Enabled && e.ExecutableHash.Mode == "" {
 		return digest.CalcHashesNone
 	}
@@ -139,6 +140,31 @@ func (e *EnrichmentConfig) GetCalcHashesOption() digest.CalcHashesOption {
 		// Default to dev-inode if invalid mode
 		return digest.CalcHashesDevInode
 	}
+}
+
+// GetEnrichmentConfig returns the enrichment config with all parsed values
+func (e *EnrichmentConfig) GetEnrichmentConfig() (*config.EnrichmentConfig, error) {
+	sockets, err := e.GetRuntimeSockets()
+	if err != nil {
+		return nil, err
+	}
+
+	return &config.EnrichmentConfig{
+		Container: config.ContainerEnrichmentConfig{
+			Enabled:          e.Container.Enabled,
+			Cgroupfs:         config.ContainerCgroupfsConfig(e.Container.Cgroupfs),
+			DockerSocket:     e.Container.DockerSocket,
+			ContainerdSocket: e.Container.ContainerdSocket,
+			CrioSocket:       e.Container.CrioSocket,
+			PodmanSocket:     e.Container.PodmanSocket,
+		},
+		FdPaths:     e.FdPaths,
+		Environment: e.Environment,
+		CalcHashes:  e.getCalcHashesOption(),
+		UserStack:   e.UserStack,
+		DecodedData: e.DecodedData,
+		Sockets:     sockets,
+	}, nil
 }
 
 // flags returns the flags for the enrichment configuration

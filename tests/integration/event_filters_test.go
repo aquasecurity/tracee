@@ -2330,7 +2330,7 @@ func Test_EventFilters(t *testing.T) {
 				Capabilities: &config.CapabilitiesConfig{
 					BypassCaps: true,
 				},
-				EnrichmentEnabled: false,
+				Enrichment: nil, // Disable enrichment
 			}
 			ps := testutils.NewPolicies(tc.policyFiles)
 			initialPolicies := make([]interface{}, 0, len(ps))

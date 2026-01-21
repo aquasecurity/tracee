@@ -38,7 +38,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "default format",
 			outputSlice: []string{},
 			expectedOutput: config.OutputConfig{
-				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -53,7 +52,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout",
 			outputSlice: []string{"table"},
 			expectedOutput: config.OutputConfig{
-				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -68,7 +66,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to /tmp/table",
 			outputSlice: []string{"table:/tmp/table"},
 			expectedOutput: config.OutputConfig{
-				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -83,7 +80,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "table to stdout, and to /tmp/table",
 			outputSlice: []string{"table", "table:/tmp/table"},
 			expectedOutput: config.OutputConfig{
-				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -161,7 +157,6 @@ func TestPrepareOutput(t *testing.T) {
 				"gotemplate=template.tmpl:/tmp/gotemplate1",
 			},
 			expectedOutput: config.OutputConfig{
-				DecodedData: true,
 				Streams: []config.Stream{
 					{
 						Name: "default-stream",
@@ -284,7 +279,6 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "sort-events",
 			outputSlice: []string{"sort-events"},
 			expectedOutput: config.OutputConfig{
-				DecodedData:   true,
 				EventsSorting: true,
 				Streams: []config.Stream{
 					{
@@ -620,17 +614,13 @@ func TestPrepareOutput(t *testing.T) {
 				}
 			}()
 
-			output, err := PrepareOutput(testcase.outputSlice, config.ContainerModeDisabled)
+			enrichmentConfig := &config.EnrichmentConfig{}
+			output, err := PrepareOutput(testcase.outputSlice, config.ContainerModeDisabled, enrichmentConfig)
 			if err != nil {
 				require.NotNil(t, testcase.expectedError)
 				assert.Contains(t, err.Error(), testcase.expectedError.Error())
 			} else {
-				assert.Equal(t, testcase.expectedOutput.CalcHashes, output.CalcHashes)
 				assert.Equal(t, testcase.expectedOutput.EventsSorting, output.EventsSorting)
-				assert.Equal(t, testcase.expectedOutput.Environment, output.Environment)
-				assert.Equal(t, testcase.expectedOutput.DecodedData, output.DecodedData)
-				assert.Equal(t, testcase.expectedOutput.FdPaths, output.FdPaths)
-				assert.Equal(t, testcase.expectedOutput.UserStack, output.UserStack)
 				assert.Equal(t, len(testcase.expectedOutput.Streams), len(output.Streams))
 
 				assertPrinterConfigs(t, testcase.expectedOutput.Streams, output.Streams)

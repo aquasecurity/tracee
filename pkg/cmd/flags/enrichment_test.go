@@ -1,10 +1,15 @@
 package flags
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/common/digest"
+	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 )
 
 func TestEnrichmentConfig_flags(t *testing.T) {
@@ -593,6 +598,412 @@ func TestPrepareEnrichment(t *testing.T) {
 				assert.Equal(t, tc.expectedReturn.ExecutableHash.Enabled, enrichment.ExecutableHash.Enabled)
 				assert.Equal(t, tc.expectedReturn.ExecutableHash.Mode, enrichment.ExecutableHash.Mode)
 				assert.Equal(t, tc.expectedReturn.UserStack, enrichment.UserStack)
+			}
+		})
+	}
+}
+
+func TestEnrichmentConfig_getCalcHashesOption(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		config         EnrichmentConfig
+		expectedResult digest.CalcHashesOption
+	}{
+		{
+			name:           "disabled and no mode",
+			config:         EnrichmentConfig{},
+			expectedResult: digest.CalcHashesNone,
+		},
+		{
+			name: "enabled but no mode - defaults to dev-inode",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Enabled: true,
+				},
+			},
+			expectedResult: digest.CalcHashesDevInode,
+		},
+		{
+			name: "mode set to none",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Mode: "none",
+				},
+			},
+			expectedResult: digest.CalcHashesNone,
+		},
+		{
+			name: "mode set to inode",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Mode: "inode",
+				},
+			},
+			expectedResult: digest.CalcHashesInode,
+		},
+		{
+			name: "mode set to dev-inode",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Mode: "dev-inode",
+				},
+			},
+			expectedResult: digest.CalcHashesDevInode,
+		},
+		{
+			name: "mode set to digest-inode",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Mode: "digest-inode",
+				},
+			},
+			expectedResult: digest.CalcHashesDigestInode,
+		},
+		{
+			name: "invalid mode defaults to dev-inode",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Mode: "invalid-mode",
+				},
+			},
+			expectedResult: digest.CalcHashesDevInode,
+		},
+		{
+			name: "enabled with mode - mode takes precedence",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Enabled: true,
+					Mode:    "inode",
+				},
+			},
+			expectedResult: digest.CalcHashesInode,
+		},
+		{
+			name: "mode empty string but enabled - defaults to dev-inode",
+			config: EnrichmentConfig{
+				ExecutableHash: ExecutableHashConfig{
+					Enabled: true,
+					Mode:    "",
+				},
+			},
+			expectedResult: digest.CalcHashesDevInode,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Test indirectly through GetEnrichmentConfig since getCalcHashesOption is private
+			result, err := tt.config.GetEnrichmentConfig()
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result.CalcHashes)
+		})
+	}
+}
+
+func TestEnrichmentConfig_GetRuntimeSockets(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		setupConfig     func(t *testing.T) EnrichmentConfig
+		expectError     bool
+		errorContains   string
+		validateSockets func(t *testing.T, sockets runtime.Sockets)
+	}{
+		{
+			name: "no sockets configured - autodiscovery",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				return EnrichmentConfig{}
+			},
+			expectError: false,
+			validateSockets: func(t *testing.T, sockets runtime.Sockets) {
+				// Autodiscovery may or may not find sockets depending on environment
+				// Just verify it doesn't panic
+				assert.NotNil(t, sockets)
+			},
+		},
+		{
+			name: "docker socket configured",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				tmpFile, err := os.CreateTemp("", "test-socket-*.sock")
+				require.NoError(t, err)
+				tmpPath := tmpFile.Name()
+				tmpFile.Close()
+				t.Cleanup(func() { os.Remove(tmpPath) })
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						DockerSocket: tmpPath,
+					},
+				}
+			},
+			expectError: false,
+			validateSockets: func(t *testing.T, sockets runtime.Sockets) {
+				assert.True(t, sockets.Supports(runtime.Docker))
+			},
+		},
+		{
+			name: "containerd socket configured",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				tmpFile, err := os.CreateTemp("", "test-socket-*.sock")
+				require.NoError(t, err)
+				tmpPath := tmpFile.Name()
+				tmpFile.Close()
+				t.Cleanup(func() { os.Remove(tmpPath) })
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						ContainerdSocket: tmpPath,
+					},
+				}
+			},
+			expectError: false,
+			validateSockets: func(t *testing.T, sockets runtime.Sockets) {
+				assert.True(t, sockets.Supports(runtime.Containerd))
+			},
+		},
+		{
+			name: "crio socket configured",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				tmpFile, err := os.CreateTemp("", "test-socket-*.sock")
+				require.NoError(t, err)
+				tmpPath := tmpFile.Name()
+				tmpFile.Close()
+				t.Cleanup(func() { os.Remove(tmpPath) })
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						CrioSocket: tmpPath,
+					},
+				}
+			},
+			expectError: false,
+			validateSockets: func(t *testing.T, sockets runtime.Sockets) {
+				assert.True(t, sockets.Supports(runtime.Crio))
+			},
+		},
+		{
+			name: "podman socket configured",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				tmpFile, err := os.CreateTemp("", "test-socket-*.sock")
+				require.NoError(t, err)
+				tmpPath := tmpFile.Name()
+				tmpFile.Close()
+				t.Cleanup(func() { os.Remove(tmpPath) })
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						PodmanSocket: tmpPath,
+					},
+				}
+			},
+			expectError: false,
+			validateSockets: func(t *testing.T, sockets runtime.Sockets) {
+				assert.True(t, sockets.Supports(runtime.Podman))
+			},
+		},
+		{
+			name: "multiple sockets configured",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				tmpFile, err := os.CreateTemp("", "test-socket-*.sock")
+				require.NoError(t, err)
+				tmpPath := tmpFile.Name()
+				tmpFile.Close()
+				t.Cleanup(func() { os.Remove(tmpPath) })
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						DockerSocket:     tmpPath,
+						ContainerdSocket: tmpPath,
+					},
+				}
+			},
+			expectError: false,
+			validateSockets: func(t *testing.T, sockets runtime.Sockets) {
+				assert.True(t, sockets.Supports(runtime.Docker))
+				assert.True(t, sockets.Supports(runtime.Containerd))
+			},
+		},
+		{
+			name: "invalid socket path",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						DockerSocket: "/nonexistent/path/to/socket.sock",
+					},
+				}
+			},
+			expectError:   true,
+			errorContains: "failed to register docker socket",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			config := tt.setupConfig(t)
+			sockets, err := config.GetRuntimeSockets()
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+			} else {
+				require.NoError(t, err)
+				if tt.validateSockets != nil {
+					tt.validateSockets(t, sockets)
+				}
+			}
+		})
+	}
+}
+
+func TestEnrichmentConfig_GetEnrichmentConfig(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		setupConfig    func(t *testing.T) EnrichmentConfig
+		expectError    bool
+		errorContains  string
+		validateConfig func(t *testing.T, cfg *config.EnrichmentConfig)
+	}{
+		{
+			name: "empty config",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				return EnrichmentConfig{}
+			},
+			expectError: false,
+			validateConfig: func(t *testing.T, cfg *config.EnrichmentConfig) {
+				assert.NotNil(t, cfg)
+				assert.False(t, cfg.UserStack)
+				assert.False(t, cfg.Environment)
+				assert.False(t, cfg.FdPaths)
+				assert.False(t, cfg.DecodedData)
+				assert.Equal(t, digest.CalcHashesNone, cfg.CalcHashes)
+			},
+		},
+		{
+			name: "all fields set",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				tmpFile, err := os.CreateTemp("", "test-socket-*.sock")
+				require.NoError(t, err)
+				tmpPath := tmpFile.Name()
+				tmpFile.Close()
+				t.Cleanup(func() { os.Remove(tmpPath) })
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						Enabled: true,
+						Cgroupfs: ContainerCgroupfsConfig{
+							Path:  "/host/sys/fs/cgroup",
+							Force: true,
+						},
+						DockerSocket: tmpPath,
+					},
+					UserStack:   true,
+					Environment: true,
+					FdPaths:     true,
+					DecodedData: true,
+					ExecutableHash: ExecutableHashConfig{
+						Enabled: true,
+						Mode:    "inode",
+					},
+				}
+			},
+			expectError: false,
+			validateConfig: func(t *testing.T, cfg *config.EnrichmentConfig) {
+				assert.NotNil(t, cfg)
+				assert.True(t, cfg.UserStack)
+				assert.True(t, cfg.Environment)
+				assert.True(t, cfg.FdPaths)
+				assert.True(t, cfg.DecodedData)
+				assert.True(t, cfg.Container.Enabled)
+				assert.Equal(t, "/host/sys/fs/cgroup", cfg.Container.Cgroupfs.Path)
+				assert.True(t, cfg.Container.Cgroupfs.Force)
+				assert.True(t, cfg.Sockets.Supports(runtime.Docker))
+				assert.Equal(t, digest.CalcHashesInode, cfg.CalcHashes)
+			},
+		},
+		{
+			name: "executable hash conversion",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				return EnrichmentConfig{
+					ExecutableHash: ExecutableHashConfig{
+						Mode: "dev-inode",
+					},
+				}
+			},
+			expectError: false,
+			validateConfig: func(t *testing.T, cfg *config.EnrichmentConfig) {
+				assert.Equal(t, digest.CalcHashesDevInode, cfg.CalcHashes)
+			},
+		},
+		{
+			name: "socket error propagation",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						DockerSocket: "/nonexistent/path/to/socket.sock",
+					},
+				}
+			},
+			expectError:   true,
+			errorContains: "failed to register docker socket",
+		},
+		{
+			name: "container config conversion",
+			setupConfig: func(t *testing.T) EnrichmentConfig {
+				tmpFile, err := os.CreateTemp("", "test-socket-*.sock")
+				require.NoError(t, err)
+				tmpPath := tmpFile.Name()
+				tmpFile.Close()
+				t.Cleanup(func() { os.Remove(tmpPath) })
+				return EnrichmentConfig{
+					Container: ContainerEnrichmentConfig{
+						Enabled:          true,
+						DockerSocket:     tmpPath,
+						ContainerdSocket: tmpPath,
+						CrioSocket:       tmpPath,
+						PodmanSocket:     tmpPath,
+						Cgroupfs: ContainerCgroupfsConfig{
+							Path:  "/custom/path",
+							Force: false,
+						},
+					},
+				}
+			},
+			expectError: false,
+			validateConfig: func(t *testing.T, cfg *config.EnrichmentConfig) {
+				assert.True(t, cfg.Container.Enabled)
+				assert.True(t, cfg.Sockets.Supports(runtime.Docker))
+				assert.True(t, cfg.Sockets.Supports(runtime.Containerd))
+				assert.True(t, cfg.Sockets.Supports(runtime.Crio))
+				assert.True(t, cfg.Sockets.Supports(runtime.Podman))
+				assert.Equal(t, "/custom/path", cfg.Container.Cgroupfs.Path)
+				assert.False(t, cfg.Container.Cgroupfs.Force)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			config := tt.setupConfig(t)
+			cfg, err := config.GetEnrichmentConfig()
+			if tt.expectError {
+				require.Error(t, err)
+				if tt.errorContains != "" {
+					assert.Contains(t, err.Error(), tt.errorContains)
+				}
+				assert.Nil(t, cfg)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, cfg)
+				if tt.validateConfig != nil {
+					tt.validateConfig(t, cfg)
+				}
 			}
 		})
 	}

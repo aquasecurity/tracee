@@ -145,6 +145,11 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return t.stats
 }
 
+// shouldCalcHashes returns whether hash calculation is enabled.
+func (t *Tracee) shouldCalcHashes() bool {
+	return t.config.Enrichment.GetCalcHashes() != digest.CalcHashesNone
+}
+
 // initializeBPFEventsStatsMap initializes the events_stats BPF map with zero values
 // and sets it for metrics collection
 func (t *Tracee) initializeBPFEventsStatsMap() error {
@@ -207,7 +212,7 @@ func New(cfg config.Config) (*Tracee, error) {
 	// Initialize capabilities rings soon
 
 	useBaseEbpf := func(c config.Config) bool {
-		return c.Output.UserStack
+		return c.Enrichment.EnrichUserStack()
 	}
 
 	err = capabilities.Initialize(
@@ -374,7 +379,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize cgroups filesystems
 
-	t.cgroups, err = cgroup.NewCgroups(t.config.CgroupFSPath, t.config.CgroupFSForce)
+	t.cgroups, err = cgroup.NewCgroups(t.config.Enrichment.GetCgroupFSPath(), t.config.Enrichment.GetCgroupFSForce())
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -387,9 +392,9 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	// Initialize containers enrichment logic
 
 	containerMgr, err := container.New(
-		t.config.EnrichmentEnabled,
+		t.config.Enrichment.EnrichContainers(),
 		t.cgroups,
-		t.config.Sockets,
+		t.config.Enrichment.GetSockets(),
 		"containers_map",
 	)
 	if err != nil {
@@ -465,9 +470,9 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize Detector Engine
 	enrichOpts := &detectors.EnrichmentOptions{
-		Environment:  t.config.Output.Environment,
-		ExecHashMode: t.config.Output.CalcHashes,
-		Container:    t.config.EnrichmentEnabled,
+		Environment:  t.config.Enrichment.EnrichEnvironment(),
+		ExecHashMode: t.config.Enrichment.GetCalcHashes(),
+		Container:    t.config.Enrichment.EnrichContainers(),
 	}
 	t.detectorEngine = detectors.NewEngine(t.policyManager, enrichOpts)
 
@@ -628,8 +633,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	}
 
 	// Initialize hashes for files
-
-	t.fileHashes, err = digest.NewCache(t.config.Output.CalcHashes, t.contPathResolver)
+	t.fileHashes, err = digest.NewCache(t.config.Enrichment.GetCalcHashes(), t.contPathResolver)
 	if err != nil {
 		t.Close()
 		return errfmt.WrapError(err)
@@ -968,10 +972,10 @@ const (
 func (t *Tracee) getOptionsConfig() uint32 {
 	var cOptVal uint32
 
-	if t.config.Output.Environment {
+	if t.config.Enrichment.EnrichEnvironment() {
 		cOptVal = cOptVal | optExecEnv
 	}
-	if t.config.Output.UserStack {
+	if t.config.Enrichment.EnrichUserStack() {
 		cOptVal = cOptVal | optStackAddresses
 	}
 	if t.config.Artifacts.FileWrite.Capture {
@@ -993,7 +997,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	case *cgroup.CgroupV1:
 		cOptVal = cOptVal | optCgroupV1
 	}
-	if t.config.Output.FdPaths {
+	if t.config.Enrichment.EnrichFDPaths() {
 		cOptVal = cOptVal | optTranslateFDFilePath
 	}
 	switch t.config.ProcessStore.Source {
@@ -1698,7 +1702,7 @@ func (t *Tracee) initBPF() error {
 	t.controlPlane = controlplane.NewController(
 		t.bpfModule,
 		t.dataStoreRegistry.GetContainerManager(),
-		t.config.EnrichmentEnabled,
+		t.config.Enrichment.EnrichContainers(),
 		t.dataStoreRegistry.GetProcessTree(),
 		t.dataTypeDecoder,
 		t.config.Buffers.Kernel.ControlPlane,
@@ -2139,7 +2143,7 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 
 	matchedPolicies = policiesMatch(events.ExistingContainer)
 	if matchedPolicies > 0 {
-		existingContainerEvents := events.ExistingContainersEvents(t.dataStoreRegistry.GetContainerManager(), t.config.EnrichmentEnabled)
+		existingContainerEvents := events.ExistingContainersEvents(t.dataStoreRegistry.GetContainerManager(), t.config.Enrichment.EnrichContainers())
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies)

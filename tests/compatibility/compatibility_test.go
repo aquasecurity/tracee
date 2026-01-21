@@ -62,8 +62,7 @@ func TestCompatibility(t *testing.T) {
 		Capabilities: &config.CapabilitiesConfig{
 			BypassCaps: true,
 		},
-		EnrichmentEnabled: false,
-		BPFObjPath:        testBinaryPath, // Use test binary for uprobe attachment
+		BPFObjPath: testBinaryPath, // Use test binary for uprobe attachment
 	}
 
 	initialPolicies := make([]interface{}, 0, len(policies))
@@ -384,7 +383,6 @@ func TestClockDetection(t *testing.T) {
 		Capabilities: &config.CapabilitiesConfig{
 			BypassCaps: true,
 		},
-		EnrichmentEnabled: false,
 	}
 
 	// Use a minimal policy to avoid unnecessary overhead

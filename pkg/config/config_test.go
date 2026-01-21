@@ -5,6 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/common/digest"
+	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 )
 
 // Helper function to create a valid base config
@@ -218,6 +221,181 @@ func TestConfig_Validate(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestEnrichmentConfig_NilHandling(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		enrich   *EnrichmentConfig
+		testFunc func(t *testing.T, enrich *EnrichmentConfig)
+	}{
+		{
+			name:   "nil EnrichmentConfig - EnrichUserStack",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.False(t, enrich.EnrichUserStack())
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - EnrichEnvironment",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.False(t, enrich.EnrichEnvironment())
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - EnrichFDPaths",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.False(t, enrich.EnrichFDPaths())
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - EnrichDecodedData",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.False(t, enrich.EnrichDecodedData())
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - EnrichContainers",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.False(t, enrich.EnrichContainers())
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - GetCalcHashes",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.Equal(t, digest.CalcHashesNone, enrich.GetCalcHashes())
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - GetSockets",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				sockets := enrich.GetSockets()
+				assert.Equal(t, runtime.Sockets{}, sockets)
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - GetCgroupFSPath",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.Equal(t, "", enrich.GetCgroupFSPath())
+			},
+		},
+		{
+			name:   "nil EnrichmentConfig - GetCgroupFSForce",
+			enrich: nil,
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.False(t, enrich.GetCgroupFSForce())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - EnrichUserStack returns true",
+			enrich: &EnrichmentConfig{
+				UserStack: true,
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.True(t, enrich.EnrichUserStack())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - EnrichEnvironment returns true",
+			enrich: &EnrichmentConfig{
+				Environment: true,
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.True(t, enrich.EnrichEnvironment())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - EnrichFDPaths returns true",
+			enrich: &EnrichmentConfig{
+				FdPaths: true,
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.True(t, enrich.EnrichFDPaths())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - EnrichDecodedData returns true",
+			enrich: &EnrichmentConfig{
+				DecodedData: true,
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.True(t, enrich.EnrichDecodedData())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - EnrichContainers returns true",
+			enrich: &EnrichmentConfig{
+				Container: ContainerEnrichmentConfig{
+					Enabled: true,
+				},
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.True(t, enrich.EnrichContainers())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - GetCalcHashes returns value",
+			enrich: &EnrichmentConfig{
+				CalcHashes: digest.CalcHashesInode,
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.Equal(t, digest.CalcHashesInode, enrich.GetCalcHashes())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - GetSockets returns value",
+			enrich: &EnrichmentConfig{
+				Sockets: runtime.Sockets{},
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				sockets := enrich.GetSockets()
+				assert.Equal(t, runtime.Sockets{}, sockets)
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - GetCgroupFSPath returns value",
+			enrich: &EnrichmentConfig{
+				Container: ContainerEnrichmentConfig{
+					Cgroupfs: ContainerCgroupfsConfig{
+						Path: "/custom/path",
+					},
+				},
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.Equal(t, "/custom/path", enrich.GetCgroupFSPath())
+			},
+		},
+		{
+			name: "non-nil EnrichmentConfig - GetCgroupFSForce returns value",
+			enrich: &EnrichmentConfig{
+				Container: ContainerEnrichmentConfig{
+					Cgroupfs: ContainerCgroupfsConfig{
+						Force: true,
+					},
+				},
+			},
+			testFunc: func(t *testing.T, enrich *EnrichmentConfig) {
+				assert.True(t, enrich.GetCgroupFSForce())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tt.testFunc(t, tt.enrich)
 		})
 	}
 }
