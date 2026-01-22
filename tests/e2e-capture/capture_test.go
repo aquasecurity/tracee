@@ -1,4 +1,4 @@
-package integration
+package e2ecapture
 
 import (
 	"context"
@@ -22,6 +22,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
+
+// busyboxImage is the pinned busybox image used in e2e capture tests
+// Using ECR Public mirror to avoid Docker Hub rate limits
+const busyboxImage = "public.ecr.aws/docker/library/busybox:1.37.0@sha256:e3652a00a2fabd16ce889f0aa32c38eec347b997e73bd09e69c962ec7f8732ee"
 
 func Test_TraceeCapture(t *testing.T) {
 	// TODO: This test is skipped due to BPF file capture bugs (to be investigated):
@@ -143,6 +147,13 @@ func Test_TraceeCapture(t *testing.T) {
 				t.Fail()
 			}
 		})
+	}
+}
+
+func coolDown(t *testing.T, d time.Duration) {
+	if d > 0 {
+		t.Logf("  ... cooling down for %v", d)
+		time.Sleep(d)
 	}
 }
 
