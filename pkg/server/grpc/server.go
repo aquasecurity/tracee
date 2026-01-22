@@ -67,6 +67,8 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
 	pb.RegisterDataSourceServiceServer(grpcServer, &DataSourceService{sigEngine: e})
 
+	t.RegisterE2eGrpcServices(grpcServer)
+
 	go func() {
 		logger.Debugw("Starting grpc server", "protocol", s.protocol, "address", s.listenAddr)
 		if err := grpcServer.Serve(s.listener); err != nil {

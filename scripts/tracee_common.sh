@@ -41,14 +41,29 @@ handle_tracee_error() {
     die "${error_msg:-Tracee operation failed}"
 }
 
-# get_running_tracee_pids - Find all running processes named "tracee"
+# get_running_tracee_pids - Find all running tracee binary processes
 #
 # Returns: Prints PIDs of running tracee processes, one per line
 #          Returns 0 if any found, 1 if none found
 # Note: Excludes zombie processes (state Z) as they cannot be interacted with
+#       Only matches exact binary names, not scripts or other processes
 get_running_tracee_pids() {
-    # Use ps with awk for better POSIX portability
-    pids=$(ps -eo pid,stat,comm 2> /dev/null | awk '$3 == "tracee" && $2 !~ /^Z/ {print $1}')
+    # Use pgrep with exact match (-x) for known tracee binary names
+    # This avoids matching shell scripts or other processes with "tracee" in the name
+    pids=""
+    for bin_name in tracee tracee-e2e tracee-e2e-net; do
+        # -x = exact match on process name
+        found=$(pgrep -x "${bin_name}" 2> /dev/null || true)
+        if [ -n "${found}" ]; then
+            if [ -n "${pids}" ]; then
+                pids="${pids}
+${found}"
+            else
+                pids="${found}"
+            fi
+        fi
+    done
+
     if [ -n "${pids}" ]; then
         printf "%s\n" "${pids}"
         return 0

@@ -1057,11 +1057,11 @@ func Test_EventFilters(t *testing.T) {
 			test:         ExpectAllInOrderSequentially,
 		},
 
-		// // TODO: add tests using signature events
-		// // This is currently not possible since signature events are dynamically
+		// // TODO: add tests using detector events
+		// // This is currently not possible since detector events are dynamically
 		// // created and an event like anti_debugging is not known in advance.
 		// {
-		// 	name: "comm: event: data: sign: trace sys events + signature events in separate policies",
+		// 	name: "comm: event: data: sign: trace sys events + detector events in separate policies",
 		// 	policyFiles: []testutils.PolicyFileWithID{
 		// 		{
 		// 			Id: 3,
@@ -1094,7 +1094,7 @@ func Test_EventFilters(t *testing.T) {
 		// 		{
 		// 			Id: 9,
 		// 			PolicyFile: v1beta1.PolicyFile{
-		// 				Name:          "signature",
+		// 				Name:          "detector",
 		// 				Scope:         []string{},
 		// 				DefaultActions: []string{"log"},
 		// 				Rules: []k8s.Rule{

@@ -54,134 +54,149 @@ tracee --output json --events net_packet_dns.data.src=8.8.8.8
 {"timestamp":1696255744441387358,"threadStartTime":1695658999333342370,"processorId":6,"processId":472,"cgroupId":2626,"threadId":472,"parentProcessId":1,"hostProcessId":472,"hostThreadId":472,"hostParentProcessId":1,"userId":976,"mountNamespace":4026532555,"pidNamespace":4026531836,"processName":"systemd-resolve","executable":{"path":""},"hostName":"rugged","containerId":"","container":{},"kubernetes":{},"eventId":"2006","eventName":"net_packet_dns","matchedPolicies":[""],"argsNum":5,"returnValue":0,"syscall":"","stackAddresses":[0],"contextFlags":{"containerStarted":false,"isCompat":false},"threadEntityId":131662446,"processEntityId":131662446,"parentEntityId":1975426032,"args":[{"name":"src","type":"const char*","value":"8.8.8.8"},{"name":"dst","type":"const char*","value":"192.168.200.50"},{"name":"src_port","type":"u16","value":53},{"name":"dst_port","type":"u16","value":33877},{"name":"proto_dns","type":"trace.ProtoDNS","value":{"ID":20551,"QR":1,"opCode":"query","AA":0,"TC":0,"RD":1,"RA":1,"Z":0,"responseCode":"no error","QDCount":1,"ANCount":48,"NSCount":0,"ARCount":1,"questions":[{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN"}],"answers":[{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"manualdaquimica.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"roteiroceara.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"roteirosincriveis.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"enem.club","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"brpaycard.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"200-147-100-53.static.uol.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minizinhachip.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhashipi.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhaship.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhachipi.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minizinhashipi.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minizinhaship.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minizinhachipi.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhashipi.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhaship.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhachipi.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhachip.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhashipi.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhaship.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhachipi.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhachip.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minizinhashipi.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minizinhaship.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minizinhachipi.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhashipi.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhaship.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhachipi.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minisinhachip.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"www.minnisinhachip.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"minnisinhachip.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"somostodosum.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"poderjp.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"tvpanico.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jptvweb.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jptvdigital.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jptvd.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jovempantv.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"tvjovempan.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"panicotv.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"tvpanico.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jptvweb.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jptvdigital.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jptvd.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jp.tv.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"jovempantv.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"tvjovempan.com.br","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"meunegocio.uol","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""},{"name":"53.100.147.200.in-addr.arpa","type":"PTR","class":"IN","TTL":16493,"IP":"","NS":"","CNAME":"","PTR":"biologianet.com","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""}],"authorities":[],"additionals":[{"name":"","type":"OPT","class":"Unknown","TTL":0,"IP":"","NS":"","CNAME":"","PTR":"","TXTs":null,"SOA":{"MName":"","RName":"","serial":0,"refresh":0,"retry":0,"expire":0,"minimum":0},"SRV":{"priority":0,"weight":0,"port":0,"name":""},"MX":{"preference":0,"name":""},"OPT":[],"URI":{"priority":0,"weight":0,"target":""},"TXT":""}]}}]}
 ```
 
-## Network Based Signatures
+## Network Based Detectors
 
-It is possible to create Golang signatures for the network events. If you haven't read about how to create signatures, do it [HERE](../custom/golang.md).
+It is possible to create Golang detectors for the network events. If you haven't read about how to create detectors, do it [HERE](../custom/golang.md).
 
 !!! Examples Note
-    Below is an example of how to create a signature for the `net_packet_dns` event. This same example is used by Tracee CI/CD tests and can be found at the [GitHub repository](https://github.com/aquasecurity/tracee/tree/main/tests/e2e-net-signatures), together with some other signatures for the network events.
+    Below is an example of how to create a detector for the `net_packet_dns` event. This same example is used by Tracee CI/CD tests and can be found at the [GitHub repository](https://github.com/aquasecurity/tracee/tree/main/detectors/e2e), together with other e2e detectors for network events.
 
-1. **net_packet_dns** signature example
+1. **net_packet_dns** detector example
+
+!!! Note
+    For complete detector implementations, see the [detectors/e2e](https://github.com/aquasecurity/tracee/tree/main/detectors/e2e) directory and the [Detector API documentation](../../detectors/api-reference.md).
 
 ```golang
 package main
 
 import (
-    "fmt"
+    "context"
     "strings"
 
-    "github.com/aquasecurity/tracee/types/detect"
-    "github.com/aquasecurity/tracee/types/protocol"
-    "github.com/aquasecurity/tracee/types/trace"
+    "github.com/aquasecurity/tracee/api/v1beta1"
+    "github.com/aquasecurity/tracee/api/v1beta1/detection"
 )
 
 //
-// HOWTO: The way to trigger this test signature is to execute:
+// HOWTO: The way to trigger this test detector is to execute:
 //
 //        nslookup -type=mx uol.com.br      and then
 //        nslookup -type=ns uol.com.br      and then
 //        nslookup -type=soa uol.com.br     and then
 //        nslookup -type=txt uol.com.br
 //
-//        This will cause it trigger once and reset it status.
+//        This will cause it trigger once and reset its state.
 
-type e2eDNS struct {
+// DNSDetector monitors DNS responses for specific record types
+type DNSDetector struct {
+    logger    detection.Logger
     foundMX   bool
     foundNS   bool
     foundSOA  bool
     foundTXTs bool
-    cb        detect.SignatureHandler
 }
 
-func (sig *e2eDNS) Init(cb detect.SignatureHandler) error {
-    sig.cb = cb
-    sig.foundMX = false   // proforma
-    sig.foundNS = false   // proforma
-    sig.foundSOA = false  // proforma
-    sig.foundTXTs = false // proforma
+func (d *DNSDetector) GetDefinition() detection.DetectorDefinition {
+    return detection.DetectorDefinition{
+        ID: "DNS",
+        Requirements: detection.DetectorRequirements{
+            Events: []detection.EventRequirement{
+                {
+                    Name:       "net_packet_dns",
+                    Dependency: detection.DependencyRequired,
+                },
+            },
+        },
+        ProducedEvent: v1beta1.EventDefinition{
+            Name:        "DNS",
+            Description: "Network DNS Detection Example",
+            Version:     &v1beta1.Version{Major: 0, Minor: 1, Patch: 0},
+            Tags:        []string{"network", "dns"},
+        },
+        AutoPopulate: detection.AutoPopulateFields{
+            Threat:       true,
+            DetectedFrom: true,
+        },
+    }
+}
+
+func (d *DNSDetector) Init(params detection.DetectorParams) error {
+    d.logger = params.Logger
+    d.foundMX = false
+    d.foundNS = false
+    d.foundSOA = false
+    d.foundTXTs = false
+    d.logger.Debugw("DNSDetector initialized")
     return nil
 }
 
-func (sig *e2eDNS) GetMetadata() (detect.SignatureMetadata, error) {
-    return detect.SignatureMetadata{
-        ID:          "DNS",
-        Version:     "0.1.0",
-        Name:        "Network DNS Test",
-        Description: "Network E2E Tests: DNS",
-        Tags:        []string{"e2e", "network"},
-    }, nil
-}
-
-func (sig *e2eDNS) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
-    return []detect.SignatureEventSelector{
-        {Source: "tracee", Name: "net_packet_dns"},
-    }, nil
-}
-
-func (sig *e2eDNS) OnEvent(event protocol.Event) error {
-    eventObj, ok := event.Payload.(trace.Event)
-    if !ok {
-        return errors.New("failed to cast event's payload")
+func (d *DNSDetector) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+    // Extract proto_dns data from event
+    var dns *v1beta1.DNS
+    for _, data := range event.Data {
+        if data.Name == "proto_dns" {
+            if v, ok := data.Value.(*v1beta1.EventValue_Dns); ok {
+                dns = v.Dns
+            }
+            break
+        }
     }
 
-    if eventObj.EventName == "net_packet_dns" {
-        dns, err := eventObj.GetProtoDNSByName("proto_dns")
-        if err != nil {
-            return err
-        }
+    if dns == nil || len(dns.Answers) == 0 {
+        return nil, nil
+    }
 
-        if len(dns.Answers) > 0 {
-            for _, answer := range dns.Answers {
-                // check if MX works
-                if answer.MX.Name == "mx.uol.com.br" && answer.MX.Preference == 10 {
-                    sig.foundMX = true
-                }
-                // check if NS works
-                if answer.NS == "eliot.uol.com.br" {
-                    sig.foundNS = true
-                }
-                // check if SOA works
-                if answer.SOA.RName == "root.uol.com.br" {
-                    sig.foundSOA = true
-                }
-                // check if TXTs works
-                if answer.TXTs != nil && len(answer.TXTs) > 0 {
-                    for _, txt := range answer.TXTs {
-                        if strings.Contains(txt, "spf.uol.com.br") {
-                            sig.foundTXTs = true
-                        }
-                    }
+    // Check DNS answers for specific record types
+    for _, answer := range dns.Answers {
+        // Check if MX record exists
+        if answer.Mx != nil && answer.Mx.Name == "mx.uol.com.br" && answer.Mx.Preference == 10 {
+            d.foundMX = true
+            d.logger.Infow("found MX record", "name", answer.Mx.Name)
+        }
+        // Check if NS record exists
+        if answer.Ns == "eliot.uol.com.br" {
+            d.foundNS = true
+            d.logger.Infow("found NS record", "name", answer.Ns)
+        }
+        // Check if SOA record exists
+        if answer.Soa != nil && answer.Soa.Rname == "root.uol.com.br" {
+            d.foundSOA = true
+            d.logger.Infow("found SOA record", "rname", answer.Soa.Rname)
+        }
+        // Check if TXT records exist
+        if len(answer.Txts) > 0 {
+            for _, txt := range answer.Txts {
+                if strings.Contains(txt, "spf.uol.com.br") {
+                    d.foundTXTs = true
+                    d.logger.Infow("found TXT record", "content", txt)
                 }
             }
         }
-
-        if !sig.foundMX || !sig.foundNS || !sig.foundSOA || !sig.foundTXTs {
-            return nil
-        }
-
-        if sig.foundMX && sig.foundNS && sig.foundSOA && sig.foundTXTs { // reset signature state
-            sig.foundMX = false
-            sig.foundNS = false
-            sig.foundSOA = false
-            sig.foundTXTs = false
-        }
-
-        m, _ := sig.GetMetadata()
-
-        sig.cb(detect.Finding{
-            SigMetadata: m,
-            Event:       event,
-            Data:        map[string]interface{}{},
-        })
     }
 
-    return nil
+    // Only trigger detection when all record types are found
+    if !d.foundMX || !d.foundNS || !d.foundSOA || !d.foundTXTs {
+        return nil, nil
+    }
+
+    // Reset state for next detection cycle
+    d.foundMX = false
+    d.foundNS = false
+    d.foundSOA = false
+    d.foundTXTs = false
+
+    // Return detection with enriched data
+    return detection.Detected(
+        detection.WithFields(
+            v1beta1.NewStringValue("domain", "uol.com.br"),
+            v1beta1.NewStringValue("record_types", "MX,NS,SOA,TXT"),
+        ),
+    ), nil
 }
 
-func (sig *e2eDNS) OnSignal(s detect.Signal) error {
+func (d *DNSDetector) Close() error {
+    d.logger.Debugw("DNSDetector closed")
     return nil
 }
-
-func (sig *e2eDNS) Close() {}
 ```
 

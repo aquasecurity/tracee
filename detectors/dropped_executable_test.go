@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestDroppedExecutable_OnEvent(t *testing.T) {
@@ -63,7 +64,7 @@ func TestDroppedExecutable_OnEvent(t *testing.T) {
 
 			detector := &DroppedExecutable{}
 			params := detection.DetectorParams{
-				Logger: &mockLogger{},
+				Logger: &testutil.MockLogger{},
 			}
 			err := detector.Init(params)
 			require.NoError(t, err)
@@ -92,7 +93,7 @@ func TestDroppedExecutable_OnEvent(t *testing.T) {
 				assert.Equal(t, "path", outputs[0].Data[0].Name)
 
 				// Extract path from output
-				path := getOutputData(outputs[0], "path")
+				path := testutil.GetOutputData(outputs[0], "path")
 				assert.Equal(t, tc.pathname, path)
 			} else {
 				assert.Len(t, outputs, 0, "Expected no detection")

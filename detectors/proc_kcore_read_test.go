@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/parsers"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestProcKcoreRead_GetDefinition(t *testing.T) {
@@ -49,8 +50,8 @@ func TestProcKcoreRead_Init(t *testing.T) {
 	detector := &ProcKcoreRead{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -61,8 +62,8 @@ func TestProcKcoreRead_OnEvent_ReadOperation(t *testing.T) {
 	detector := &ProcKcoreRead{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -110,8 +111,8 @@ func TestProcKcoreRead_OnEvent_MissingFields(t *testing.T) {
 	detector := &ProcKcoreRead{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -150,8 +151,8 @@ func TestProcKcoreRead_OnEvent_MultipleReadOperations(t *testing.T) {
 	detector := &ProcKcoreRead{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -179,8 +180,8 @@ func TestProcKcoreRead_Close(t *testing.T) {
 	detector := &ProcKcoreRead{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)

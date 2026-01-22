@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestHookedSeqOps_GetDefinition(t *testing.T) {
@@ -32,11 +33,11 @@ func TestHookedSeqOps_GetDefinition(t *testing.T) {
 func TestHookedSeqOps_Init(t *testing.T) {
 	detector := &HookedSeqOps{}
 
-	symbolStore := &mockKernelSymbolStore{symbols: map[uint64][]*datastores.SymbolInfo{}}
-	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{}, symbolStore: symbolStore}
+	symbolStore := &testutil.MockKernelSymbolStore{Symbols: map[uint64][]*datastores.SymbolInfo{}}
+	registry := &testutil.MockDataStoreRegistryWithStores{MockDataStoreRegistry: testutil.MockDataStoreRegistry{}, SymbolStore: symbolStore}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
+		Logger:     &testutil.MockLogger{},
 		DataStores: registry,
 	}
 
@@ -48,17 +49,17 @@ func TestHookedSeqOps_OnEvent_SingleHook(t *testing.T) {
 	detector := &HookedSeqOps{}
 
 	// Single hook at tcp4_seq_ops.show (index 0)
-	symbolStore := &mockKernelSymbolStore{
-		symbols: map[uint64][]*datastores.SymbolInfo{
+	symbolStore := &testutil.MockKernelSymbolStore{
+		Symbols: map[uint64][]*datastores.SymbolInfo{
 			0xffffffffc0001000: {
 				{Name: "malicious_show", Module: "rootkit"},
 			},
 		},
 	}
 
-	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{}, symbolStore: symbolStore}
+	registry := &testutil.MockDataStoreRegistryWithStores{MockDataStoreRegistry: testutil.MockDataStoreRegistry{}, SymbolStore: symbolStore}
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
+		Logger:     &testutil.MockLogger{},
 		DataStores: registry,
 	}
 
@@ -106,8 +107,8 @@ func TestHookedSeqOps_OnEvent_SingleHook(t *testing.T) {
 func TestHookedSeqOps_OnEvent_MultipleHooks(t *testing.T) {
 	detector := &HookedSeqOps{}
 
-	symbolStore := &mockKernelSymbolStore{
-		symbols: map[uint64][]*datastores.SymbolInfo{
+	symbolStore := &testutil.MockKernelSymbolStore{
+		Symbols: map[uint64][]*datastores.SymbolInfo{
 			0xffffffffc0001000: {{Name: "hook_tcp4_show", Module: "rootkit1"}},
 			0xffffffffc0002000: {{Name: "hook_tcp4_next", Module: "rootkit1"}},
 			0xffffffffc0003000: {{Name: "hook_udp_start", Module: "rootkit2"}},
@@ -115,9 +116,9 @@ func TestHookedSeqOps_OnEvent_MultipleHooks(t *testing.T) {
 		},
 	}
 
-	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{}, symbolStore: symbolStore}
+	registry := &testutil.MockDataStoreRegistryWithStores{MockDataStoreRegistry: testutil.MockDataStoreRegistry{}, SymbolStore: symbolStore}
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
+		Logger:     &testutil.MockLogger{},
 		DataStores: registry,
 	}
 
@@ -163,11 +164,11 @@ func TestHookedSeqOps_OnEvent_MultipleHooks(t *testing.T) {
 func TestHookedSeqOps_OnEvent_NoHooks(t *testing.T) {
 	detector := &HookedSeqOps{}
 
-	symbolStore := &mockKernelSymbolStore{symbols: map[uint64][]*datastores.SymbolInfo{}}
-	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{}, symbolStore: symbolStore}
+	symbolStore := &testutil.MockKernelSymbolStore{Symbols: map[uint64][]*datastores.SymbolInfo{}}
+	registry := &testutil.MockDataStoreRegistryWithStores{MockDataStoreRegistry: testutil.MockDataStoreRegistry{}, SymbolStore: symbolStore}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
+		Logger:     &testutil.MockLogger{},
 		DataStores: registry,
 	}
 
@@ -200,11 +201,11 @@ func TestHookedSeqOps_OnEvent_NoHooks(t *testing.T) {
 func TestHookedSeqOps_OnEvent_EmptyArray(t *testing.T) {
 	detector := &HookedSeqOps{}
 
-	symbolStore := &mockKernelSymbolStore{symbols: map[uint64][]*datastores.SymbolInfo{}}
-	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{}, symbolStore: symbolStore}
+	symbolStore := &testutil.MockKernelSymbolStore{Symbols: map[uint64][]*datastores.SymbolInfo{}}
+	registry := &testutil.MockDataStoreRegistryWithStores{MockDataStoreRegistry: testutil.MockDataStoreRegistry{}, SymbolStore: symbolStore}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
+		Logger:     &testutil.MockLogger{},
 		DataStores: registry,
 	}
 
@@ -234,11 +235,11 @@ func TestHookedSeqOps_OnEvent_SymbolNotResolved(t *testing.T) {
 	detector := &HookedSeqOps{}
 
 	// Symbol store with no symbols (can't resolve addresses)
-	symbolStore := &mockKernelSymbolStore{symbols: map[uint64][]*datastores.SymbolInfo{}}
-	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{}, symbolStore: symbolStore}
+	symbolStore := &testutil.MockKernelSymbolStore{Symbols: map[uint64][]*datastores.SymbolInfo{}}
+	registry := &testutil.MockDataStoreRegistryWithStores{MockDataStoreRegistry: testutil.MockDataStoreRegistry{}, SymbolStore: symbolStore}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
+		Logger:     &testutil.MockLogger{},
 		DataStores: registry,
 	}
 
@@ -308,11 +309,11 @@ func Test_getSeqOpsSymbols(t *testing.T) {
 func TestHookedSeqOps_Close(t *testing.T) {
 	detector := &HookedSeqOps{}
 
-	symbolStore := &mockKernelSymbolStore{symbols: map[uint64][]*datastores.SymbolInfo{}}
-	registry := &mockDataStoreRegistryWithStores{mockDataStoreRegistry: mockDataStoreRegistry{}, symbolStore: symbolStore}
+	symbolStore := &testutil.MockKernelSymbolStore{Symbols: map[uint64][]*datastores.SymbolInfo{}}
+	registry := &testutil.MockDataStoreRegistryWithStores{MockDataStoreRegistry: testutil.MockDataStoreRegistry{}, SymbolStore: symbolStore}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
+		Logger:     &testutil.MockLogger{},
 		DataStores: registry,
 	}
 

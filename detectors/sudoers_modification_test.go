@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/parsers"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestSudoersModification(t *testing.T) {
@@ -59,7 +60,7 @@ func TestSudoersModification(t *testing.T) {
 			t.Parallel()
 
 			detector := &SudoersModification{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -125,7 +126,7 @@ func TestSudoersModification_Rename(t *testing.T) {
 			t.Parallel()
 
 			detector := &SudoersModification{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{

@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestIllegitimateShell_OnEvent(t *testing.T) {
@@ -65,7 +66,7 @@ func TestIllegitimateShell_OnEvent(t *testing.T) {
 
 			detector := &IllegitimateShell{}
 			params := detection.DetectorParams{
-				Logger: &mockLogger{},
+				Logger: &testutil.MockLogger{},
 			}
 			err := detector.Init(params)
 			require.NoError(t, err)

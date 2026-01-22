@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestStdioOverSocket(t *testing.T) {
@@ -82,7 +83,7 @@ func TestStdioOverSocket(t *testing.T) {
 			t.Parallel()
 
 			detector := &StdioOverSocket{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			dataFieldName := "sockfd"
