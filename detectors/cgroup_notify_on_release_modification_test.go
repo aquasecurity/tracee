@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/parsers"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestCgroupNotifyOnReleaseModification_OnEvent(t *testing.T) {
@@ -53,7 +54,7 @@ func TestCgroupNotifyOnReleaseModification_OnEvent(t *testing.T) {
 
 			detector := &CgroupNotifyOnReleaseModification{}
 			params := detection.DetectorParams{
-				Logger: &mockLogger{},
+				Logger: &testutil.MockLogger{},
 			}
 			err := detector.Init(params)
 			require.NoError(t, err)

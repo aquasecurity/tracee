@@ -55,8 +55,6 @@
         $ make tracee                   # build ./dist/tracee
         $ make tracee-bench             # build ./dist/tracee-bench
         $ make signatures               # build ./dist/signatures
-        $ make e2e-net-signatures       # build ./dist/e2e-net-signatures
-        $ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures
         $ make tracee-operator          # build ./dist/tracee-operator
 
     # clean

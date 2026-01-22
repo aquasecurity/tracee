@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: writable-ds-test
+  annotations:
+    description: test tracee's writable data store (DataStoreService + Registry)
+spec:
+  scope:
+    - comm=ds_writer
+  rules:
+    - event: WRITABLE_DATA_STORE

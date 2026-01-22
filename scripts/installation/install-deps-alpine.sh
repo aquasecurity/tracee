@@ -164,12 +164,23 @@ install_go_tools() {
 check_docker() {
     info "Checking Docker availability"
 
-    # In GitHub Actions containers, Docker is available from the host
-    # We don't need to install it, just verify it's accessible
+    # Check if Docker is already installed
     if command -v docker > /dev/null 2>&1; then
-        info "Docker is available from host system"
+        info "Docker already installed: $(docker --version)"
     else
-        info "Docker not available - will be provided by GitHub Actions runner"
+        info "Docker not found. Installing from Alpine repositories..."
+        apk add docker docker-cli-compose
+        info "Docker installed successfully"
+    fi
+    
+    # Add user to docker group if USER_NAME is set and not root
+    if [ -n "${USER_NAME}" ] && [ "${USER_NAME}" != "root" ]; then
+        if getent group docker >/dev/null 2>&1; then
+            addgroup "${USER_NAME}" docker
+            info "Added ${USER_NAME} to docker group"
+        else
+            info "Docker group not found, skipping group assignment"
+        fi
     fi
 }
 

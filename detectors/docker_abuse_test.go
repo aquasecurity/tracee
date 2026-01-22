@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestDockerAbuse_FileOpen(t *testing.T) {
@@ -47,7 +48,7 @@ func TestDockerAbuse_FileOpen(t *testing.T) {
 			t.Parallel()
 
 			detector := &DockerAbuse{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -115,7 +116,7 @@ func TestDockerAbuse_SocketConnect(t *testing.T) {
 			t.Parallel()
 
 			detector := &DockerAbuse{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -159,7 +160,7 @@ func TestDockerAbuse_SocketConnect_NonUnix(t *testing.T) {
 	t.Parallel()
 
 	detector := &DockerAbuse{}
-	err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+	err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 	require.NoError(t, err)
 
 	// Test AF_INET socket (should not trigger - not a Unix socket)
