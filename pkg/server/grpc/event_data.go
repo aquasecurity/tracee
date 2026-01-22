@@ -354,6 +354,18 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 				Str: v.String(),
 			},
 		}, nil
+	case map[string]interface{}:
+		// Handle raw map[string]interface{} values (e.g., detectedFrom argument)
+		sanitizedMap := sanitizeMapForProtobuf(v)
+		structValue, err := structpb.NewStruct(sanitizedMap)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.EventValue{
+			Value: &pb.EventValue_Struct{
+				Struct: structValue,
+			},
+		}, nil
 	}
 
 	return convertToStruct(arg)
@@ -743,12 +755,53 @@ func sanitizeMapForProtobuf(m map[string]interface{}) map[string]interface{} {
 			sanitizedMap[k] = sanitizeStringForProtobuf(val)
 		case map[string]interface{}:
 			sanitizedMap[k] = sanitizeMapForProtobuf(val)
+		case []trace.Argument:
+			// Convert []trace.Argument to []interface{} with map representation
+			args := make([]interface{}, 0, len(val))
+			for _, arg := range val {
+				argMap := map[string]interface{}{
+					"name":  sanitizeStringForProtobuf(arg.ArgMeta.Name),
+					"type":  sanitizeStringForProtobuf(arg.ArgMeta.Type),
+					"value": sanitizeValueForProtobuf(arg.Value),
+				}
+				args = append(args, argMap)
+			}
+			sanitizedMap[k] = args
 		default:
 			sanitizedMap[k] = val
 		}
 	}
 
 	return sanitizedMap
+}
+
+// sanitizeValueForProtobuf converts a value to a protobuf-compatible format
+func sanitizeValueForProtobuf(v interface{}) interface{} {
+	switch val := v.(type) {
+	case string:
+		return sanitizeStringForProtobuf(val)
+	case map[string]interface{}:
+		return sanitizeMapForProtobuf(val)
+	case []string:
+		result := make([]interface{}, len(val))
+		for i, s := range val {
+			result[i] = sanitizeStringForProtobuf(s)
+		}
+		return result
+	case []trace.Argument:
+		args := make([]interface{}, 0, len(val))
+		for _, arg := range val {
+			argMap := map[string]interface{}{
+				"name":  sanitizeStringForProtobuf(arg.ArgMeta.Name),
+				"type":  sanitizeStringForProtobuf(arg.ArgMeta.Type),
+				"value": sanitizeValueForProtobuf(arg.Value),
+			}
+			args = append(args, argMap)
+		}
+		return args
+	default:
+		return val
+	}
 }
 
 func convertToStruct(arg trace.Argument) (*pb.EventValue, error) {
