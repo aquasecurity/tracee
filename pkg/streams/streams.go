@@ -80,14 +80,14 @@ func (s *Stream) close() {
 
 // StreamManager manages streams
 type StreamsManager struct {
-	mutex       sync.Mutex
+	mutex       sync.RWMutex
 	subscribers map[*Stream]struct{}
 }
 
 // NewStreamManager creates a new stream manager
 func NewStreamsManager() *StreamsManager {
 	return &StreamsManager{
-		mutex:       sync.Mutex{},
+		mutex:       sync.RWMutex{},
 		subscribers: make(map[*Stream]struct{}),
 	}
 }
@@ -131,8 +131,8 @@ func (sm *StreamsManager) Unsubscribe(stream *Stream) {
 // Publish publishes an event to all streams.
 // The event is a pb.Event pointer and the policyBitmap indicates which policies matched.
 func (sm *StreamsManager) Publish(ctx context.Context, event *pb.Event, policyBitmap uint64) {
-	sm.mutex.Lock()
-	defer sm.mutex.Unlock()
+	sm.mutex.RLock()
+	defer sm.mutex.RUnlock()
 
 	for stream := range sm.subscribers {
 		stream.publish(ctx, event, policyBitmap)
@@ -141,8 +141,8 @@ func (sm *StreamsManager) Publish(ctx context.Context, event *pb.Event, policyBi
 
 // HasSubscribers returns true if there are any active subscribers
 func (sm *StreamsManager) HasSubscribers() bool {
-	sm.mutex.Lock()
-	defer sm.mutex.Unlock()
+	sm.mutex.RLock()
+	defer sm.mutex.RUnlock()
 	return len(sm.subscribers) > 0
 }
 
