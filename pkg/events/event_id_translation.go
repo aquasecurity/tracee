@@ -605,3 +605,39 @@ func TranslateEventID(eventID int) pb.EventId {
 	}
 	return pb.EventId(eventID)
 }
+
+// TranslateFromProtoEventID translates a protobuf Event ID back to the corresponding internal event ID.
+// This is the reverse of TranslateEventID.
+//
+// For built-in events with protobuf mappings (ID <= MaxUserSpaceID), it searches the
+// EventTranslationTable to find the matching internal ID. For events without protobuf mappings,
+// it returns the protobuf ID directly as an internal ID.
+//
+// Parameters:
+//   - protoEventID: The protobuf Event ID
+//
+// Returns:
+//   - The corresponding internal event ID, or 0 if not found
+func TranslateFromProtoEventID(protoEventID pb.EventId) ID {
+	// For events that don't have protobuf mappings, the protobuf ID equals the internal ID
+	protoIDInt := int(protoEventID)
+	if protoIDInt > int(MaxUserSpaceID) && protoIDInt != int(Unsupported) {
+		return ID(protoIDInt)
+	}
+
+	// Search the translation table for a matching protobuf ID
+	// This is a linear search, but the table is small (< 10000 entries)
+	for internalID := ID(0); internalID < MaxBuiltinID; internalID++ {
+		if EventTranslationTable[internalID] == protoEventID {
+			return internalID
+		}
+	}
+
+	// If not found in table, check if it's Unsupported (9000)
+	if protoIDInt == int(Unsupported) {
+		return Unsupported
+	}
+
+	// If not found, return the protobuf ID as-is (for events without mappings)
+	return ID(protoIDInt)
+}
