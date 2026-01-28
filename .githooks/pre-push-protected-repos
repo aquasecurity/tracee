@@ -1,0 +1,5 @@
+# Protected repositories list
+# Format: owner/repo (one per line)
+# Comments start with #
+
+aquasecurity/tracee

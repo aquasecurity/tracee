@@ -1,0 +1,7 @@
+# Blocked branch patterns
+# Format: branch name or pattern (one per line)
+# Patterns support shell glob matching (e.g., release-v*)
+# Comments start with #
+
+main
+release-v*
