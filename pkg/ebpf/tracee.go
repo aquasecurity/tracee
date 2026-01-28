@@ -12,6 +12,7 @@ import (
 	"time"
 	"unsafe"
 
+	"google.golang.org/grpc"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -62,6 +63,10 @@ const (
 	pkgName          = "tracee"
 	maxMemDumpLength = 127
 )
+
+// populateE2eRegistrations is overridden by e2e build-tagged files to populate e2e registrations.
+// Default no-op implementation for non-e2e builds.
+var populateE2eRegistrations = func(t *Tracee) {}
 
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
@@ -120,6 +125,10 @@ type Tracee struct {
 	// DataStore Registry Manager (provides both internal and public access).
 	// Use GetXxx() methods for internal Tracee operations; use Registry() for detector access.
 	dataStoreRegistry datastores.RegistryManager
+	// E2e datastore registration function (set by build-tagged files via populateE2eRegistrations)
+	registerE2eDatastoresFn func(dsapi.Registry) error
+	// E2e gRPC service registration function (set by build-tagged files via populateE2eRegistrations)
+	registerE2eGrpcServicesFn func(*grpc.Server, *Tracee)
 	// Detector Engine
 	detectorEngine *detectors.Engine
 	// Specific Events Needs
@@ -195,6 +204,13 @@ func (t *Tracee) setKernelSymbols(kernelSymbols *symbol.KernelSymbolTable) {
 // DataStores returns the datastore registry for accessing system state information
 func (t *Tracee) DataStores() dsapi.Registry {
 	return t.dataStoreRegistry.Registry()
+}
+
+// RegisterE2eGrpcServices calls the e2e gRPC service registration function if set
+func (t *Tracee) RegisterE2eGrpcServices(grpcServer *grpc.Server) {
+	if t.registerE2eGrpcServicesFn != nil {
+		t.registerE2eGrpcServicesFn(grpcServer, t)
+	}
 }
 
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
@@ -298,6 +314,11 @@ func New(cfg config.Config) (*Tracee, error) {
 		extraProbes:        make(map[string]*probes.ProbeGroup),
 		dataTypeDecoder:    bufferdecoder.NewTypeDecoder(),
 		extensions:         NewExtensions(),
+	}
+
+	// Allow e2e build-tagged files to set e2e registration functions
+	if populateE2eRegistrations != nil {
+		populateE2eRegistrations(t)
 	}
 
 	// clear initial policies to avoid wrong references
@@ -592,6 +613,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 	syscallStore := syscall.New(events.Core)
 	if err := t.dataStoreRegistry.RegisterStore(dsapi.Syscall, syscallStore, true); err != nil {
 		return errfmt.WrapError(err)
+	}
+
+	if t.registerE2eDatastoresFn != nil {
+		if err := t.registerE2eDatastoresFn(t.dataStoreRegistry.Registry()); err != nil {
+			return errfmt.WrapError(err)
+		}
 	}
 
 	// Initialize all registered datastores

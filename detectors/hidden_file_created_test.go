@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestHiddenFileCreated_GetDefinition(t *testing.T) {
@@ -40,8 +41,8 @@ func TestHiddenFileCreated_Init(t *testing.T) {
 	detector := &HiddenFileCreated{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -52,8 +53,8 @@ func TestHiddenFileCreated_OnEvent_HiddenELF(t *testing.T) {
 	detector := &HiddenFileCreated{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -103,8 +104,8 @@ func TestHiddenFileCreated_OnEvent_NotELF(t *testing.T) {
 	detector := &HiddenFileCreated{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -132,8 +133,8 @@ func TestHiddenFileCreated_OnEvent_MissingFields(t *testing.T) {
 	detector := &HiddenFileCreated{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -181,8 +182,8 @@ func TestHiddenFileCreated_OnEvent_MultipleWrites(t *testing.T) {
 	detector := &HiddenFileCreated{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -211,8 +212,8 @@ func TestHiddenFileCreated_Close(t *testing.T) {
 	detector := &HiddenFileCreated{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)

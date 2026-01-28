@@ -264,6 +264,8 @@ env::
 	@echo ---------------------------------------
 	@echo "GO_ARCH                  $(GO_ARCH)"
 	@echo "GO_TAGS_EBPF             $(GO_TAGS_EBPF)"
+	@echo "GO_TAGS_E2E              $(GO_TAGS_E2E)"
+	@echo "GO_TAGS_E2E_NET          $(GO_TAGS_E2E_NET)"
 	@echo "GO_TAGS_RULES            $(GO_TAGS_RULES)"
 	@echo ---------------------------------------
 	@echo "DEBUG                    $(DEBUG)"
@@ -292,10 +294,6 @@ env::
 	@echo "GOSIGNATURES_DIR         $(GOSIGNATURES_DIR)"
 	@echo "GOSIGNATURES_SRC         $(GOSIGNATURES_SRC)"
 	@echo ---------------------------------------
-	@echo "E2E_NET_DIR              $(E2E_NET_DIR)"
-	@echo "E2E_NET_SRC              $(E2E_NET_SRC)"
-	@echo "E2E_INST_DIR             $(E2E_INST_DIR)"
-	@echo "E2E_INST_SRC             $(E2E_INST_SRC)"
 	@echo ---------------------------------------
 	@echo "TRACEE_PROTOS            $(TRACEE_PROTOS)"
 	@echo ---------------------------------------
@@ -320,8 +318,8 @@ help::
 	@echo "    $$ make tracee                   # build ./dist/tracee"
 	@echo "    $$ make tracee-bench             # build ./dist/tracee-bench"
 	@echo "    $$ make signatures               # build ./dist/signatures"
-	@echo "    $$ make e2e-net-signatures       # build ./dist/e2e-net-signatures"
-	@echo "    $$ make e2e-inst-signatures      # build ./dist/e2e-inst-signatures"
+	@echo "    $$ make tracee-e2e               # build ./dist/tracee-e2e (with e2e detectors)"
+	@echo "    $$ make tracee-e2e-net           # build ./dist/tracee-e2e-net (with network e2e detectors)"
 	@echo "    $$ make tracee-operator          # build ./dist/tracee-operator"
 	@echo "    $$ make lsm-check                # build ./dist/lsm-check"
 	@echo ""
@@ -345,6 +343,10 @@ help::
 	@echo "    $$ make test-common              # run unit tests for common module"
 	@echo "    $$ make test-integration         # run integration tests"
 	@echo "    $$ make test-compatibility       # run compatibility and fallback feature tests"
+	@echo "    $$ make test-e2e                 # run E2E core tests (requires root)"
+	@echo "    $$ make test-e2e-net             # run E2E network tests (requires root)"
+	@echo "    $$ make test-e2e-kernel          # run E2E kernel tests (requires root)"
+	@echo "    $$ make test-e2e E2E_ARGS='--keep-artifacts'  # pass flags to E2E scripts"
 	@echo ""
 	@echo "# development"
 	@echo ""
@@ -672,30 +674,40 @@ ifeq ($(BTFHUB), 1)
 endif
 
 #
-# tracee (single binary)
+# tracee builds (single binary)
+#
+# Builds tracee and its e2e test variants using a shared recipe.
+# - tracee: production build
+# - tracee-e2e: build with general e2e test detectors (build tag: e2e)
+# - tracee-e2e-net: build with network e2e test detectors (build tag: e2e_net)
 #
 
-.PHONY: tracee
-tracee:: $(OUTPUT_DIR)/tracee
+GO_TAGS_E2E := $(GO_TAGS_EBPF),e2e
+GO_TAGS_E2E_NET := $(GO_TAGS_EBPF),e2e_net
 
-$(OUTPUT_DIR)/tracee:: \
+# Shared dependencies for all tracee builds
+TRACEE_BUILD_DEPS = \
 	$(OUTPUT_DIR)/tracee.bpf.o \
 	$(LSM_SUPPORT_OBJS) \
 	$(TRACEE_SRC) \
 	go.mod \
 	go.sum \
 	detectors/go.mod \
-	detectors/go.sum \
-	| .eval_goenv \
+	detectors/go.sum
+
+TRACEE_BUILD_ORDER_DEPS = \
+	.eval_goenv \
 	.checkver_$(CMD_GO) \
 	.checklib_$(LIB_BPF) \
 	btfhub \
 	signatures
-#
+
+# Canned recipe for building tracee variants
+define TRACEE_BUILD_RECIPE
 	$(MAKE) embedded-dirs
 	$(MAKE) btfhub
 	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_EBPF) \
+		-tags $(TRACEE_BUILD_TAGS) \
 		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
 			-X github.com/aquasecurity/tracee/pkg/version.version=$(VERSION) \
@@ -703,12 +715,42 @@ $(OUTPUT_DIR)/tracee:: \
 			" \
 		-v -o $@ \
 		./cmd/tracee
+endef
 
+# Target-specific build tags
+$(OUTPUT_DIR)/tracee: TRACEE_BUILD_TAGS = $(GO_TAGS_EBPF)
+$(OUTPUT_DIR)/tracee-e2e: TRACEE_BUILD_TAGS = $(GO_TAGS_E2E)
+$(OUTPUT_DIR)/tracee-e2e-net: TRACEE_BUILD_TAGS = $(GO_TAGS_E2E_NET)
+
+# Phony aliases
+.PHONY: tracee tracee-e2e tracee-e2e-net
+tracee:: $(OUTPUT_DIR)/tracee
+tracee-e2e:: $(OUTPUT_DIR)/tracee-e2e
+tracee-e2e-net:: $(OUTPUT_DIR)/tracee-e2e-net
+
+# Single rule for all tracee variants
+$(OUTPUT_DIR)/tracee $(OUTPUT_DIR)/tracee-e2e $(OUTPUT_DIR)/tracee-e2e-net:: \
+	$(TRACEE_BUILD_DEPS) \
+	| $(TRACEE_BUILD_ORDER_DEPS)
+#
+	$(TRACEE_BUILD_RECIPE)
+
+# Clean targets
 .PHONY: clean-tracee
 clean-tracee::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
 	$(CMD_RM) -rf .*.md5
+
+.PHONY: clean-tracee-e2e
+clean-tracee-e2e::
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-e2e
+
+.PHONY: clean-tracee-e2e-net
+clean-tracee-e2e-net::
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-e2e-net
 
 # Convenience target for building tracee with example detectors
 .PHONY: tracee-with-examples
@@ -827,18 +869,6 @@ clean-tracee-bench::
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-bench
 
-#
-# functional tests (using test signatures)
-#
-
-# e2e network signatures
-
-E2E_NET_DIR ?= tests/e2e-net-signatures
-E2E_NET_SRC := $(shell find $(E2E_NET_DIR) \
-		-type f \
-		-name '*.go' \
-		! -name '*_test.go' \
-		)
 
 #
 #	traceectl 
@@ -869,67 +899,6 @@ clean-traceectl::
 	$(MAKE) -C $(SUBDIR_TRACEECTL) clean
 	$(CMD_RM) -f $(OUTPUT_DIR)/traceectl
 
-
-#
-# e2e signatures
-#
-
-# e2e network signatures
-
-.PHONY: e2e-net-signatures
-e2e-net-signatures:: \
-	$(OUTPUT_DIR)/e2e-net-signatures/builtin.so
-
-$(OUTPUT_DIR)/e2e-net-signatures/builtin.so:: \
-	$(E2E_NET_SRC) \
-	| .eval_goenv \
-	.checkver_$(CMD_GO) \
-	.check_$(CMD_INSTALL)
-#
-	$(CMD_MKDIR) -p $@
-	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_EBPF) \
-		--buildmode=plugin \
-		-o $@ \
-		$(E2E_NET_SRC)
-
-.PHONY: clean-e2e-net-signatures
-clean-e2e-net-signatures::
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-signatures
-
-# e2e instrumentation signatures
-
-E2E_INST_DIR ?= tests/e2e-inst-signatures
-E2E_INST_SRC := $(shell find $(E2E_INST_DIR) \
-		-type f \
-		-name '*.go' \
-		! -name '*_test.go' \
-		! -path '$(E2E_INST_DIR)/scripts/*' \
-		! -path '$(E2E_INST_DIR)/datasourcetest/*' \
-		)
-
-.PHONY: e2e-inst-signatures
-e2e-inst-signatures:: \
-	$(OUTPUT_DIR)/e2e-inst-signatures/builtin.so
-
-$(OUTPUT_DIR)/e2e-inst-signatures/builtin.so:: \
-	$(E2E_INST_SRC) \
-	| .eval_goenv \
-	.checkver_$(CMD_GO) \
-	.check_$(CMD_INSTALL)
-#
-	$(CMD_MKDIR) -p $@
-	$(GO_ENV_EBPF) $(CMD_GO) build \
-		-tags $(GO_TAGS_EBPF) \
-		--buildmode=plugin \
-		-o $@ \
-		$(E2E_INST_SRC)
-
-.PHONY: clean-e2e-inst-signatures
-clean-e2e-inst-signatures::
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-inst-signatures
 
 #
 # unit tests
@@ -1102,6 +1071,35 @@ test-performance:: \
 		-p 1 \
 		-count=1 \
 		./tests/perftests/... \
+
+#
+# E2E tests
+#
+
+# E2E test arguments (e.g., make test-e2e E2E_ARGS="--keep-artifacts")
+E2E_ARGS ?=
+
+.PHONY: test-e2e
+test-e2e:: \
+	tracee-e2e \
+	lsm-check
+#
+	@echo "Running E2E core tests..."
+	./tests/e2e/run.sh $(E2E_ARGS)
+
+.PHONY: test-e2e-net
+test-e2e-net:: \
+	tracee-e2e-net
+#
+	@echo "Running E2E network tests..."
+	./tests/e2e/run-net.sh $(E2E_ARGS)
+
+.PHONY: test-e2e-kernel
+test-e2e-kernel:: \
+	tracee
+#
+	@echo "Running E2E kernel tests..."
+	./tests/e2e/run-kernel.sh $(E2E_ARGS)
 
 #
 # development

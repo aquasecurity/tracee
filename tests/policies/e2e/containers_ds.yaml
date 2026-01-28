@@ -1,0 +1,12 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: containers-ds-test
+  annotations:
+    description: test tracee's containers data store events
+spec:
+  scope: 
+    - container=new
+    - comm=ls
+  rules:
+    - event: CONTAINERS_DATA_STORE

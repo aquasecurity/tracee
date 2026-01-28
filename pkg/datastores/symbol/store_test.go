@@ -1,6 +1,7 @@
 package symbol
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +11,9 @@ import (
 )
 
 func TestKernelSymbolTable_DataStoreInterface(t *testing.T) {
-	kst, err := NewKernelSymbolTable(false, false)
+	// Create an empty symbol table once for all subtests
+	emptyReader := strings.NewReader("")
+	kst, err := NewKernelSymbolTableFromReader(emptyReader, false, false)
 	require.NoError(t, err)
 
 	t.Run("Name", func(t *testing.T) {
@@ -29,6 +32,7 @@ func TestKernelSymbolTable_DataStoreInterface(t *testing.T) {
 		metrics := kst.GetMetrics()
 		require.NotNil(t, metrics)
 		assert.GreaterOrEqual(t, metrics.ItemCount, int64(0))
+		assert.Equal(t, int64(0), metrics.ItemCount) // Should be 0 for empty table
 	})
 
 	t.Run("ResolveSymbolByAddress_NotFound", func(t *testing.T) {

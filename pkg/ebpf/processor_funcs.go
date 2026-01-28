@@ -236,20 +236,23 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 			if err != nil {
 				return errfmt.WrapError(err)
 			}
+
 			t.setKernelSymbols(newKernelSymbols)
+
+			// Update kallsyms asynchronously to avoid blocking the events pipeline.
+			// On some platforms (ARM64/kernel 5.13), BPF map updates can block indefinitely
+			// during do_init_module context. Running asynchronously prevents holding any
+			// locks while blocked.
+			go func() {
+				updateErr := t.UpdateKallsyms()
+				if updateErr != nil {
+					logger.Warnw("async UpdateKallsyms failed", "error", updateErr)
+				}
+			}()
+
 			return nil
 		},
 	)
-
-	// Update kallsyms asynchronously to avoid blocking the events pipeline.
-	// On some platforms (ARM64/kernel 5.13), BPF map updates can block indefinitely
-	// during do_init_module context. Running asynchronously without capabilities.EBPF()
-	// wrapper prevents holding any locks while blocked.
-	go func() {
-		if updateErr := t.UpdateKallsyms(); updateErr != nil {
-			logger.Warnw("async UpdateKallsyms failed", "error", updateErr)
-		}
-	}()
 
 	if err != nil {
 		return errfmt.WrapError(err)

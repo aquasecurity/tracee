@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestLdPreload_EnvVar(t *testing.T) {
@@ -45,7 +46,7 @@ func TestLdPreload_EnvVar(t *testing.T) {
 			t.Parallel()
 
 			detector := &LdPreload{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -119,7 +120,7 @@ func TestLdPreload_FileWrite(t *testing.T) {
 			t.Parallel()
 
 			detector := &LdPreload{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -170,7 +171,7 @@ func TestLdPreload_Rename(t *testing.T) {
 			t.Parallel()
 
 			detector := &LdPreload{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{

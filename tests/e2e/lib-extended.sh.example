@@ -1,0 +1,192 @@
+#!/bin/bash
+#
+# lib-extended.sh - Extended E2E Test Implementations
+#
+# This file contains implementations for extended/custom tests that are not part
+# of the core test suite.
+# This file should be sourced, not executed directly.
+#
+# HOW TO USE:
+#   1. Copy this file to: tests/e2e/lib-extended.sh (NO .example suffix)
+#   2. Add your test names to INSTTESTS_EXTENDED_AVAILABLE list below
+#   3. Configure tests in extended_init_test_config()
+#   4. Implement the three phase functions: setup, run, check
+#   5. The coordinator (run.sh) will automatically source and use it
+
+# Prevent direct execution
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    echo "ERROR: This script must be sourced, not executed directly."
+    echo "Usage: source ${BASH_SOURCE[0]}"
+    exit 1
+fi
+
+# ==============================================================================
+# Extended Tests Available
+# ==============================================================================
+# List of all extended tests that can be run
+# This is the single source of truth for available extended tests
+# shellcheck disable=SC2034  # Used by coordinator script
+INSTTESTS_EXTENDED_AVAILABLE="
+    CUSTOM_TEST_A
+    CUSTOM_TEST_B
+"
+
+# ==============================================================================
+# Extended Test Configuration
+# ==============================================================================
+# Initialize extended test metadata
+# Arguments for add_test_config: TEST_NAME POLICY_NAME TIMEOUT SLEEP
+# Called by coordinator after validation, only if extended tests will run
+extended_init_test_config() {
+    add_test_config TEST_CONFIG_MAP "CUSTOM_TEST_A" "custom-test-a" 15 0
+    add_test_config TEST_CONFIG_MAP "CUSTOM_TEST_B" "custom-test-b" 10 5
+}
+
+# ==============================================================================
+# Extended Test Skip Management (Optional)
+# ==============================================================================
+# Implement dynamic skip logic if needed
+# Global skip flags example (set by extended_test_setup, read by extended_should_skip_test):
+#   extended_skip_custom_test_a=0
+
+# Check if an extended test should be skipped
+# Arguments:
+#   $1 - Test name
+# Returns:
+#   0 - Test should be skipped
+#   1 - Test should run
+extended_should_skip_test() {
+    local test_name="$1"
+
+    case "${test_name}" in
+        # CUSTOM_TEST_A)
+        #     # Example: Skip based on kernel version
+        #     [[ "${extended_skip_custom_test_a:-0}" -eq 1 ]]
+        #     ;;
+        *)
+            false # Never skip by default
+            ;;
+    esac
+}
+
+# ==============================================================================
+# Extended Test Setup Phase
+# ==============================================================================
+# Build/prepare a single extended test
+# Arguments:
+#   $1 - Test name
+extended_test_setup() {
+    local test="$1"
+
+    case ${test} in
+        CUSTOM_TEST_A)
+            info "Setting up custom test A..."
+            # Example: Build test binary
+            if ! ./tests/e2e/core/scripts/custom_test_a.sh --build; then
+                error "Could not build custom test A"
+            fi
+            ;;
+
+        CUSTOM_TEST_B)
+            info "Setting up custom test B..."
+            # Example: Pull container image
+            if ! docker pull custom-test-image:latest; then
+                error "Could not pull image for custom test B"
+            fi
+            ;;
+    esac
+}
+
+# ==============================================================================
+# Extended Test Run Phase
+# ==============================================================================
+# Execute a single extended test in background
+# Arguments:
+#   $1 - Test name
+#   $2 - Name of test_pids_map array (nameref)
+#   $3 - Timeout in seconds
+#   $4 - Sleep time in seconds
+extended_test_run() {
+    local test="$1"
+    local -n pid_map="$2"
+    local timeout="$3"
+    local sleep_time="$4"
+    local test_args=""
+    local run_msg=""
+
+    case ${test} in
+        CUSTOM_TEST_A)
+            # Standard test execution
+            test_args="--run"
+
+            run_msg="running test ${test} with timeout ${timeout}"
+            if [[ "${sleep_time}" -gt 0 ]]; then
+                run_msg="${run_msg} and internal sleep ${sleep_time}"
+            fi
+            info "${run_msg}"
+            ;;
+
+        CUSTOM_TEST_B)
+            # Custom arguments example
+            test_args="--run --extra-option"
+            info "Running ${test} with custom arguments"
+            ;;
+    esac
+
+    # Execute test in background using common helper
+    local test_script="${TESTS_DIR}/${test,,}.sh"
+    run_test_background "${test}" "$2" "${timeout}" "${sleep_time}" "${test_script}" "${test_args}"
+}
+
+# ==============================================================================
+# Extended Test Check Phase
+# ==============================================================================
+# Validate a single extended test result
+# Arguments:
+#   $1 - Test name
+#   $2 - Path to output file
+#   $3 - Path to log file
+# Returns:
+#   0 - Test passed
+#   1 - Test failed
+extended_test_check() {
+    local test="$1"
+    local outputfile="$2"
+    local logfile="$3"
+    local policy_name
+    local match_count
+
+    case ${test} in
+        CUSTOM_TEST_A)
+            # Standard event matching check
+            policy_name=$(get_policy_name TEST_CONFIG_MAP "${test}")
+            match_count=$(get_event_match_count "${outputfile}" "${test}" "${policy_name}")
+
+            info "Found ${match_count} matching ${test} events with policy ${policy_name}"
+
+            if [[ "${match_count}" -gt 0 ]]; then
+                check_multi_policy_matches "${outputfile}" "${test}" "${policy_name}"
+                return 0
+            else
+                error "No matching events found for ${test}"
+                return 1
+            fi
+            ;;
+
+        CUSTOM_TEST_B)
+            # Custom validation logic example
+            policy_name=$(get_policy_name TEST_CONFIG_MAP "${test}")
+            match_count=$(get_event_match_count "${outputfile}" "${test}" "${policy_name}")
+
+            if [[ "${match_count}" -ge 3 ]]; then
+                info "Found ${match_count} events (expected at least 3)"
+                return 0
+            else
+                error "Found only ${match_count} events, expected at least 3"
+                return 1
+            fi
+            ;;
+    esac
+
+    return 1
+}

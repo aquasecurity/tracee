@@ -156,14 +156,6 @@ jobs:
         run: |
           make clean
           make tracee-bench
-      - name: Build E2E Network Signatures
-        run: |
-          make clean
-          make e2e-net-signatures
-      - name: Build E2E Instrumentation Signatures
-        run: |
-          make clean
-          make e2e-inst-signatures
   #
   # CODE TESTS
   #
