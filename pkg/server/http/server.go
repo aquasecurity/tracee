@@ -80,13 +80,6 @@ func (s *Server) Start(ctx context.Context) {
 		srvCancel()
 	}()
 
-	heartbeatCtx, cancel := context.WithCancel(srvCtx)
-	defer cancel()
-
-	heartbeat.Init(heartbeatCtx, heartbeatSignalInterval, heartbeatAckTimeout)
-	heartbeat.GetInstance().SetCallback(invokeHeartbeat)
-	heartbeat.GetInstance().Start()
-
 	select {
 	case <-ctx.Done():
 		logger.Debugw("Context cancelled, shutting down metrics endpoint server")
@@ -159,9 +152,4 @@ func (s *Server) IsPyroscopeEnabled() bool {
 // Address returns the address of the server
 func (s *Server) Address() string {
 	return s.address
-}
-
-//go:noinline
-func invokeHeartbeat() {
-	// Intentionally left empty
 }
