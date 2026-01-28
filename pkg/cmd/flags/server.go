@@ -131,6 +131,11 @@ func PrepareServer(serverSlice []string) (ServerConfig, error) {
 		return server, err
 	}
 
+	// Enable gRPC health service if healthz flag is set
+	if server.Healthz && server.grpc != nil {
+		server.grpc.EnableHealthService()
+	}
+
 	return server, nil
 }
 

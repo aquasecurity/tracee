@@ -42,19 +42,48 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-          {{- if or .Values.config.server.httpAddress .Values.config.server.metrics .Values.config.server.healthz }}
+          {{- $hasHttpServer := or .Values.config.server.httpAddress .Values.config.server.metrics .Values.config.server.healthz }}
+          {{- $hasGrpcServer := .Values.config.server.grpcAddress }}
+          {{- $grpcAddress := .Values.config.server.grpcAddress }}
+          {{- $isGrpcTcp := false }}
+          {{- $grpcPort := "" }}
+          {{- if $hasGrpcServer }}
+            {{- $parts := splitList ":" $grpcAddress }}
+            {{- if eq (index $parts 0) "tcp" }}
+              {{- $isGrpcTcp = true }}
+              {{- if gt (len $parts) 2 }}
+                {{- $grpcPort = index $parts 2 }}
+              {{- else if eq (len $parts) 2 }}
+                {{- $grpcPort = index $parts 1 }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- if or $hasHttpServer $hasGrpcServer }}
           ports:
+            {{- if $hasHttpServer }}
             - name: metrics
               containerPort: {{ trimPrefix ":" (.Values.config.server.httpAddress | default ":3366") }}
               protocol: TCP
+            {{- end }}
+            {{- if $isGrpcTcp }}
+            - name: grpc
+              containerPort: {{ $grpcPort }}
+              protocol: TCP
+            {{- end }}
           {{- end }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           {{- if .Values.config.server.healthz }}
           readinessProbe:
+            {{- if and $isGrpcTcp $grpcPort }}
+            grpc:
+              port: {{ $grpcPort }}
+              service: ""
+            {{- else if $hasHttpServer }}
             httpGet:
               path: /healthz
               port: {{ trimPrefix ":" (.Values.config.server.httpAddress | default ":3366") }}
+            {{- end }}
           {{- end }}
           volumeMounts:
             - name: tmp-tracee

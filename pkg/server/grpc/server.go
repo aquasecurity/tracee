@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
@@ -18,10 +19,11 @@ import (
 )
 
 type Server struct {
-	listener   net.Listener
-	protocol   string
-	listenAddr string
-	server     *grpc.Server
+	listener      net.Listener
+	protocol      string
+	listenAddr    string
+	server        *grpc.Server
+	healthService *HealthService
 }
 
 func New(protocol, listenAddr string) *Server {
@@ -29,7 +31,11 @@ func New(protocol, listenAddr string) *Server {
 		listenAddr = ":" + listenAddr
 	}
 
-	return &Server{listener: nil, protocol: protocol, listenAddr: listenAddr}
+	return &Server{
+		listener:   nil,
+		protocol:   protocol,
+		listenAddr: listenAddr,
+	}
 }
 
 func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) {
@@ -67,6 +73,12 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
 	pb.RegisterDataSourceServiceServer(grpcServer, &DataSourceService{sigEngine: e})
 
+	// Register health service only if enabled
+	if s.healthService != nil {
+		healthpb.RegisterHealthServer(grpcServer, s.healthService.Server())
+		go s.healthService.StartMonitor(ctx)
+	}
+
 	go func() {
 		logger.Debugw("Starting grpc server", "protocol", s.protocol, "address", s.listenAddr)
 		if err := grpcServer.Serve(s.listener); err != nil {
@@ -95,6 +107,11 @@ func (s *Server) Address() string {
 		addr = addr[1:] // Remove leading colon
 	}
 	return fmt.Sprintf("%s:%s", s.protocol, addr)
+}
+
+// EnableHealthService enables the gRPC health checking service
+func (s *Server) EnableHealthService() {
+	s.healthService = NewHealthService()
 }
 
 func (s *Server) cleanup() {
