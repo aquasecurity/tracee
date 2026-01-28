@@ -91,8 +91,12 @@ ShellCheck is non-negotiable and catches common bugs, portability issues, and an
 - Avoid Bash-specific features (arrays, `[[`, `local`, etc.)
 - Test with `shellcheck -s sh` to ensure POSIX compliance
 - Cannot use `local` keyword - see POSIX variable patterns below
-- **Internal functions**: prefix with `__` and namespace variables with function name
+- **Internal functions**: prefix with `__` and namespace variables with function name (e.g. `__function_name_variable`)
 - **Status variables**: MUST use `__status=$?` (not `status=$?`) to avoid namespace conflicts
+
+**Underscore convention (POSIX sh without `local`):**
+- **Double underscore (`__`)**: Reserved for **library files** (`scripts/lib*.sh`) only. Internal library functions and their variables use `__` (e.g. `__my_lib_helper`, `__my_lib_helper_result`). Library consumers must not use `__` so the namespace stays reserved for the library.
+- **Single underscore (`_`)**: For **all other POSIX sh scripts** (non-library, e.g. hooks, utilities) that need to namespace internal/helper function variables. Use `_function_name_variable` (e.g. `_check_blocked_patterns_file`). This avoids reserving the library `__` namespace.
 
 ```bash
 #!/bin/sh
@@ -423,8 +427,7 @@ my_function() {
     unset result  # Clean up if variable name is common
 }
 
-# Pattern 4: Prefix internal function variables with the function name (RECOMMENDED)
-# This creates a namespace for each function's variables
+# Pattern 4 (library only): Internal functions/variables use __ (scripts/lib*.sh only)
 __internal_helper() {
     __internal_helper_result="$(some_command)"
     __internal_helper_status=$?
@@ -434,25 +437,22 @@ __internal_helper() {
     echo "${__internal_helper_result}"
 }
 
-# For complex internal functions with multiple variables
-__process_data() {
-    __process_data_input="$1"
-    __process_data_output=""
-    __process_data_count=0
-    
-    # Process logic here
-    __process_data_output="$(transform "${__process_data_input}")"
-    __process_data_count=$((${__process_data_count} + 1))
-    
-    printf '%s\n' "${__process_data_output}"
+# Pattern 5 (non-library POSIX sh): Use single _ for internal function variable namespacing
+# Use this in hooks, utilities, and any script that is not part of scripts/lib*.sh
+my_helper() {
+    _my_helper_file="$1"
+    _my_helper_branch="$2"
+    if [ -f "${_my_helper_file}" ]; then
+        while IFS= read -r _my_helper_line || [ -n "${_my_helper_line}" ]; do
+            # ...
+        done < "${_my_helper_file}"
+    fi
 }
 ```
 
 **Important:** In POSIX sh, all function variables are global by default. Use careful naming to avoid conflicts:
-- **Best Practice**: Prefix internal function variables with the function name (Pattern 4)
-- Example: `__my_function_result`, `__my_function_status`, `__my_function_count`
-- This creates a namespace for each function and prevents variable collisions
-- Especially important for library functions that may be called from multiple contexts
+- **Library files** (`scripts/lib*.sh`): Use `__` for internal functions and variables (e.g. `__my_function_result`).
+- **Other POSIX sh scripts** (hooks, utilities): Use single `_` for internal function variable namespacing (e.g. `_my_helper_file`, `_check_blocked_patterns_branch`). Do not use `__`; it is reserved for the library.
 
 **Separate declaration from assignment for command substitution:**
 ```bash
@@ -840,11 +840,18 @@ my_function() {
     echo "Processing ${arg}"
 }
 
-# ✅ Correct - internal function with namespaced variables
+# ✅ Correct - library internal function (lib*.sh only) with __ namespaced variables
 __internal_helper() {
     __internal_helper_data="$1"
     __internal_helper_result="$(process "${__internal_helper_data}")"
     echo "${__internal_helper_result}"
+}
+
+# ✅ Correct - non-library script helper; variables use single _ namespacing
+check_blocked_patterns() {
+    _check_blocked_patterns_file="$1"
+    _check_blocked_patterns_branch="$2"
+    # ...
 }
 
 # ✅ Correct - for packages/libraries, use :: separator
@@ -866,10 +873,10 @@ __helper() {
 
 **Naming Conventions:**
 - **Public functions**: `function_name` (lowercase with underscores)
-- **Internal functions**: `__function_name` (prefix with double underscore)
-  - Variables: `__function_name_variable` (namespace with function name)
+- **Library internal functions** (`scripts/lib*.sh` only): `__function_name` (prefix with double underscore); variables: `__function_name_variable`
+- **Non-library POSIX sh internal/helper variables**: use single `_` and function name: `_function_name_variable` (e.g. `_check_blocked_patterns_file`). Do not use `__` outside the library.
 - **Package functions**: `package::function_name` (use `::` separator)
-- This convention prevents variable collisions and signals intended usage
+- This convention prevents variable collisions and reserves `__` for the library
 
 ### Function Comments
 
@@ -1617,8 +1624,8 @@ When writing or reviewing shell scripts, ensure:
 - [ ] Functions documented (non-trivial ones)
 - [ ] Functions placed near top after constants
 - [ ] `main` function for multi-function scripts
-- [ ] Internal functions prefixed with `__`
-- [ ] Internal function variables namespaced: `__function_name_variable`
+- [ ] Library (`lib*.sh`) internal functions/variables use `__` (e.g. `__function_name_variable`)
+- [ ] Non-library POSIX sh scripts use single `_` for internal function variables (e.g. `_function_name_variable`)
 
 ## References
 
