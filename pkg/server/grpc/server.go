@@ -12,9 +12,9 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/common/logger"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
 type Server struct {
@@ -32,7 +32,12 @@ func New(protocol, listenAddr string) *Server {
 	return &Server{listener: nil, protocol: protocol, listenAddr: listenAddr}
 }
 
-func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) {
+func (s *Server) Start(ctx context.Context, t *tracee.Tracee) {
+	if t == nil {
+		logger.Errorw("Failed to start GRPC server: tracee instance is required but was nil")
+		return
+	}
+
 	// Create listener when starting
 	lis, err := net.Listen(s.protocol, s.listenAddr)
 	if err != nil {
@@ -65,7 +70,7 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 	s.server = grpcServer
 	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{tracee: t})
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
-	pb.RegisterDataSourceServiceServer(grpcServer, &DataSourceService{sigEngine: e})
+	datastores.RegisterDataStoreServiceServer(grpcServer, &DataStoreService{registry: t.DataStores()})
 
 	go func() {
 		logger.Debugw("Starting grpc server", "protocol", s.protocol, "address", s.listenAddr)

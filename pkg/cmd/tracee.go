@@ -42,7 +42,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 			// start server if one is configured
 			if r.GRPC != nil {
-				go r.GRPC.Start(ctx, t, t.Engine())
+				go r.GRPC.Start(ctx, t)
 			}
 		},
 	)

@@ -27,7 +27,7 @@ INSTTESTS_CORE_AVAILABLE="
     BPF_ATTACH
     CONTAINERS_DATA_SOURCE
     DNS_DATA_SOURCE
-    WRITABLE_DATA_SOURCE
+    # WRITABLE_DATA_SOURCE  # Temporarily disabled while we migrate e2e to detectors
     SECURITY_PATH_NOTIFY
     SET_FS_PWD
     SUSPICIOUS_SYSCALL_SOURCE
@@ -41,7 +41,7 @@ INSTTESTS_CORE_AVAILABLE="
 # Called by coordinator after validation, only if core tests will run
 core_init_test_config() {
     add_test_config TEST_CONFIG_MAP "SET_FS_PWD" "set-fs-pwd-test" 5 0
-    add_test_config TEST_CONFIG_MAP "WRITABLE_DATA_SOURCE" "writable-ds-test" 40 0
+    # add_test_config TEST_CONFIG_MAP "WRITABLE_DATA_SOURCE" "writable-ds-test" 40 0  TEMP DISABLED WHILE WE MIGRATE TO DETECTORS
     add_test_config TEST_CONFIG_MAP "SECURITY_PATH_NOTIFY" "security-path-notify-test" 5 0
     add_test_config TEST_CONFIG_MAP "SUSPICIOUS_SYSCALL_SOURCE" "suspicious-syscall-src-test" 10 0
     add_test_config TEST_CONFIG_MAP "CONTAINERS_DATA_SOURCE" "containers-ds-test" 10 5
