@@ -2263,7 +2263,10 @@ func (t *Tracee) EnableEvent(eventName string) error {
 				if metadata.EventName == eventName {
 					_, err := t.sigEngine.LoadSignature(sig)
 					if err != nil {
-						logger.Errorw("Failed to load signature", "signature", metadata.Name, "error", err)
+						if strings.Contains(err.Error(), "already loaded") {
+							logger.Debugw("Signature already loaded, skipping", "signature", metadata.Name)
+							break // Already enabled = success
+						}
 						return errfmt.Errorf("failed to load signature %s: %v", metadata.Name, err)
 					}
 					logger.Debugw("Loaded signature", "signature", metadata.Name, "event", eventName)
