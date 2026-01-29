@@ -1,0 +1,31 @@
+  # Clone Tracee scripts from GitHub using sparse-checkout
+  # This gets ALL scripts with proper structure in one efficient operation
+  - |
+    echo "Cloning Tracee scripts from GitHub..." | tee -a /var/log/tracee-vm-init.log
+    
+    # Configure repository and branch (can be overridden via environment)
+    TRACEE_REPO="${TRACEE_REPO:-https://github.com/aquasecurity/tracee.git}"
+    TRACEE_BRANCH="${TRACEE_BRANCH:-main}"
+    
+    cd /tmp
+    
+    # Clone without checkout first (--sparse flag has a bug in git 2.25.x on focal)
+    # --filter=blob:none: don't download file contents until needed (faster)
+    # --no-checkout: defer checkout until sparse-checkout is configured
+    # --depth=1: shallow clone (only latest commit, faster)
+    git clone \
+      --filter=blob:none \
+      --no-checkout \
+      --depth=1 \
+      --branch="${TRACEE_BRANCH}" \
+      "${TRACEE_REPO}" \
+      tracee 2>&1 | tee -a /var/log/tracee-vm-init.log
+    
+    cd tracee || { echo "ERROR: git clone failed, /tmp/tracee not created" | tee -a /var/log/tracee-vm-init.log; exit 1; }
+    
+    # Initialize sparse-checkout and limit to scripts/ directory only
+    git sparse-checkout init --cone 2>&1 | tee -a /var/log/tracee-vm-init.log
+    git sparse-checkout set scripts 2>&1 | tee -a /var/log/tracee-vm-init.log
+    git checkout 2>&1 | tee -a /var/log/tracee-vm-init.log
+    
+    echo "Tracee scripts cloned successfully from ${TRACEE_REPO} (branch: ${TRACEE_BRANCH})" | tee -a /var/log/tracee-vm-init.log

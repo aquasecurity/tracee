@@ -1,0 +1,136 @@
+#cloud-config
+# Cloud-init configuration for Ubuntu/Debian Tracee VMs
+# Distro: ${DISTRO} ${VERSION} | Kernel: ${KERNEL_FLAVOR} ${KERNEL_VERSION} | Env: ${ENVIRONMENT}
+
+# Create ubuntu group (GID will match UID 1000)
+# Docker group will be created automatically during Docker installation
+groups:
+  - ubuntu
+
+users:
+  - name: ubuntu
+    uid: 1000
+    primary_group: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: [sudo]
+    shell: /bin/bash
+    # Set password to 'ubuntu' (plaintext, cloud-init will hash it)
+    # For console/emergency access
+    plain_text_passwd: ubuntu
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ${SSH_PUBKEY}
+
+hostname: ${DISTRO}-${VERSION}-${KERNEL_FLAVOR}
+disable_root: true
+ssh_pwauth: true
+timezone: UTC
+
+# Automatically grow partition and resize filesystem to use all available space
+# This fixes GPT partition table issues when disk is expanded
+growpart:
+  mode: auto
+  devices: ['/']
+  ignore_growroot_disabled: false
+
+resize_rootfs: true
+
+# Install essential packages
+packages:
+  - build-essential
+  - git
+  - curl
+  - wget
+  - vim
+  - nano
+  - jq
+
+# Write helper scripts
+write_files:
+  # Environment variables for installation scripts
+  # Source this file in runcmd blocks: . /tmp/tracee-vm-env.sh
+  - path: /tmp/tracee-vm-env.sh
+    permissions: '0644'
+    content: |
+      # Tracee VM environment variables for cloud-init scripts
+      export DISTRO="${DISTRO}"
+      export VERSION="${VERSION}"
+      export KERNEL_FLAVOR="${KERNEL_FLAVOR}"
+      export KERNEL_VERSION="${KERNEL_VERSION}"
+      export ENVIRONMENT="${ENVIRONMENT}"
+      export SSH_KEY_NAME="${SSH_KEY_NAME}"
+      export USER_NAME="ubuntu"
+  
+  # WRITE_VM_CONFIGS_PLACEHOLDER
+  
+  - path: /home/ubuntu/.bash_aliases
+    content: |
+      # Tracee development aliases
+      alias tracee-build='cd /mnt/tracee && make'
+      alias tracee-test='cd /mnt/tracee && make test'
+      alias tracee-clean='cd /mnt/tracee && make clean'
+    owner: ubuntu:ubuntu
+    permissions: '0644'
+    defer: true
+
+# Run installation scripts from Tracee repo
+runcmd:
+  # INIT_SERVICES_PLACEHOLDER
+  
+  # Setup dynamic MOTD (embedded script, like kernel installer)
+  # NOTE: Currently embedded for reliability, but may be fetched from
+  #       the repo branch in the future (like other scripts).
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    echo "Setting up dynamic MOTD..." | tee -a /var/log/tracee-vm-init.log
+    
+    # MOTD_SCRIPT_PLACEHOLDER
+    
+    chmod +x /tmp/setup-motd.sh
+    /tmp/setup-motd.sh \
+      "${DISTRO}" \
+      "${VERSION}" \
+      "${KERNEL_FLAVOR}" \
+      "${KERNEL_VERSION}" \
+      "${SSH_KEY_NAME}" \
+      2>&1 | tee -a /var/log/tracee-vm-init.log
+  
+  # DOWNLOAD_SCRIPTS_PLACEHOLDER
+  
+  # DISABLE_UNATTENDED_UPGRADES_PLACEHOLDER
+  
+  # INSTALL_TOOLS_PLACEHOLDER
+  
+  # SETUP_VIRTFS_PLACEHOLDER
+  
+  # Install kernel LAST (using embedded script below)
+  # NOTE: Currently embedded for reliability, but we might change this to fetch
+  #       from the repo branch in the future (like other scripts) to ensure
+  #       we always use the latest version from the branch.
+  # IMPORTANT: Kernel installation must be last because it reboots the VM!
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    echo "Installing kernel ${KERNEL_FLAVOR} ${KERNEL_VERSION}..." | tee -a /var/log/tracee-vm-init.log
+    
+    # KERNEL_SCRIPT_PLACEHOLDER
+    
+    chmod +x /tmp/install-kernel.sh
+    /tmp/install-kernel.sh \
+      -d "${DISTRO}" \
+      -f "${KERNEL_FLAVOR}" \
+      -k "${KERNEL_VERSION}" \
+      2>&1 | tee -a /var/log/tracee-vm-init.log
+  
+  # FINALIZE_PLACEHOLDER
+
+final_message: |
+  Tracee VM is ready!
+  
+  Distro:  ${DISTRO} ${VERSION}
+  Kernel:  ${KERNEL_FLAVOR} ${KERNEL_VERSION} (active after reboot)
+  
+  ${SSH_ACCESS_HINT}
+  
+  The system took ${UPTIME} seconds to boot.

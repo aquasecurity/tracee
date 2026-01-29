@@ -113,6 +113,31 @@ Please create the checksum file with the SHA256 from https://go.dev/dl/"
     # Verify installation
     go version
     info "Go ${GOLANG_VERSION} installed successfully"
+    
+    # Configure Go environment for user if USER_NAME and USER_HOME are set
+    if [ -n "${USER_NAME}" ] && [ -n "${USER_HOME}" ] && [ -d "${USER_HOME}" ]; then
+        info "Configuring Go environment for ${USER_NAME} in ${USER_HOME}/.bashrc"
+        
+        # Add Go paths to .bashrc if not already present
+        if ! grep -q "GOROOT" "${USER_HOME}/.bashrc" 2>/dev/null; then
+            cat >> "${USER_HOME}/.bashrc" << 'EOF'
+
+# Go environment configuration
+export GOROOT="/usr/local/go"
+export GOPATH="${HOME}/go"
+export GOCACHE="${HOME}/.cache/go-build"
+export PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+EOF
+            info "Go environment added to ${USER_HOME}/.bashrc"
+        else
+            info "Go environment already configured in .bashrc"
+        fi
+        
+        # Create Go directories with proper ownership
+        mkdir -p "${USER_HOME}/go" "${USER_HOME}/.cache/go-build"
+        chown -R "${USER_NAME}:${USER_NAME}" "${USER_HOME}/go" "${USER_HOME}/.cache"
+        info "Go directories created in ${USER_HOME}"
+    fi
 }
 
 install_clang() {
@@ -177,9 +202,56 @@ install_docker() {
 
     wait_for_apt_locks
     apt-get update
-    apt-get install -y docker-ce-cli
+    # Install full Docker engine, not just CLI
+    apt-get install -y docker-ce docker-ce-cli containerd.io
+
+    # Enable and start Docker service
+    systemctl enable docker
+    systemctl start docker
 
     info "Docker installed successfully"
+    
+    # Add user to docker group if USER_NAME is set and not root
+    if [ -n "${USER_NAME}" ] && [ "${USER_NAME}" != "root" ]; then
+        if getent group docker >/dev/null 2>&1; then
+            usermod -aG docker "${USER_NAME}"
+            info "Added ${USER_NAME} to docker group"
+        else
+            info "Docker group not found, skipping group assignment"
+        fi
+    fi
+}
+
+setup_user_vars() {
+    # Setup USER_NAME and USER_HOME variables for user-specific configuration
+    # Use USER_NAME env var if set, otherwise default to current user ($USER)
+    # Caller can override with: USER_NAME=myuser ./install-deps-ubuntu.sh
+    
+    USER_NAME="${USER_NAME:-${USER}}"
+    
+    # Verify user exists
+    if ! id "${USER_NAME}" >/dev/null 2>&1; then
+        info "User ${USER_NAME} not found, skipping user-specific configuration"
+        USER_NAME=""
+        USER_HOME=""
+        return 0
+    fi
+    
+    # Get home directory from passwd database
+    USER_HOME=$(getent passwd "${USER_NAME}" | cut -d: -f6)
+    
+    if [ -z "${USER_HOME}" ]; then
+        info "Could not determine home directory for user ${USER_NAME}, skipping user-specific configuration"
+        USER_NAME=""
+        USER_HOME=""
+        return 0
+    fi
+    
+    info "User configuration will be applied to: ${USER_NAME} (home: ${USER_HOME})"
+    
+    # Export for child processes
+    export USER_NAME
+    export USER_HOME
 }
 
 verify_installation() {
@@ -207,7 +279,10 @@ verify_installation() {
 
 main() {
     info "=== Tracee Dependencies Installation (Ubuntu/Debian) ==="
-
+    
+    # Setup user variables for user-specific configuration
+    setup_user_vars
+    
     install_base_packages
     install_golang
     install_clang

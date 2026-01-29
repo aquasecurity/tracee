@@ -1,0 +1,2 @@
+instance-id: ${DISTRO}-${VERSION}-${KERNEL_FLAVOR}-${KERNEL_VERSION}-${ARCH}
+local-hostname: ${DISTRO}-${VERSION}-${KERNEL_FLAVOR}

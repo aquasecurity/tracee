@@ -1,0 +1,423 @@
+#cloud-config
+# Cloud-init configuration for Ubuntu/Debian Tracee VMs
+# Distro: ubuntu 22.04 | Kernel: generic 5.19.0-50 | Env: local
+
+# Create ubuntu group (GID will match UID 1000)
+# Docker group will be created automatically during Docker installation
+groups:
+  - ubuntu
+
+users:
+  - name: ubuntu
+    uid: 1000
+    primary_group: ubuntu
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: [sudo]
+    shell: /bin/bash
+    # Set password to 'ubuntu' (plaintext, cloud-init will hash it)
+    # For console/emergency access
+    plain_text_passwd: ubuntu
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOEDKA/c+LS9J7ZtnYBnJqaQLKjgKwl3o7/+cJhHrsWh tracee-team@aquasecurity
+
+hostname: ubuntu-22.04-generic
+disable_root: true
+ssh_pwauth: true
+timezone: UTC
+
+# Automatically grow partition and resize filesystem to use all available space
+# This fixes GPT partition table issues when disk is expanded
+growpart:
+  mode: auto
+  devices: ['/']
+  ignore_growroot_disabled: false
+
+resize_rootfs: true
+
+# Install essential packages
+packages:
+  - build-essential
+  - git
+  - curl
+  - wget
+  - vim
+  - nano
+  - jq
+
+# Write helper scripts
+write_files:
+  # Environment variables for installation scripts
+  # Source this file in runcmd blocks: . /tmp/tracee-vm-env.sh
+  - path: /tmp/tracee-vm-env.sh
+    permissions: '0644'
+    content: |
+      # Tracee VM environment variables for cloud-init scripts
+      export DISTRO="ubuntu"
+      export VERSION="22.04"
+      export KERNEL_FLAVOR="generic"
+      export KERNEL_VERSION="5.19.0-50"
+      export ENVIRONMENT="local"
+      export USER_NAME="ubuntu"
+  
+  # Blacklist floppy driver to prevent fd0 I/O errors in VM
+  - path: /etc/modprobe.d/blacklist-floppy.conf
+    permissions: '0644'
+    content: |
+      # Prevent floppy driver from loading in VM environment
+      # VMs don't have physical floppy drives and the driver causes harmless I/O errors
+      blacklist floppy
+  
+  # Virtiofs mount entries for local development (fstab approach)
+  # Written to /tmp and conditionally appended to /etc/fstab by setup-virtfs script
+  - path: /tmp/virtiofs-mounts.conf
+    permissions: '0644'
+    content: |
+      # Virtiofs mounts for local development
+      # virtiofs provides full POSIX semantics (file locking, timestamps, mmap, etc.)
+      # nofail: don't block boot if virtiofs not available
+      tracee      /mnt/tracee    virtiofs  rw,nofail 0 0
+  
+  - path: /etc/motd
+    content: |
+      ════════════════════════════════════════════════════════════════
+                  Welcome to Tracee Development VM
+      ════════════════════════════════════════════════════════════════
+      
+      Distro:     ubuntu 22.04
+      Kernel:     generic 5.19.0-50
+      SSH Key:    ~/.ssh/tracee_team_ed25519
+      Console:    ubuntu / ubuntu (for emergency access)
+      Project:    https://github.com/aquasecurity/tracee
+      
+      ════════════════════════════════════════════════════════════════
+
+  - path: /home/ubuntu/.bash_aliases
+    content: |
+      # Tracee development aliases
+      alias tracee-build='cd /mnt/tracee && make'
+      alias tracee-test='cd /mnt/tracee && make test'
+      alias tracee-clean='cd /mnt/tracee && make clean'
+    owner: ubuntu:ubuntu
+    permissions: '0644'
+
+# Run installation scripts from Tracee repo
+runcmd:
+  # Initialize logging and services
+  - |
+    echo "Tracee VM initialization started at $(date)" | tee -a /var/log/tracee-vm-init.log
+    systemctl enable ssh
+    systemctl start ssh
+  
+  # Clone Tracee scripts from GitHub using sparse-checkout
+  # This gets ALL scripts with proper structure in one efficient operation
+  - |
+    echo "Cloning Tracee scripts from GitHub..." | tee -a /var/log/tracee-vm-init.log
+    
+    # Configure repository and branch (can be overridden via environment)
+    TRACEE_REPO="${TRACEE_REPO:-https://github.com/aquasecurity/tracee.git}"
+    TRACEE_BRANCH="${TRACEE_BRANCH:-main}"
+    
+    cd /tmp
+    
+    # Use git sparse-checkout to clone only the scripts/ folder (efficient & complete)
+    # --filter=blob:none: don't download file contents until needed (faster)
+    # --sparse: enable sparse-checkout mode
+    # --depth=1: shallow clone (only latest commit, faster)
+    git clone       --filter=blob:none       --sparse       --depth=1       --branch="${TRACEE_BRANCH}"       "${TRACEE_REPO}"       tracee 2>&1 | tee -a /var/log/tracee-vm-init.log
+    
+    cd tracee
+    
+    # Configure sparse-checkout to only get the scripts/ directory
+    git sparse-checkout set scripts 2>&1 | tee -a /var/log/tracee-vm-init.log
+    
+    echo "Tracee scripts cloned successfully from ${TRACEE_REPO} (branch: ${TRACEE_BRANCH})" | tee -a /var/log/tracee-vm-init.log
+  
+  # Install all dependencies using Tracee's install-deps-${DISTRO}.sh
+  # This script handles everything: packages, Go, Clang, Go tools, Docker, user environment
+  # The USER_NAME env var (from tracee-vm-env.sh) tells install-deps which user to configure
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    echo "Installing ${DISTRO} dependencies via install-deps-${DISTRO}.sh..." | tee -a /var/log/tracee-vm-init.log
+    echo "This includes: base packages, Go, Clang, Go tools, Docker, and user environment setup" | tee -a /var/log/tracee-vm-init.log
+    echo "Configuring user environment for: ${USER_NAME}" | tee -a /var/log/tracee-vm-init.log
+    
+    cd /tmp/tracee
+    DEPS_SCRIPT="./scripts/installation/install-deps-${DISTRO}.sh"
+    
+    if [ -f "${DEPS_SCRIPT}" ]; then
+      USER_NAME="${USER_NAME}" ${DEPS_SCRIPT} 2>&1 | tee -a /var/log/tracee-vm-init.log
+    else
+      echo "Error: ${DEPS_SCRIPT} not found, cannot install dependencies" | tee -a /var/log/tracee-vm-init.log
+      exit 1
+    fi
+    
+    echo "Dependencies installation completed successfully" | tee -a /var/log/tracee-vm-init.log
+    
+    # Install AMI tooling for AWS environments (Go, GitHub runner, etc.)
+    if [ "${ENVIRONMENT}" = "aws" ]; then
+      AMI_SCRIPT="./scripts/installation/install-ami-tooling.sh"
+      if [ -f "${AMI_SCRIPT}" ]; then
+        echo "Installing AWS/GitHub tooling..." | tee -a /var/log/tracee-vm-init.log
+        ${AMI_SCRIPT} 2>&1 | tee -a /var/log/tracee-vm-init.log
+      else
+        echo "Error: ${AMI_SCRIPT} not found, cannot install AWS tooling" | tee -a /var/log/tracee-vm-init.log
+        exit 1
+      fi
+    fi
+  
+  # Environment-specific setup
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    if [ "${ENVIRONMENT}" = "local" ]; then
+      echo "Setting up local development environment..." | tee -a /var/log/tracee-vm-init.log
+      mkdir -p /mnt/tracee
+      chown ubuntu:ubuntu /mnt/tracee
+      
+      # Append virtiofs mounts to /etc/fstab (distro-agnostic approach)
+      # Virtiofs config was written to /tmp/virtiofs-mounts.conf via write_files
+      if [ -f /tmp/virtiofs-mounts.conf ]; then
+        echo "" >> /etc/fstab  # Add blank line for readability
+        cat /tmp/virtiofs-mounts.conf >> /etc/fstab
+        echo "Virtiofs mounts added to /etc/fstab (will auto-mount after reboot)" | tee -a /var/log/tracee-vm-init.log
+      else
+        echo "Warning: /tmp/virtiofs-mounts.conf not found, skipping fstab update" | tee -a /var/log/tracee-vm-init.log
+      fi
+      
+      # Reload systemd to pick up fstab changes
+      systemctl daemon-reload
+      
+      echo "Local development environment configured" | tee -a /var/log/tracee-vm-init.log
+    fi
+  
+  # Install kernel LAST (using embedded script below)
+  # NOTE: Currently embedded for reliability, but we might change this to fetch
+  #       from the repo branch in the future (like other scripts) to ensure
+  #       we always use the latest version from the branch.
+  # IMPORTANT: Kernel installation must be last because it reboots the VM!
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    echo "Installing kernel generic 5.19.0-50..." | tee -a /var/log/tracee-vm-init.log
+    
+  - |
+    cat > /tmp/install-kernel.sh <<'KERNEL_SCRIPT'
+    #!/bin/bash
+    # Install specific kernel version (distro-agnostic)
+    # Usage: ./install-kernel.sh -d ubuntu -f generic -k 5.19.0-50
+    #        ./install-kernel.sh --distro auto --flavor generic --kernel-version 5.19.0-50
+    
+    set -euo pipefail
+    
+    # Function to show usage
+    usage() {
+        cat << EOF
+    Usage: $0 -d DISTRO -f FLAVOR -k VERSION
+    
+    Install a specific kernel version (distro-agnostic).
+    
+    Required Arguments:
+      -d, --distro DISTRO              Target distribution (ubuntu, centos, alpine, or auto for auto-detect)
+      -f, --flavor FLAVOR              Kernel flavor (generic, aws, gcp, azure, mainline, lts, vanilla)
+      -k, --kernel-version VERSION     Kernel version (e.g., 5.19.0-50)
+    
+    Examples:
+      $0 -d ubuntu -f generic -k 5.19.0-50
+      $0 --distro auto --flavor generic --kernel-version 5.19.0-50
+      $0 -d centos -f standard -k 5.15.0-1
+    
+    Supported Distros:
+      - ubuntu, debian    (flavors: generic, aws, gcp, azure, mainline)
+      - centos, rhel      (flavors: generic, standard, mainline, elrepo)
+      - alpine            (flavors: vanilla, lts)
+      - auto              (auto-detect from /etc/os-release)
+    
+    EOF
+        exit 1
+    }
+    
+    # Initialize variables
+    DISTRO=""
+    KERNEL_FLAVOR=""
+    KERNEL_VERSION=""
+    
+    # Parse command line arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -d|--distro)
+                DISTRO="$2"
+                shift 2
+                ;;
+            -f|--flavor)
+                KERNEL_FLAVOR="$2"
+                shift 2
+                ;;
+            -k|--kernel-version)
+                KERNEL_VERSION="$2"
+                shift 2
+                ;;
+            -h|--help)
+                usage
+                ;;
+            *)
+                echo "Error: Unknown option: $1"
+                usage
+                ;;
+        esac
+    done
+    
+    # Validate required arguments
+    if [ -z "$DISTRO" ] || [ -z "$KERNEL_FLAVOR" ] || [ -z "$KERNEL_VERSION" ]; then
+        echo "Error: All arguments are required (-d, -f, -k)"
+        echo ""
+        usage
+    fi
+    
+    echo "Installing kernel ${KERNEL_FLAVOR} ${KERNEL_VERSION} on ${DISTRO}..."
+    
+    # Auto-detect distro if specified as "auto"
+    if [ "$DISTRO" = "auto" ]; then
+        if [ -f /etc/os-release ]; then
+            . /etc/os-release
+            case "$ID" in
+                ubuntu|debian) DISTRO="ubuntu" ;;
+                centos|rhel|rocky|almalinux) DISTRO="centos" ;;
+                alpine) DISTRO="alpine" ;;
+                *)
+                    echo "Error: Could not auto-detect distro from ID: $ID"
+                    exit 1
+                    ;;
+            esac
+            echo "Auto-detected distro: ${DISTRO}"
+        else
+            echo "Error: Cannot auto-detect distro (/etc/os-release not found)"
+            exit 1
+        fi
+    fi
+    
+    # Install kernel based on distro
+    case "${DISTRO}" in
+        ubuntu|debian)
+            case "${KERNEL_FLAVOR}" in
+                generic)
+                    apt-get update -y
+                    apt-get install -y                         "linux-image-${KERNEL_VERSION}-generic"                         "linux-headers-${KERNEL_VERSION}-generic"                         "linux-modules-extra-${KERNEL_VERSION}-generic"                         "linux-tools-${KERNEL_VERSION}-generic"
+                    ;;
+                
+                aws)
+                    apt-get update -y
+                    apt-get install -y                         "linux-image-${KERNEL_VERSION}"                         "linux-headers-${KERNEL_VERSION}"                         "linux-modules-extra-${KERNEL_VERSION}"
+                    ;;
+                
+                gcp)
+                    apt-get update -y
+                    apt-get install -y                         "linux-image-${KERNEL_VERSION}"                         "linux-headers-${KERNEL_VERSION}"
+                    ;;
+                
+                azure)
+                    apt-get update -y
+                    apt-get install -y                         "linux-image-${KERNEL_VERSION}"                         "linux-headers-${KERNEL_VERSION}"
+                    ;;
+                
+                mainline)
+                    apt-get update -y
+                    apt-get install -y software-properties-common
+                    add-apt-repository -y ppa:canonical-kernel-team/ppa || true
+                    apt-get update -y
+                    apt-get install -y                         "linux-image-unsigned-${KERNEL_VERSION}-generic"                         "linux-headers-${KERNEL_VERSION}-generic"
+                    ;;
+                
+                *)
+                    echo "Unknown kernel flavor for Ubuntu/Debian: ${KERNEL_FLAVOR}"
+                    exit 1
+                    ;;
+            esac
+            
+            # Update GRUB
+            update-grub
+            ;;
+        
+        centos|rhel|rocky|almalinux)
+            case "${KERNEL_FLAVOR}" in
+                generic|standard)
+                    # Install from standard repos
+                    dnf install -y                         "kernel-${KERNEL_VERSION}"                         "kernel-headers-${KERNEL_VERSION}"                         "kernel-devel-${KERNEL_VERSION}"                         "kernel-tools-${KERNEL_VERSION}" ||                     yum install -y                         "kernel-${KERNEL_VERSION}"                         "kernel-headers-${KERNEL_VERSION}"                         "kernel-devel-${KERNEL_VERSION}"                         "kernel-tools-${KERNEL_VERSION}"
+                    ;;
+                
+                mainline|elrepo)
+                    # Install from ELRepo for newer kernels
+                    dnf install -y elrepo-release || yum install -y elrepo-release
+                    dnf --enablerepo=elrepo-kernel install -y                         "kernel-ml-${KERNEL_VERSION}"                         "kernel-ml-headers-${KERNEL_VERSION}"                         "kernel-ml-devel-${KERNEL_VERSION}" ||                     yum --enablerepo=elrepo-kernel install -y                         "kernel-ml-${KERNEL_VERSION}"                         "kernel-ml-headers-${KERNEL_VERSION}"                         "kernel-ml-devel-${KERNEL_VERSION}"
+                    ;;
+                
+                *)
+                    echo "Unknown kernel flavor for CentOS/RHEL: ${KERNEL_FLAVOR}"
+                    exit 1
+                    ;;
+            esac
+            
+            # Update GRUB2
+            grub2-mkconfig -o /boot/grub2/grub.cfg || grubby --set-default="/boot/vmlinuz-${KERNEL_VERSION}"
+            ;;
+        
+        alpine)
+            case "${KERNEL_FLAVOR}" in
+                vanilla|standard)
+                    apk update
+                    apk add                         "linux-vanilla~=${KERNEL_VERSION%.*}"                         "linux-vanilla-dev~=${KERNEL_VERSION%.*}"
+                    ;;
+                
+                lts)
+                    apk update
+                    apk add                         "linux-lts~=${KERNEL_VERSION%.*}"                         "linux-lts-dev~=${KERNEL_VERSION%.*}"
+                    ;;
+                
+                *)
+                    echo "Unknown kernel flavor for Alpine: ${KERNEL_FLAVOR}"
+                    echo "Supported flavors: vanilla, lts"
+                    exit 1
+                    ;;
+            esac
+            
+            # Update bootloader
+            update-extlinux || true
+            ;;
+        
+        *)
+            echo "Unsupported distro: ${DISTRO}"
+            echo "Supported distros: ubuntu, debian, centos, rhel, rocky, almalinux, alpine"
+            exit 1
+            ;;
+    esac
+    
+    echo "Kernel ${KERNEL_FLAVOR} ${KERNEL_VERSION} installed successfully on ${DISTRO}"
+    KERNEL_SCRIPT
+    
+    chmod +x /tmp/install-kernel.sh
+    /tmp/install-kernel.sh \
+      -d "ubuntu" \
+      -f "generic" \
+      -k "5.19.0-50" \
+      2>&1 | tee -a /var/log/tracee-vm-init.log
+  
+  # Finalize initialization and reboot
+  - |
+    echo "VM initialization complete (marker for tracking)" | tee -a /var/log/tracee-vm-init.log
+    touch /tmp/tracee-vm-init.done
+    echo "VM initialization completed at $(date)" | tee -a /var/log/tracee-vm-init.log
+    
+    # Reboot to activate new kernel (if kernel was installed)
+    reboot
+
+final_message: |
+  Tracee VM is ready!
+  
+  Distro:  ubuntu 22.04
+  Kernel:  generic 5.19.0-50 (active after reboot)
+  
+  SSH Access:
+    ssh -i ~/.ssh/tracee_team_ed25519 -p 2222 ubuntu@localhost
+  
+  The system took ${UPTIME} seconds to boot.

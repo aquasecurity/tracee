@@ -1,0 +1,9 @@
+  # Disable unattended upgrades to prevent apt lock contention
+  # Uses the existing script from the cloned Tracee repo
+  - |
+    echo "Disabling unattended upgrades..." | tee -a /var/log/tracee-vm-init.log
+    if [ -x /tmp/tracee/scripts/disable-unattended-upgrades.sh ]; then
+      /tmp/tracee/scripts/disable-unattended-upgrades.sh 2>&1 | tee -a /var/log/tracee-vm-init.log
+    else
+      echo "Warning: disable-unattended-upgrades.sh not found, skipping" | tee -a /var/log/tracee-vm-init.log
+    fi

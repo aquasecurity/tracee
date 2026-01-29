@@ -1,0 +1,27 @@
+  # Blacklist floppy driver to prevent fd0 I/O errors in VM
+  - path: /etc/modprobe.d/blacklist-floppy.conf
+    permissions: '0644'
+    content: |
+      # Prevent floppy driver from loading in VM environment
+      # VMs don't have physical floppy drives and the driver causes harmless I/O errors
+      blacklist floppy
+  
+  # Shared directory mount script for local development
+  # Tries virtiofs first (KVM, fast), falls back to 9p (TCG cross-arch)
+  - path: /tmp/mount-shared-dirs.sh
+    permissions: '0755'
+    content: |
+      #!/bin/sh
+      # Mount shared directories: try virtiofs first, fall back to 9p
+      MOUNT_TAG="tracee"
+      MOUNT_POINT="/mnt/tracee"
+      
+      if mount -t virtiofs "${MOUNT_TAG}" "${MOUNT_POINT}" 2>/dev/null; then
+        echo "Mounted ${MOUNT_POINT} via virtiofs"
+        echo "${MOUNT_TAG} ${MOUNT_POINT} virtiofs rw,nofail 0 0" >> /etc/fstab
+      elif mount -t 9p -o trans=virtio,version=9p2000.L "${MOUNT_TAG}" "${MOUNT_POINT}" 2>/dev/null; then
+        echo "Mounted ${MOUNT_POINT} via 9p"
+        echo "${MOUNT_TAG} ${MOUNT_POINT} 9p trans=virtio,version=9p2000.L,rw,nofail 0 0" >> /etc/fstab
+      else
+        echo "Warning: could not mount ${MOUNT_POINT} (no virtiofs or 9p device)"
+      fi

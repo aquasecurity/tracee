@@ -1,0 +1,8 @@
+  # Finalize initialization and reboot
+  - |
+    echo "VM initialization complete (marker for tracking)" | tee -a /var/log/tracee-vm-init.log
+    touch /tmp/tracee-vm-init.done
+    echo "VM initialization completed at $(date)" | tee -a /var/log/tracee-vm-init.log
+    
+    # Reboot to activate new kernel (if kernel was installed)
+    reboot

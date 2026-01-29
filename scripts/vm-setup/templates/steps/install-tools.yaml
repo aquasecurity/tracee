@@ -1,0 +1,33 @@
+  # Install all dependencies using Tracee's install-deps-${DISTRO}.sh
+  # This script handles everything: packages, Go, Clang, Go tools, Docker, user environment
+  # The USER_NAME env var (from tracee-vm-env.sh) tells install-deps which user to configure
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    echo "Installing ${DISTRO} dependencies via install-deps-${DISTRO}.sh..." | tee -a /var/log/tracee-vm-init.log
+    echo "This includes: base packages, Go, Clang, Go tools, Docker, and user environment setup" | tee -a /var/log/tracee-vm-init.log
+    echo "Configuring user environment for: ${USER_NAME}" | tee -a /var/log/tracee-vm-init.log
+    
+    cd /tmp/tracee
+    DEPS_SCRIPT="./scripts/installation/install-deps-${DISTRO}.sh"
+    
+    if [ -f "${DEPS_SCRIPT}" ]; then
+      USER_NAME="${USER_NAME}" ${DEPS_SCRIPT} 2>&1 | tee -a /var/log/tracee-vm-init.log
+    else
+      echo "Error: ${DEPS_SCRIPT} not found, cannot install dependencies" | tee -a /var/log/tracee-vm-init.log
+      exit 1
+    fi
+    
+    echo "Dependencies installation completed successfully" | tee -a /var/log/tracee-vm-init.log
+    
+    # Install AMI tooling for AWS environments (Go, GitHub runner, etc.)
+    if [ "${ENVIRONMENT}" = "aws" ]; then
+      AMI_SCRIPT="./scripts/installation/install-ami-tooling.sh"
+      if [ -f "${AMI_SCRIPT}" ]; then
+        echo "Installing AWS/GitHub tooling..." | tee -a /var/log/tracee-vm-init.log
+        ${AMI_SCRIPT} 2>&1 | tee -a /var/log/tracee-vm-init.log
+      else
+        echo "Error: ${AMI_SCRIPT} not found, cannot install AWS tooling" | tee -a /var/log/tracee-vm-init.log
+        exit 1
+      fi
+    fi

@@ -1,0 +1,155 @@
+#cloud-config
+# Cloud-init configuration for CentOS/RHEL/Rocky/AlmaLinux Tracee VMs
+# Distro: ${DISTRO} ${VERSION} | Kernel: ${KERNEL_FLAVOR} ${KERNEL_VERSION} | Env: ${ENVIRONMENT}
+
+# Create ec2-user group (GID will match UID 1000)
+# Docker group will be created automatically during Docker installation
+groups:
+  - ec2-user
+
+users:
+  - name: ec2-user
+    uid: 1000
+    primary_group: ec2-user
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: [wheel]
+    shell: /bin/bash
+    # Set password to 'centos' (plaintext, cloud-init will hash it)
+    # For console/emergency access
+    plain_text_passwd: centos
+    lock_passwd: false
+    ssh_authorized_keys:
+      - ${SSH_PUBKEY}
+
+hostname: ${DISTRO}-${VERSION}-${KERNEL_FLAVOR}
+disable_root: true
+ssh_pwauth: true
+timezone: UTC
+
+# Automatically grow partition and resize filesystem to use all available space
+# This fixes GPT partition table issues when disk is expanded
+growpart:
+  mode: auto
+  devices: ['/']
+  ignore_growroot_disabled: false
+
+resize_rootfs: true
+
+# Install essential packages
+packages:
+  - gcc
+  - make
+  - git
+  - curl
+  - wget
+  - vim
+  - nano
+  - jq
+
+# Write helper scripts
+write_files:
+  # Environment variables for installation scripts
+  # Source this file in runcmd blocks: . /tmp/tracee-vm-env.sh
+  - path: /tmp/tracee-vm-env.sh
+    permissions: '0644'
+    content: |
+      # Tracee VM environment variables for cloud-init scripts
+      export DISTRO="${DISTRO}"
+      export VERSION="${VERSION}"
+      export KERNEL_FLAVOR="${KERNEL_FLAVOR}"
+      export KERNEL_VERSION="${KERNEL_VERSION}"
+      export ENVIRONMENT="${ENVIRONMENT}"
+      export SSH_KEY_NAME="${SSH_KEY_NAME}"
+      export USER_NAME="ec2-user"
+  
+  # WRITE_VM_CONFIGS_PLACEHOLDER
+  
+  - path: /etc/motd
+    content: |
+      ════════════════════════════════════════════════════════════════
+                  Welcome to Tracee Development VM
+      ════════════════════════════════════════════════════════════════
+      
+      Distro:     ${DISTRO} ${VERSION}
+      Kernel:     ${KERNEL_FLAVOR} ${KERNEL_VERSION}
+      SSH Key:    ~/.ssh/${SSH_KEY_NAME}
+      Console:    ec2-user / centos (for emergency access)
+      Project:    https://github.com/aquasecurity/tracee
+      
+      ════════════════════════════════════════════════════════════════
+
+  - path: /home/ec2-user/.bash_aliases
+    content: |
+      # Tracee development aliases
+      alias tracee-build='cd /mnt/tracee && make'
+      alias tracee-test='cd /mnt/tracee && make test'
+      alias tracee-clean='cd /mnt/tracee && make clean'
+    owner: ec2-user:ec2-user
+    permissions: '0644'
+
+# Run installation scripts from Tracee repo
+runcmd:
+  # Initialize logging and services
+  - |
+    echo "Tracee VM initialization started at $(date)" | tee -a /var/log/tracee-vm-init.log
+    systemctl enable sshd
+    systemctl start sshd
+  
+  # Wait for package manager to be available
+  - echo "Waiting for package manager..." | tee -a /var/log/tracee-vm-init.log
+  - |
+    timeout=300
+    elapsed=0
+    while fuser /var/lib/rpm/.rpm.lock >/dev/null 2>&1; do
+      if [ $elapsed -ge $timeout ]; then
+        echo "Timeout waiting for rpm lock" | tee -a /var/log/tracee-vm-init.log
+        break
+      fi
+      echo "Waiting for other package operations to complete... (${elapsed}s)" | tee -a /var/log/tracee-vm-init.log
+      sleep 5
+      elapsed=$((elapsed + 5))
+    done
+  - echo "Package manager available, proceeding..." | tee -a /var/log/tracee-vm-init.log
+  
+  # Update package lists and upgrade existing packages
+  - echo "Updating and upgrading system packages..." | tee -a /var/log/tracee-vm-init.log
+  - dnf check-update -y 2>&1 | tee -a /var/log/tracee-vm-init.log || true
+  - dnf upgrade -y 2>&1 | tee -a /var/log/tracee-vm-init.log
+  - echo "System packages updated" | tee -a /var/log/tracee-vm-init.log
+  
+  # DOWNLOAD_SCRIPTS_PLACEHOLDER
+  
+  # INSTALL_TOOLS_PLACEHOLDER
+  
+  # SETUP_VIRTFS_PLACEHOLDER
+  
+  # Install kernel LAST (using embedded script below)
+  # NOTE: Currently embedded for reliability, but we might change this to fetch
+  #       from the repo branch in the future (like other scripts) to ensure
+  #       we always use the latest version from the branch.
+  # IMPORTANT: Kernel installation must be last because it reboots the VM!
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    echo "Installing kernel ${KERNEL_FLAVOR} ${KERNEL_VERSION}..." | tee -a /var/log/tracee-vm-init.log
+    
+    # KERNEL_SCRIPT_PLACEHOLDER
+    
+    chmod +x /tmp/install-kernel.sh
+    /tmp/install-kernel.sh \
+      -d "${DISTRO}" \
+      -f "${KERNEL_FLAVOR}" \
+      -k "${KERNEL_VERSION}" \
+      2>&1 | tee -a /var/log/tracee-vm-init.log
+  
+  # FINALIZE_PLACEHOLDER
+
+final_message: |
+  Tracee VM is ready!
+  
+  Distro:  ${DISTRO} ${VERSION}
+  Kernel:  ${KERNEL_FLAVOR} ${KERNEL_VERSION} (active after reboot)
+  
+  ${SSH_ACCESS_HINT}
+  
+  The system took ${UPTIME} seconds to boot.

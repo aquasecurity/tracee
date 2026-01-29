@@ -1,0 +1,22 @@
+  # Environment-specific setup
+  - |
+    . /tmp/tracee-vm-env.sh
+    
+    if [ "${ENVIRONMENT}" = "local" ]; then
+      echo "Setting up local development environment..." | tee -a /var/log/tracee-vm-init.log
+      mkdir -p /mnt/tracee
+      chown ${USERNAME}:${USERNAME} /mnt/tracee
+      
+      # Mount shared directories (tries virtiofs first, falls back to 9p)
+      if [ -x /tmp/mount-shared-dirs.sh ]; then
+        /tmp/mount-shared-dirs.sh 2>&1 | tee -a /var/log/tracee-vm-init.log
+        chown ${USERNAME}:${USERNAME} /mnt/tracee
+      else
+        echo "Warning: /tmp/mount-shared-dirs.sh not found, skipping shared dir mount" | tee -a /var/log/tracee-vm-init.log
+      fi
+      
+      # Reload systemd to pick up fstab changes
+      systemctl daemon-reload
+      
+      echo "Local development environment configured" | tee -a /var/log/tracee-vm-init.log
+    fi
