@@ -1,0 +1,22 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracee-lists
+  labels:
+    {{- include "tracee.labels" . | nindent 4 }}
+data:
+  lists.yaml: |-
+    # Lists are defined here as a YAML array
+    # Each list must have:
+    #   - name: uppercase snake_case (e.g., SHELL_BINARIES)
+    #   - type: "string_list"
+    #   - values: array of strings
+    #
+    # Example:
+    # - name: SHELL_BINARIES
+    #   type: string_list
+    #   values:
+    #     - /bin/bash
+    #     - /bin/sh
+    #     - /bin/zsh

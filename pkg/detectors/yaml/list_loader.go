@@ -64,3 +64,52 @@ func validateListName(name string) error {
 
 	return nil
 }
+
+// ParseListsFromConfigMap parses lists from ConfigMap data (lists.yaml key)
+// Returns a map of list names to their values, and any validation errors encountered
+// Invalid lists are skipped but errors are logged
+func ParseListsFromConfigMap(configMapData string) (map[string][]string, error) {
+	listsMap := make(map[string][]string)
+
+	if configMapData == "" {
+		return listsMap, nil
+	}
+
+	// Parse YAML array of list definitions
+	var listDefs []ListDefinition
+	if err := yaml.Unmarshal([]byte(configMapData), &listDefs); err != nil {
+		return nil, errfmt.Errorf("failed to parse lists YAML: %v", err)
+	}
+
+	// Process each list definition
+	for _, listDef := range listDefs {
+		// Validate type field
+		if listDef.Type == "" {
+			// Skip invalid list, but don't fail completely
+			continue
+		}
+
+		normalized := strings.TrimSpace(strings.ToLower(listDef.Type))
+		if normalized != ListTypeString {
+			// Skip invalid type, but don't fail completely
+			continue
+		}
+
+		// Validate list name
+		if err := validateListName(listDef.Name); err != nil {
+			// Skip invalid list name, but don't fail completely
+			continue
+		}
+
+		// Check for duplicates
+		if _, exists := listsMap[listDef.Name]; exists {
+			// Skip duplicate, but don't fail completely
+			continue
+		}
+
+		// Add to map
+		listsMap[listDef.Name] = listDef.Values
+	}
+
+	return listsMap, nil
+}

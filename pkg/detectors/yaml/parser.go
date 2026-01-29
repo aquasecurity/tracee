@@ -1,8 +1,8 @@
 package yaml
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -19,29 +19,47 @@ const (
 	MaxYAMLFileSize = 1 * 1024 * 1024 // 1 MB
 )
 
-// ParseFile reads and parses a YAML detector file
+// ParseFile reads and parses a detector file (supports both plain and CRD formats)
+// Both formats normalize to YAMLDetectorSpec
 func ParseFile(filePath string) (*YAMLDetectorSpec, error) {
-	// Check file size before reading to prevent memory exhaustion
-	fileInfo, err := os.Stat(filePath)
+	data, err := readFileData(filePath)
 	if err != nil {
-		return nil, errfmt.WrapError(err)
+		return nil, err
 	}
 
-	if fileInfo.Size() > MaxYAMLFileSize {
-		return nil, fmt.Errorf("YAML file too large: %d bytes (max: %d bytes)", fileInfo.Size(), MaxYAMLFileSize)
-	}
-
-	data, err := os.ReadFile(filePath)
+	// Detect format from data
+	isJSON := strings.HasSuffix(filePath, ".json")
+	format, err := peekDetectorFormat(data, isJSON)
 	if err != nil {
-		return nil, errfmt.WrapError(err)
+		return nil, err
 	}
 
-	var spec YAMLDetectorSpec
-	if err := yaml.Unmarshal(data, &spec); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
-	}
+	// Route to appropriate parser based on detected format
+	switch format {
+	case FormatPlainYAML:
+		var spec YAMLDetectorSpec
+		if isJSON {
+			err = json.Unmarshal(data, &spec)
+		} else {
+			err = yaml.Unmarshal(data, &spec)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse plain detector: %w", err)
+		}
+		return &spec, nil
 
-	return &spec, nil
+	case FormatK8sCRD:
+		// Parse CRD format and extract Spec
+		file, parseErr := ParseCRDFile(filePath)
+		if parseErr != nil {
+			return nil, fmt.Errorf("failed to parse CRD detector: %w", parseErr)
+		}
+		// Extract Spec from CRD format and convert to YAMLDetectorSpec
+		return GetDetectorSpecFromCRD(file), nil
+
+	default:
+		return nil, errfmt.Errorf("unsupported detector format: %s", format)
+	}
 }
 
 // ToDetectorDefinition converts a YAML spec to a DetectorDefinition

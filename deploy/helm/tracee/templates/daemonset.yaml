@@ -78,6 +78,10 @@ spec:
               readOnly: true
               mountPath: /tracee/config.yaml
               subPath: config.yaml
+            - name: tracee-lists
+              readOnly: true
+              mountPath: /etc/tracee/lists.yaml
+              subPath: lists.yaml
             {{- range .Values.extraWebhookTemplates }}
             - name: tracee-templates
               readonly: true
@@ -120,6 +124,9 @@ spec:
         - name: tracee-config
           configMap:
             name: tracee-config
+        - name: tracee-lists
+          configMap:
+            name: tracee-lists
         {{- if .Values.extraWebhookTemplates }}
         - name: "tracee-templates"
           configMap:
