@@ -165,6 +165,156 @@ func TestFindRetInsts_SupportedArchs(t *testing.T) {
 	}
 }
 
+func TestGetHostElfMachine(t *testing.T) {
+	machine := GetHostElfMachine()
+
+	// Tracee only supports x86_64 and arm64 hosts
+	switch machine {
+	case elf.EM_X86_64, elf.EM_AARCH64:
+		// Valid supported host architecture
+	case elf.EM_NONE:
+		// Unknown architecture - acceptable on unsupported platforms
+	default:
+		t.Errorf("Unexpected machine type: %v", machine)
+	}
+}
+
+func TestGetCompatibleElfMachines(t *testing.T) {
+	machines := GetCompatibleElfMachines()
+	hostMachine := GetHostElfMachine()
+
+	if hostMachine == elf.EM_NONE {
+		// Unknown host - should return empty list
+		assert.Empty(t, machines)
+		return
+	}
+
+	// Should include at least the host machine
+	assert.NotEmpty(t, machines)
+	assert.Contains(t, machines, hostMachine)
+
+	// On 64-bit hosts, should also include 32-bit compat
+	if hostMachine == elf.EM_X86_64 {
+		assert.Contains(t, machines, elf.EM_386)
+	}
+	if hostMachine == elf.EM_AARCH64 {
+		assert.Contains(t, machines, elf.EM_ARM)
+	}
+}
+
+func TestIsMachineCompatibleWithHost(t *testing.T) {
+	hostMachine := GetHostElfMachine()
+	if hostMachine == elf.EM_NONE {
+		t.Skip("Unknown host architecture")
+	}
+
+	t.Run("host machine is compatible", func(t *testing.T) {
+		assert.True(t, IsMachineCompatibleWithHost(hostMachine))
+	})
+
+	t.Run("incompatible machines", func(t *testing.T) {
+		// MIPS should never be compatible with x86_64 or arm64
+		assert.False(t, IsMachineCompatibleWithHost(elf.EM_MIPS))
+		assert.False(t, IsMachineCompatibleWithHost(elf.EM_PPC64))
+		assert.False(t, IsMachineCompatibleWithHost(elf.EM_RISCV))
+	})
+
+	t.Run("32-bit compat on 64-bit host", func(t *testing.T) {
+		if hostMachine == elf.EM_X86_64 {
+			assert.True(t, IsMachineCompatibleWithHost(elf.EM_386))
+		}
+		if hostMachine == elf.EM_AARCH64 {
+			assert.True(t, IsMachineCompatibleWithHost(elf.EM_ARM))
+		}
+	})
+}
+
+func TestIs32BitMachine(t *testing.T) {
+	t.Run("32-bit architectures", func(t *testing.T) {
+		assert.True(t, Is32BitMachine(elf.EM_386))
+		assert.True(t, Is32BitMachine(elf.EM_ARM))
+	})
+
+	t.Run("64-bit architectures", func(t *testing.T) {
+		assert.False(t, Is32BitMachine(elf.EM_X86_64))
+		assert.False(t, Is32BitMachine(elf.EM_AARCH64))
+	})
+
+	t.Run("other architectures", func(t *testing.T) {
+		assert.False(t, Is32BitMachine(elf.EM_MIPS))
+		assert.False(t, Is32BitMachine(elf.EM_NONE))
+	})
+}
+
+func TestIsElfFile(t *testing.T) {
+	t.Run("valid ELF file", func(t *testing.T) {
+		elfPath := findElfBinary()
+		if elfPath == "" {
+			t.Skip("No ELF binary found for testing")
+		}
+		assert.True(t, IsElfFile(elfPath))
+	})
+
+	t.Run("non-ELF file", func(t *testing.T) {
+		tempFile, err := os.CreateTemp("", "test_non_elf_*")
+		require.NoError(t, err)
+		defer os.Remove(tempFile.Name())
+
+		_, err = tempFile.WriteString("This is not an ELF file")
+		require.NoError(t, err)
+		tempFile.Close()
+
+		assert.False(t, IsElfFile(tempFile.Name()))
+	})
+
+	t.Run("non-existent file", func(t *testing.T) {
+		assert.False(t, IsElfFile("/non/existent/file"))
+	})
+
+	t.Run("empty file", func(t *testing.T) {
+		tempFile, err := os.CreateTemp("", "test_empty_*")
+		require.NoError(t, err)
+		defer os.Remove(tempFile.Name())
+		tempFile.Close()
+
+		assert.False(t, IsElfFile(tempFile.Name()))
+	})
+}
+
+func TestElfAnalyzer_ArchMethods(t *testing.T) {
+	elfPath := findElfBinary()
+	if elfPath == "" {
+		t.Skip("No ELF binary found for testing")
+	}
+
+	analyzer, err := NewElfAnalyzer(elfPath, nil)
+	require.NoError(t, err)
+	defer analyzer.Close()
+
+	t.Run("GetMachine returns valid machine", func(t *testing.T) {
+		machine := analyzer.GetMachine()
+		// Should be a known machine type
+		assert.NotEqual(t, elf.EM_NONE, machine)
+	})
+
+	t.Run("Is32Bit", func(t *testing.T) {
+		// Result depends on the system binary we found
+		is32 := analyzer.Is32Bit()
+		machine := analyzer.GetMachine()
+
+		if machine == elf.EM_386 || machine == elf.EM_ARM {
+			assert.True(t, is32)
+		} else {
+			assert.False(t, is32)
+		}
+	})
+
+	t.Run("IsArchCompatible", func(t *testing.T) {
+		// System binaries should be compatible with the host
+		assert.True(t, analyzer.IsArchCompatible())
+	})
+}
+
 func TestHasElfMagic(t *testing.T) {
 	t.Run("valid ELF magic", func(t *testing.T) {
 		validElf := []byte{0x7F, 'E', 'L', 'F', 0x02, 0x01, 0x01}
