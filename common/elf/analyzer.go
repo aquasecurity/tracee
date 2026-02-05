@@ -17,6 +17,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"runtime"
 	"syscall"
 
 	"golang.org/x/arch/arm64/arm64asm"
@@ -43,6 +44,56 @@ type ElfAnalyzer struct {
 
 var ErrSymbolNotFound = errors.New("symbol not found")
 
+// GetHostElfMachine returns the ELF machine type for the host architecture.
+// Tracee only supports x86_64 and arm64.
+func GetHostElfMachine() elf.Machine {
+	switch runtime.GOARCH {
+	case "amd64":
+		return elf.EM_X86_64
+	case "arm64":
+		return elf.EM_AARCH64
+	default:
+		return elf.EM_NONE
+	}
+}
+
+// GetCompatibleElfMachines returns all ELF machine types that can run on the host.
+// On 64-bit hosts, this includes both native 64-bit and 32-bit compat binaries.
+// For example, on x86_64 hosts, both EM_X86_64 and EM_386 (i386) binaries can run.
+func GetCompatibleElfMachines() []elf.Machine {
+	switch runtime.GOARCH {
+	case "amd64":
+		// x86_64 can run both 64-bit and 32-bit (i386) binaries
+		return []elf.Machine{elf.EM_X86_64, elf.EM_386}
+	case "arm64":
+		// ARM64 can run both 64-bit and 32-bit ARM binaries
+		return []elf.Machine{elf.EM_AARCH64, elf.EM_ARM}
+	default:
+		return []elf.Machine{}
+	}
+}
+
+// IsMachineCompatibleWithHost checks if the given ELF machine type can run on this host.
+func IsMachineCompatibleWithHost(machine elf.Machine) bool {
+	compatibleMachines := GetCompatibleElfMachines()
+	for _, m := range compatibleMachines {
+		if m == machine {
+			return true
+		}
+	}
+	return false
+}
+
+// Is32BitMachine returns true if the given ELF machine type is a 32-bit architecture.
+func Is32BitMachine(machine elf.Machine) bool {
+	switch machine {
+	case elf.EM_386, elf.EM_ARM:
+		return true
+	default:
+		return false
+	}
+}
+
 // HasElfMagic checks if the given bytes start with the ELF magic number (0x7F 'ELF').
 // This is a fast check that only validates the first 4 bytes.
 func HasElfMagic(bytesArray []byte) bool {
@@ -59,6 +110,27 @@ func HasElfMagic(bytesArray []byte) bool {
 // to include more comprehensive ELF validation.
 func IsElf(bytesArray []byte) bool {
 	return HasElfMagic(bytesArray)
+}
+
+// IsElfFile checks if the file at the given path is an ELF file (fast magic-only check).
+func IsElfFile(filePath string) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Debugw("Closing ELF file", "path", filePath, "error", err)
+		}
+	}()
+
+	magic := make([]byte, 4)
+	n, err := file.Read(magic)
+	if err != nil || n < 4 {
+		return false
+	}
+
+	return HasElfMagic(magic)
 }
 
 func NewElfAnalyzer(filePath string, wantedSymbols []WantedSymbol) (*ElfAnalyzer, error) {
@@ -130,6 +202,22 @@ func (ea *ElfAnalyzer) Close() error {
 
 func (ea *ElfAnalyzer) GetFilePath() string {
 	return ea.filePath
+}
+
+// GetMachine returns the ELF machine type (architecture) of the binary.
+func (ea *ElfAnalyzer) GetMachine() elf.Machine {
+	return ea.elf.Machine
+}
+
+// Is32Bit returns true if the ELF binary is a 32-bit architecture.
+func (ea *ElfAnalyzer) Is32Bit() bool {
+	return Is32BitMachine(ea.elf.Machine)
+}
+
+// IsArchCompatible checks if the ELF binary's architecture is compatible with the host.
+// On x86_64 hosts, both 64-bit (EM_X86_64) and 32-bit (EM_386) binaries are compatible.
+func (ea *ElfAnalyzer) IsArchCompatible() bool {
+	return IsMachineCompatibleWithHost(ea.GetMachine())
 }
 
 func (ea *ElfAnalyzer) GetFunctionRetInsts(funcName string) ([]uint64, error) {
