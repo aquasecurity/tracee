@@ -4,9 +4,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"sync/atomic"
 	"testing"
-	"time"
+
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -319,11 +318,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				// signal the end
 				cancel()
 
-				// give some time for the goroutine to finish
-				time.Sleep(1 * time.Second)
-
 				// cleanup
-				close(inputs.Tracee)
 				close(outputChan)
 			}()
 
@@ -343,15 +338,11 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			var sigs []detect.Signature
 			sigs = append(sigs, tc.inputSignature)
 
-			// FIXME We should use another Go concurrency pattern to make this test logically correct.
-			//       The gotNumEvents variable is causing data race, because it's accessed
-			//       by two goroutines. Temporary workaround is to change from int to uint32 and
-			//       use atomic.AddUint32 and atomic.LoadUint32 methods.
-			//       go test -v -run=TestConsumeSources -race ./pkg/signatures/engine/...
-			var gotNumEvents uint32
+
+			var gotNumEvents int
 			tc.inputSignature.FakeOnEvent = func(event protocol.Event) error {
 				assert.Equal(t, tc.expectedEvent, event.Payload, tc.name)
-				atomic.AddUint32(&gotNumEvents, 1)
+				gotNumEvents++
 				return nil
 			}
 
@@ -364,21 +355,25 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			err = e.Init()
 			require.NoError(t, err, "initializing engine")
 
-			go e.Start(ctx)
+			done := make(chan bool)
+			go func() {
+				defer close(done)
+				e.Start(ctx)
+			}()
 
 			// send a test event
 			e.inputs.Tracee <- tc.inputEvent
+			close(e.inputs.Tracee)
+			<-done
 
 			// assert
 			var gotEvent protocol.Event
-			time.Sleep(time.Millisecond * 1) // wait for events to propagate
 
-			eventsCount := int(atomic.LoadUint32(&gotNumEvents))
 			if tc.expectedNumEvents <= 0 {
 				assert.Equal(t, emptyEvent, gotEvent, tc.name)
-				assert.Zero(t, eventsCount, tc.name)
+				assert.Zero(t, gotNumEvents, tc.name)
 			} else {
-				assert.Equal(t, tc.expectedNumEvents, eventsCount, tc.name)
+				assert.Equal(t, tc.expectedNumEvents, gotNumEvents, tc.name)
 			}
 
 			if tc.expectedError != "" {
