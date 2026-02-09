@@ -2,7 +2,7 @@
 # This container is used by 'evt stress' command to run event triggers in isolation
 
 # Stage 1: Build evt binary
-FROM golang:1.24.12-alpine@sha256:1c0e8e7dd5cd36c6f5dd50df5da93bebb66c4bb0ab055f8ad88544aa50b4179f AS builder
+FROM golang:1.24.13-alpine@sha256:8bee1901f1e530bfb4a7850aa7a479d17ae3a18beb6e09064ed54cfd245b7191 AS builder
 
 WORKDIR /tracee
 
