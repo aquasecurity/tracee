@@ -15,7 +15,9 @@ func TestServer(t *testing.T) {
 	httpServer := New("")
 
 	httpServer.EnableMetricsEndpoint()
-	httpServer.EnableHealthzEndpoint()
+	httpServer.EnableHealthzEndpoint(func() bool {
+		return true
+	}) // Always ready for test
 	httpServer.EnablePProfEndpoint()
 
 	server := httptest.NewServer(httpServer.mux)
@@ -60,7 +62,9 @@ func TestServer_EndpointFlags(t *testing.T) {
 
 	t.Run("healthz enabled", func(t *testing.T) {
 		s := New("")
-		s.EnableHealthzEndpoint()
+		s.EnableHealthzEndpoint(func() bool {
+			return true
+		}) // Always ready for test
 		assert.True(t, s.IsHealthzEnabled())
 	})
 

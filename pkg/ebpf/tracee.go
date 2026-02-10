@@ -1851,9 +1851,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// Management
 
 	<-pipelineReady
-	t.running.Store(true) // set running state after writing pid file
-	t.ready(ctx)          // executes ready callback, non blocking
-	<-ctx.Done()          // block until ctx is cancelled elsewhere
+	t.running.Store(true)      // Tracee is now fully ready to capture events
+	t.invokeReadyCallback(ctx) // executes ready callback, non blocking
+	<-ctx.Done()               // block until ctx is cancelled elsewhere
 
 	// Stop perf buffers (close them when no more events are being processed)
 
@@ -1997,7 +1997,10 @@ func (t *Tracee) Close() {
 	close(t.done)
 }
 
-// Running returns true if the tracee is running
+// Running returns true if Tracee is fully ready to capture events.
+// This means BPF programs are attached and the event pipeline is running.
+// Returns false before initialization completes or after Close() is called.
+// Use this for health checks that need to verify Tracee can capture events.
 func (t *Tracee) Running() bool {
 	return t.running.Load()
 }
@@ -2186,9 +2189,9 @@ func (t *Tracee) AddReadyCallback(f func(ctx gocontext.Context)) {
 	t.readyCallback = f
 }
 
-// ready executes the ready callback if it was set.
+// invokeReadyCallback executes the ready callback if it was set.
 // doesn't block the execution of the tracee
-func (t *Tracee) ready(ctx gocontext.Context) {
+func (t *Tracee) invokeReadyCallback(ctx gocontext.Context) {
 	if t.readyCallback != nil {
 		go t.readyCallback(ctx)
 	}

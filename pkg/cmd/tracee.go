@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
 	"github.com/aquasecurity/tracee/pkg/streams"
@@ -31,7 +32,19 @@ func (r Runner) Run(ctx context.Context) error {
 	t.AddReadyCallback(
 		func(ctx context.Context) {
 			logger.Debugw("Tracee is ready callback")
+
+			// Start HTTP server if configured
 			if r.HTTP != nil {
+				// Enable healthz endpoint with combined readiness check
+				if r.TraceeConfig.HealthzEnabled {
+					r.HTTP.EnableHealthzEndpoint(func() bool {
+						if hb := heartbeat.GetInstance(); hb != nil {
+							return t.Running() && hb.IsAlive()
+						}
+						return t.Running()
+					})
+				}
+				// Register Prometheus metrics if enabled
 				if r.HTTP.IsMetricsEnabled() {
 					if err := t.Stats().RegisterPrometheus(); err != nil {
 						logger.Errorw("Registering prometheus metrics", "error", err)
@@ -40,7 +53,7 @@ func (r Runner) Run(ctx context.Context) error {
 				go r.HTTP.Start(ctx)
 			}
 
-			// start server if one is configured
+			// Start gRPC server if configured
 			if r.GRPC != nil {
 				go r.GRPC.Start(ctx, t, t.Engine())
 			}

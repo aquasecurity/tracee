@@ -52,36 +52,47 @@ func (s *Server) EnableMetricsEndpoint() {
 	s.metricsEnabled = true
 }
 
-// EnableHealthzEndpoint enables healthz endpoint
-func (s *Server) EnableHealthzEndpoint() {
+// SetHealthzEnabled marks healthz as enabled (handler registered later with EnableHealthzEndpoint)
+func (s *Server) SetHealthzEnabled() {
+	s.healthzEnabled = true
+}
+
+// EnableHealthzEndpoint registers the /healthz handler. The isHealthy function
+// is called on each request; the caller is responsible for composing all checks
+// (e.g., Tracee readiness + heartbeat liveness) into a single predicate.
+func (s *Server) EnableHealthzEndpoint(isHealthy func() bool) {
 	s.mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
-		if heartbeat.GetInstance() != nil && heartbeat.GetInstance().IsAlive() {
+		if isHealthy != nil && isHealthy() {
+			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "OK")
 			return
 		}
+		w.WriteHeader(http.StatusServiceUnavailable)
 		fmt.Fprint(w, "NOT OK")
 	})
 	s.healthzEnabled = true
 }
 
-// Start starts the http server on the listen address
+// Start starts the http server on the listen address.
+// It initializes heartbeat monitoring and blocks until context is cancelled.
 func (s *Server) Start(ctx context.Context) {
 	srvCtx, srvCancel := context.WithCancel(ctx)
 	defer srvCancel()
 
 	go func() {
-		logger.Debugw("Starting serving metrics endpoint goroutine", "address", s.hs.Addr)
-		defer logger.Debugw("Stopped serving metrics endpoint goroutine")
+		logger.Debugw("Starting HTTP server", "address", s.hs.Addr)
+		defer logger.Debugw("HTTP server stopped")
 
 		if err := s.hs.ListenAndServe(); err != http.ErrServerClosed {
-			logger.Errorw("Serving metrics endpoint", "error", err)
+			logger.Errorw("HTTP server error", "error", err)
 		}
 
 		srvCancel()
 	}()
 
-	heartbeatCtx, cancel := context.WithCancel(srvCtx)
-	defer cancel()
+	// Initialize heartbeat monitoring
+	heartbeatCtx, cancelHeartbeat := context.WithCancel(srvCtx)
+	defer cancelHeartbeat()
 
 	heartbeat.Init(heartbeatCtx, heartbeatSignalInterval, heartbeatAckTimeout)
 	heartbeat.GetInstance().SetCallback(invokeHeartbeat)
@@ -89,12 +100,15 @@ func (s *Server) Start(ctx context.Context) {
 
 	select {
 	case <-ctx.Done():
-		logger.Debugw("Context cancelled, shutting down metrics endpoint server")
-		if err := s.hs.Shutdown(ctx); err != nil {
-			logger.Errorw("Stopping serving metrics endpoint", "error", err)
+		logger.Debugw("Context cancelled, shutting down HTTP server")
+		// Use a fresh context for shutdown since the original is cancelled
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := s.hs.Shutdown(shutdownCtx); err != nil {
+			logger.Errorw("Error shutting down HTTP server", "error", err)
 		}
 
-	// if server error occurred while base ctx is not done, we should exit via this case
+	// If server error occurred while base ctx is not done, exit via this case
 	case <-srvCtx.Done():
 	}
 }
