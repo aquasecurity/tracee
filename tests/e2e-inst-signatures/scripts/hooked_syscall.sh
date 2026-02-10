@@ -88,5 +88,9 @@ if [[ "$INSTALL" == "true" ]]; then
 fi
 
 if [[ "${UNINSTALL}" == "true" ]]; then
+    # Note: when run by the e2e runner, this is called by core_test_teardown in
+    # PHASE 7 (post-stop teardown), after tracee has already stopped. The module
+    # stays loaded during the entire tracee run to allow async detection to complete.
+    info "unloading hijack module"
     ./unload.sh || exit_err "could not unload hijack module"
 fi

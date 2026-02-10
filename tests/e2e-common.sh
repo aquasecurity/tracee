@@ -16,21 +16,27 @@ __LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../scripts" && pwd)"
 # ==============================================================================
 
 # Add a test configuration entry to the map
-# Usage: add_test_config <config_map_name> <test_name> <policy_name> <timeout> <sleep>
+# Usage: add_test_config <config_map_name> <test_name> <policy_name> <timeout> <sleep> [wait_after_trigger]
 # Arguments:
 #   config_map_name - Name of associative array variable
 #   test_name - Test identifier (e.g., "VFS_WRITE")
 #   policy_name - Policy name for the test
 #   timeout - Test timeout in seconds
 #   sleep - Internal sleep duration in seconds
+#   wait_after_trigger - Minimum seconds tracee must run before stopping (default: 0)
+#                        Used by tests whose triggers depend on async tracee mechanisms
+#                        (e.g., periodic integrity checks, delayed event derivation).
+#                        The runner computes the max across all tests and merges it with
+#                        the BPF buffer flush wait into a single pre-stop sleep.
 add_test_config() {
     local -n config_map="$1"
     local test_name="$2"
     local policy_name="$3"
     local timeout="$4"
     local sleep="$5"
+    local wait_after_trigger="${6:-0}"
 
-    config_map["$test_name"]="${policy_name}:${timeout}:${sleep}"
+    config_map["$test_name"]="${policy_name}:${timeout}:${sleep}:${wait_after_trigger}"
 }
 
 # Extract policy name from test configuration map
@@ -38,7 +44,7 @@ add_test_config() {
 # Arguments:
 #   config_map_name - Name of associative array variable (not the value)
 #   test_name - Test name key to lookup
-# Map format: "policy:timeout:sleep"
+# Map format: "policy:timeout:sleep:wait_after_trigger"
 get_policy_name() {
     # shellcheck disable=SC2178  # nameref to associative array is intentional
     local -n config_map="$1"
@@ -86,6 +92,24 @@ get_test_sleep() {
 
     sleep_time=$(echo "${config_map[$test_name]}" | cut -d: -f3)
     echo "${sleep_time}"
+}
+
+# Extract wait_after_trigger duration from test configuration map
+# Usage: get_wait_after_trigger <config_map_name> <test_name>
+# Returns: Seconds to wait after setup for tracee detection (0 if not set)
+get_wait_after_trigger() {
+    # shellcheck disable=SC2178  # nameref to associative array is intentional
+    local -n config_map="$1"
+    local test_name="$2"
+    local wait_time
+
+    if [[ -z "${config_map[$test_name]:-}" ]]; then
+        error "Test '${test_name}' is not configured in TEST_CONFIG_MAP"
+        return 1
+    fi
+
+    wait_time=$(echo "${config_map[$test_name]}" | cut -d: -f4)
+    echo "${wait_time:-0}"
 }
 
 # ==============================================================================

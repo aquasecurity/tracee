@@ -110,7 +110,7 @@ if [[ "${MODE}" == "all" || "${MODE}" == "system" ]]; then
     print_section_header "Kernel BTF support" "-"
     if [[ -f "${btf_vmlinux_path}" ]]; then
         info "BTF is available: ${btf_vmlinux_path} exists"
-        print_cmd ls -lh "${btf_vmlinux_path}"
+        print_cmd ls -lh "${btf_vmlinux_path}" || error "(ls failed)"
     else
         warn "BTF is not available: ${btf_vmlinux_path} not found"
     fi
@@ -126,16 +126,16 @@ if [[ "${MODE}" == "all" || "${MODE}" == "bpf" ]]; then
 
     print_section_header "bpftrace" "-"
     if command -v bpftrace > /dev/null 2>&1; then
-        print_cmd bpftrace --version
-        print_cmd bpftrace --info
+        print_cmd bpftrace --version || error "(bpftrace version failed)"
+        print_cmd bpftrace --info || error "(bpftrace info failed)"
     else
         info "(not found)"
     fi
 
     print_section_header "bpftool" "-"
     if command -v bpftool > /dev/null 2>&1 && bpftool version > /dev/null 2>&1; then
-        print_cmd bpftool version
-        print_cmd bpftool feature
+        print_cmd bpftool version || error "(bpftool version failed)"
+        print_cmd bpftool feature || error "(bpftool feature failed)"
     else
         info "(not found or not available for current kernel)"
     fi

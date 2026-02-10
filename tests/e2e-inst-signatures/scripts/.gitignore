@@ -1,5 +1,7 @@
 proctreetester
 fsnotify_tester
 vfs_write.txt
+stack_pivot
+sys_src_tester
 ds_writer/ds_writer
 writev_tester/writev

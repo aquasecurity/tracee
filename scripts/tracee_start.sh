@@ -264,10 +264,6 @@ else
     handle_tracee_error "Tracee process not found after successful healthz check"
 fi
 
-cooldown=5
-info "Wait ${cooldown} seconds for Tracee to finish initializing"
-sleep "${cooldown}"
-
 info "Tracee successfully started"
 info "Event output: ${EVENT_OUTPUT_FILE}"
 info "Log output: ${LOG_OUTPUT_FILE}"
