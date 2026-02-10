@@ -115,11 +115,14 @@ if [[ "$RUN" == "true" ]]; then
         exit_err "bpftrace is required for the test but not available"
     fi
 
-    sleep_time=${E2E_INST_TEST_SLEEP:-10}
+    sleep_time=${E2E_INST_TEST_SLEEP:-5}
 
-    # Use bpftrace to attach a simple kprobe that should trigger BPF_ATTACH event
-    # Run in background to ensure attachment happens, then let it run for the sleep time
-    bpftrace -e 'kprobe:security_file_open { printf("BPF_ATTACH: security_file_open\n"); }' > /dev/null 2>&1 &
+    # Use bpftrace to attach a simple kprobe that should trigger BPF_ATTACH event.
+    # We use do_syslog (rarely called) instead of a high-frequency function like
+    # security_file_open, because bpftrace can't exit cleanly when overwhelmed by
+    # constant probe hits - causing timeout failures on slow runners.
+    # Tracee detects the BPF program attachment itself, not the probed function firing.
+    bpftrace -e 'kprobe:do_syslog { }' > /dev/null 2>&1 &
     bpftrace_pid=$!
 
     # Let it run for the configured time

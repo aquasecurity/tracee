@@ -87,7 +87,8 @@ ARCH=$(uname -m)
 export ARCH
 export KERNEL # Set later, used by core_test_setup
 TRACEE_STARTUP_TIMEOUT=30
-TRACEE_SHUTDOWN_TIMEOUT=30
+TRACEE_SHUTDOWN_TIMEOUT=35 # Same as tracee_stop.sh default timeout
+BPF_BUFFER_FLUSH_WAIT=5 # 5 seconds is a generous amount of time
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
 
@@ -143,6 +144,7 @@ else
     extended_should_skip_test() { return 0; }
     extended_test_setup() { return 0; }
     extended_test_run() { return 0; }
+    extended_test_teardown() { return 0; }
     extended_test_check() { return 0; }
 fi
 
@@ -319,6 +321,69 @@ for TEST in ${INSTTESTS_EXTENDED}; do
 done
 
 # ==============================================================================
+# Compute Timing Parameters
+# ==============================================================================
+# Computed after PHASE 1 (setup) so skip flags are already set.
+# Core and extended tests track their own max values independently.
+
+core_max_test_timeout=0
+core_max_wait_after_trigger=0
+
+for TEST in ${INSTTESTS_CORE}; do
+    if core_should_skip_test "${TEST}"; then
+        continue
+    fi
+    test_timeout=$(get_test_timeout TEST_CONFIG_MAP "${TEST}")
+    test_wait=$(get_wait_after_trigger TEST_CONFIG_MAP "${TEST}")
+    if [[ "${test_timeout}" -gt "${core_max_test_timeout}" ]]; then
+        core_max_test_timeout="${test_timeout}"
+    fi
+    if [[ "${test_wait}" -gt "${core_max_wait_after_trigger}" ]]; then
+        core_max_wait_after_trigger="${test_wait}"
+    fi
+done
+
+ext_max_test_timeout=0
+ext_max_wait_after_trigger=0
+
+for TEST in ${INSTTESTS_EXTENDED}; do
+    if extended_should_skip_test "${TEST}"; then
+        continue
+    fi
+    test_timeout=$(get_test_timeout TEST_CONFIG_MAP "${TEST}")
+    test_wait=$(get_wait_after_trigger TEST_CONFIG_MAP "${TEST}")
+    if [[ "${test_timeout}" -gt "${ext_max_test_timeout}" ]]; then
+        ext_max_test_timeout="${test_timeout}"
+    fi
+    if [[ "${test_wait}" -gt "${ext_max_wait_after_trigger}" ]]; then
+        ext_max_wait_after_trigger="${test_wait}"
+    fi
+done
+
+# Global max across both test types
+if [[ "${core_max_test_timeout}" -gt "${ext_max_test_timeout}" ]]; then
+    max_test_timeout="${core_max_test_timeout}"
+else
+    max_test_timeout="${ext_max_test_timeout}"
+fi
+
+if [[ "${core_max_wait_after_trigger}" -gt "${ext_max_wait_after_trigger}" ]]; then
+    max_wait_after_trigger="${core_max_wait_after_trigger}"
+else
+    max_wait_after_trigger="${ext_max_wait_after_trigger}"
+fi
+
+info "Timing parameters:"
+if [[ -n "${INSTTESTS_CORE}" ]]; then
+    info "  Core: max_timeout=${core_max_test_timeout}s, max_detection_wait=${core_max_wait_after_trigger}s"
+fi
+if [[ -n "${INSTTESTS_EXTENDED}" ]]; then
+    info "  Extended: max_timeout=${ext_max_test_timeout}s, max_detection_wait=${ext_max_wait_after_trigger}s"
+fi
+info "  Global: max_timeout=${max_test_timeout}s, max_detection_wait=${max_wait_after_trigger}s"
+print_test_separator
+
+# ==============================================================================
 # PHASE 2: START TRACEE
 # ==============================================================================
 print_test_header "START TRACE"
@@ -348,8 +413,6 @@ print_test_separator
 # ==============================================================================
 print_test_header "RUNNING TESTS"
 declare -A test_pids_map
-max_internal_sleep=0
-max_test_timeout=0
 
 # Run core tests
 for TEST in ${INSTTESTS_CORE}; do
@@ -364,14 +427,6 @@ for TEST in ${INSTTESTS_CORE}; do
 
     test_timeout=$(get_test_timeout TEST_CONFIG_MAP "${TEST}")
     test_sleep=$(get_test_sleep TEST_CONFIG_MAP "${TEST}")
-
-    # Track maximum sleep and timeout
-    if [[ "${test_sleep}" -gt "${max_internal_sleep}" ]]; then
-        max_internal_sleep="${test_sleep}"
-    fi
-    if [[ "${test_timeout}" -gt "${max_test_timeout}" ]]; then
-        max_test_timeout="${test_timeout}"
-    fi
 
     core_test_run "${TEST}" test_pids_map "${test_timeout}" "${test_sleep}"
     print_test_separator
@@ -391,14 +446,6 @@ for TEST in ${INSTTESTS_EXTENDED}; do
     test_timeout=$(get_test_timeout TEST_CONFIG_MAP "${TEST}")
     test_sleep=$(get_test_sleep TEST_CONFIG_MAP "${TEST}")
 
-    # Track maximum sleep and timeout
-    if [[ "${test_sleep}" -gt "${max_internal_sleep}" ]]; then
-        max_internal_sleep="${test_sleep}"
-    fi
-    if [[ "${test_timeout}" -gt "${max_test_timeout}" ]]; then
-        max_test_timeout="${test_timeout}"
-    fi
-
     extended_test_run "${TEST}" test_pids_map "${test_timeout}" "${test_sleep}"
     print_test_separator
 done
@@ -407,7 +454,7 @@ done
 # PHASE 4: WAIT FOR TEST COMPLETION
 # ==============================================================================
 print_test_header "WAITING FOR TESTS TO COMPLETE"
-info "Waiting for all tests to complete (max timeout: ${max_test_timeout}s, max internal sleep: ${max_internal_sleep}s)..."
+info "Waiting for all tests to complete (max timeout: ${max_test_timeout}s)..."
 
 for test_name in "${!test_pids_map[@]}"; do
     pid="${test_pids_map[$test_name]}"
@@ -447,14 +494,31 @@ for test_name in "${!test_pids_map[@]}"; do
 done
 print_test_separator
 
-# Wait for event processing
-print_test_header "WAIT FOR EVENTS TO BE PROCESSED"
-info "Waiting for more 5 seconds for event processing"
-sleep 5
+# ==============================================================================
+# PHASE 5: PRE-STOP FLUSH
+# ==============================================================================
+# Single wait before stopping tracee, serving two purposes:
+#   1. BPF buffer flush: allow time for events in BPF ring buffers to reach
+#      the pipeline (the pipeline drains during shutdown, but events must
+#      first be read from the kernel buffers).
+#   2. Async detection window: give tracee's async mechanisms enough time to
+#      complete (e.g., the hookedSyscallTableRoutine needs at least one 10s
+#      cycle to populate the expected syscall table and run integrity checks).
+# Uses the larger of BPF_BUFFER_FLUSH_WAIT and max_wait_after_trigger.
+
+if [[ "${max_wait_after_trigger}" -gt "${BPF_BUFFER_FLUSH_WAIT}" ]]; then
+    pre_stop_wait="${max_wait_after_trigger}"
+else
+    pre_stop_wait="${BPF_BUFFER_FLUSH_WAIT}"
+fi
+
+print_test_header "PRE-STOP FLUSH"
+info "Waiting ${pre_stop_wait}s before stopping tracee (BPF flush: ${BPF_BUFFER_FLUSH_WAIT}s, detection wait: ${max_wait_after_trigger}s)..."
+sleep "${pre_stop_wait}"
 print_test_separator
 
 # ==============================================================================
-# PHASE 5: STOP TRACEE
+# PHASE 6: STOP TRACEE
 # ==============================================================================
 print_test_header "STOP TRACE"
 ./scripts/tracee_stop.sh \
@@ -468,7 +532,49 @@ fi
 print_test_separator
 
 # ==============================================================================
-# PHASE 6: CHECK TEST RESULTS
+# PHASE 7: POST-STOP TEARDOWN
+# ==============================================================================
+# Clean up test artifacts that must outlive tracee (e.g., kernel modules that
+# need to stay loaded during the entire tracee run for detection to work).
+# Running teardown after tracee stops eliminates any race between tracee's
+# async detection mechanisms and artifact removal.
+
+print_test_header "POST-STOP TEARDOWN"
+teardown_ran=0
+
+for TEST in ${INSTTESTS_CORE}; do
+    if core_should_skip_test "${TEST}"; then
+        continue
+    fi
+    test_wait=$(get_wait_after_trigger TEST_CONFIG_MAP "${TEST}")
+    if [[ "${test_wait}" -gt 0 ]]; then
+        print_test_header "${TEST}" "TEARDOWN"
+        core_test_teardown "${TEST}"
+        teardown_ran=1
+        print_test_separator
+    fi
+done
+
+for TEST in ${INSTTESTS_EXTENDED}; do
+    if extended_should_skip_test "${TEST}"; then
+        continue
+    fi
+    test_wait=$(get_wait_after_trigger TEST_CONFIG_MAP "${TEST}")
+    if [[ "${test_wait}" -gt 0 ]]; then
+        print_test_header "${TEST}" "TEARDOWN"
+        extended_test_teardown "${TEST}"
+        teardown_ran=1
+        print_test_separator
+    fi
+done
+
+if [[ "${teardown_ran}" -eq 0 ]]; then
+    info "No post-stop teardown actions needed"
+    print_test_separator
+fi
+
+# ==============================================================================
+# PHASE 8: CHECK TEST RESULTS
 # ==============================================================================
 print_test_header "CHECKING TESTS RESULTS"
 anyerror=""

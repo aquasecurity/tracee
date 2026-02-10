@@ -7,7 +7,9 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 require_cmds cat sleep
 
 # Default values specific to stop script
-TIMEOUT_DEFAULT=10
+# Note: Tracee internally waits up to 30s for pipeline drain, so we give it
+# enough time to complete graceful shutdown before falling back to SIGKILL
+TIMEOUT_DEFAULT=35
 FORCE_DEFAULT=0
 
 show_help() {

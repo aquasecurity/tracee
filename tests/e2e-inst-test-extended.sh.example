@@ -27,11 +27,12 @@ INSTTESTS_EXTENDED_AVAILABLE="
 # Extended Test Configuration
 # ==============================================================================
 # Initialize extended test metadata
-# Arguments for add_test_config: TEST_NAME POLICY_NAME TIMEOUT SLEEP
+# Arguments for add_test_config: TEST_NAME POLICY_NAME TIMEOUT SLEEP [WAIT_AFTER_TRIGGER]
 # Called by coordinator after validation, only if extended tests will run
 extended_init_test_config() {
-    add_test_config TEST_CONFIG_MAP "CUSTOM_TEST_A" "custom-test-a" 15 0
-    add_test_config TEST_CONFIG_MAP "CUSTOM_TEST_B" "custom-test-b" 10 5
+    #                               test name       policy name     timeout sleep wait_after_trigger
+    add_test_config TEST_CONFIG_MAP "CUSTOM_TEST_A" "custom-test-a" 15       0     0
+    add_test_config TEST_CONFIG_MAP "CUSTOM_TEST_B" "custom-test-b" 10       5     0
 }
 
 # ==============================================================================
@@ -128,6 +129,29 @@ extended_test_run() {
     # Execute test in background using common helper
     local test_script="${TESTS_DIR}/${test,,}.sh"
     run_test_background "${test}" "$2" "${timeout}" "${sleep_time}" "${test_script}" "${test_args}"
+}
+
+# ==============================================================================
+# Extended Test Teardown Phase (Post-Detection Wait)
+# ==============================================================================
+# Run deferred cleanup for tests with wait_after_trigger > 0.
+# Called by the coordinator after the detection wait, before tracee stops.
+# Arguments:
+#   $1 - Test name
+extended_test_teardown() {
+    local test="$1"
+
+    case ${test} in
+        # Example: If a test loads a kernel module during setup and needs
+        # tracee to detect it before unloading:
+        # CUSTOM_TEST_A)
+        #     info "unloading custom module after detection wait"
+        #     "${TESTS_DIR}/custom_test_a.sh" --uninstall
+        #     ;;
+        *)
+            info "No teardown action defined for ${test}"
+            ;;
+    esac
 }
 
 # ==============================================================================

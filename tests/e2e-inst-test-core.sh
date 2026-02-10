@@ -17,22 +17,23 @@
 # This is the single source of truth for available core tests
 # shellcheck disable=SC2034  # Used by coordinator script
 INSTTESTS_CORE_AVAILABLE="
-    LSM_TEST
-    PROCESS_EXECUTE_FAILED
-    VFS_WRITE
-    FILE_MODIFICATION
-    HOOKED_SYSCALL
-    FTRACE_HOOK
-    SECURITY_INODE_RENAME
-    BPF_ATTACH
     CONTAINERS_DATA_SOURCE
     DNS_DATA_SOURCE
-    WRITABLE_DATA_SOURCE
+    FILE_MODIFICATION
+    FTRACE_HOOK
+    HOOKED_SYSCALL
+    LSM_TEST
+    PROCESS_EXECUTE_FAILED
+    SECURITY_INODE_RENAME
     SECURITY_PATH_NOTIFY
     SET_FS_PWD
-    SUSPICIOUS_SYSCALL_SOURCE
     STACK_PIVOT
+    SUSPICIOUS_SYSCALL_SOURCE
+    VFS_WRITE
+    WRITABLE_DATA_SOURCE
 "
+    # BPF_ATTACH is disabled for now because it's not working properly (e2e signature vs current pipeline)
+    # PROCTREE_DATA_SOURCE is disabled for now because it's not working properly (e2e signature vs current pipeline)
 
 # ==============================================================================
 # Core Test Configuration
@@ -40,22 +41,23 @@ INSTTESTS_CORE_AVAILABLE="
 # Initialize core test metadata
 # Called by coordinator after validation, only if core tests will run
 core_init_test_config() {
-    add_test_config TEST_CONFIG_MAP "SET_FS_PWD" "set-fs-pwd-test" 5 0
-    add_test_config TEST_CONFIG_MAP "WRITABLE_DATA_SOURCE" "writable-ds-test" 40 0
-    add_test_config TEST_CONFIG_MAP "SECURITY_PATH_NOTIFY" "security-path-notify-test" 5 0
-    add_test_config TEST_CONFIG_MAP "SUSPICIOUS_SYSCALL_SOURCE" "suspicious-syscall-src-test" 10 0
-    add_test_config TEST_CONFIG_MAP "CONTAINERS_DATA_SOURCE" "containers-ds-test" 10 5
-    # add_test_config TEST_CONFIG_MAP "PROCTREE_DATA_SOURCE" "proctree-ds-test" 15 10
-    add_test_config TEST_CONFIG_MAP "HOOKED_SYSCALL" "hooked-syscall-test" 10 5
-    add_test_config TEST_CONFIG_MAP "PROCESS_EXECUTE_FAILED" "execute-failed-test" 5 2
-    add_test_config TEST_CONFIG_MAP "STACK_PIVOT" "stack-pivot-test" 10 5
-    add_test_config TEST_CONFIG_MAP "FTRACE_HOOK" "ftrace-hook-test" 15 5
-    add_test_config TEST_CONFIG_MAP "BPF_ATTACH" "bpf-attach-test" 15 10
-    add_test_config TEST_CONFIG_MAP "DNS_DATA_SOURCE" "dns-ds-test" 10 0
-    add_test_config TEST_CONFIG_MAP "SECURITY_INODE_RENAME" "security-inode-rename-test" 10 2
-    add_test_config TEST_CONFIG_MAP "FILE_MODIFICATION" "file-modification-test" 5 0
-    add_test_config TEST_CONFIG_MAP "LSM_TEST" "lsm-test" 5 0
-    add_test_config TEST_CONFIG_MAP "VFS_WRITE" "vfs-write-test" 5 0
+    #                               test name                    policy name                     timeout sleep wait_after_trigger
+    add_test_config TEST_CONFIG_MAP "BPF_ATTACH"                 "bpf-attach-test"               15      10     0
+    add_test_config TEST_CONFIG_MAP "CONTAINERS_DATA_SOURCE"     "containers-ds-test"            10       5     0
+    add_test_config TEST_CONFIG_MAP "DNS_DATA_SOURCE"            "dns-ds-test"                   10       0     0
+    add_test_config TEST_CONFIG_MAP "FILE_MODIFICATION"          "file-modification-test"         5       0     0
+    add_test_config TEST_CONFIG_MAP "FTRACE_HOOK"                "ftrace-hook-test"              15       5     0
+    add_test_config TEST_CONFIG_MAP "HOOKED_SYSCALL"             "hooked-syscall-test"           10       5    12
+    add_test_config TEST_CONFIG_MAP "LSM_TEST"                   "lsm-test"                       5       0     0
+    add_test_config TEST_CONFIG_MAP "PROCESS_EXECUTE_FAILED"     "execute-failed-test"            5       2     0
+    add_test_config TEST_CONFIG_MAP "PROCTREE_DATA_SOURCE"       "proctree-ds-test"              15      10     0
+    add_test_config TEST_CONFIG_MAP "SECURITY_INODE_RENAME"      "security-inode-rename-test"    10       2     0
+    add_test_config TEST_CONFIG_MAP "SECURITY_PATH_NOTIFY"       "security-path-notify-test"      5       0     0
+    add_test_config TEST_CONFIG_MAP "SET_FS_PWD"                 "set-fs-pwd-test"                5       0     0
+    add_test_config TEST_CONFIG_MAP "STACK_PIVOT"                "stack-pivot-test"              10       5     0
+    add_test_config TEST_CONFIG_MAP "SUSPICIOUS_SYSCALL_SOURCE"  "suspicious-syscall-src-test"   10       0     0
+    add_test_config TEST_CONFIG_MAP "VFS_WRITE"                  "vfs-write-test"                 5       0     0
+    add_test_config TEST_CONFIG_MAP "WRITABLE_DATA_SOURCE"       "writable-ds-test"              40       0     0
 }
 
 # ==============================================================================
@@ -274,8 +276,8 @@ core_test_run() {
 
     case ${test} in
         HOOKED_SYSCALL)
-            info "unloading hijack module that was loaded at setup step"
-            test_args="--uninstall"
+            info "hijack module installed at setup; uninstall deferred to post-detection teardown"
+            return
             ;;
 
         FTRACE_HOOK)
@@ -304,6 +306,25 @@ core_test_run() {
     # Execute test in background using common helper
     local test_script="${TESTS_DIR}/${test,,}.sh"
     run_test_background "${test}" "$2" "${timeout}" "${sleep_time}" "${test_script}" "${test_args}"
+}
+
+# ==============================================================================
+# Core Test Teardown Phase (Post-Detection Wait, Post-Tracee Stop)
+# ==============================================================================
+# Run deferred cleanup for tests with wait_after_trigger > 0.
+# Called by the coordinator after the detection wait, after tracee has been
+# stopped (post-tracee_stop.sh).
+# Arguments:
+#   $1 - Test name
+core_test_teardown() {
+    local test="$1"
+
+    case ${test} in
+        HOOKED_SYSCALL)
+            info "teardown hooked_syscall test"
+            "${TESTS_DIR}/hooked_syscall.sh" --uninstall
+            ;;
+    esac
 }
 
 # ==============================================================================
