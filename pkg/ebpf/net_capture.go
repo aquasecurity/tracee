@@ -36,7 +36,7 @@ func (t *Tracee) handleNetCaptureEvents(ctx context.Context) {
 	var errChanList []<-chan error
 
 	// source pipeline stage (re-used from regular pipeline)
-	eventsChan, errChan := t.decodeEvents(ctx, t.netCapChannel)
+	eventsChan, errChan := t.decodeEvents(t.netCapChannel)
 	errChanList = append(errChanList, errChan)
 
 	// process events stage (network capture only)

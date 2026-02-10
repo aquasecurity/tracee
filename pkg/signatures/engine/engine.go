@@ -106,10 +106,12 @@ func (engine *Engine) Init() error {
 	return nil
 }
 
-// Start starts processing events and detecting signatures
-// it runs continuously until stopped by the done channel
-// once done, it cleans all internal resources, which means the engine is not reusable
-// note that the input and output channels are created by the consumer and therefore are not closed
+// Start starts processing events and detecting signatures.
+// It runs continuously until the input channel is closed, processing every
+// remaining event before returning. The ctx is stored for matchHandler's
+// safety-valve select (used by analyze mode to break potential deadlocks).
+// Once done, it cleans all internal resources, which means the engine is not reusable.
+// Note that the input and output channels are created by the consumer and therefore are not closed.
 func (engine *Engine) Start(ctx context.Context) {
 	defer engine.unloadAllSignatures()
 	engine.ctx = ctx
@@ -161,16 +163,6 @@ func (engine *Engine) matchHandler(res *detect.Finding) {
 	}
 }
 
-// checkCompletion is a function that runs at the end of each input source
-// closing signature evaluation if no more pending input sources exists
-func (engine *Engine) checkCompletion() bool {
-	if engine.inputs.Tracee == nil {
-		engine.unloadAllSignatures()
-		return true
-	}
-	return false
-}
-
 func (engine *Engine) processEvent(event protocol.Event) {
 	engine.signaturesMutex.RLock()
 	defer engine.signaturesMutex.RUnlock()
@@ -201,55 +193,31 @@ func (engine *Engine) processEvent(event protocol.Event) {
 	}
 }
 
-// consumeSources starts consuming the input sources
-// it runs continuously until stopped by the done channel
+// consumeSources processes all events from the input source until the channel
+// is closed. Shutdown is driven entirely by channel close (not context
+// cancellation) so that every in-flight event is processed before returning.
 func (engine *Engine) consumeSources() {
-	for {
-		select {
-		case event, ok := <-engine.inputs.Tracee:
-			if !ok {
-				// Skip signature signals if NoSignatures is enabled (signatures not initialized)
-				if !engine.config.NoSignatures {
-					engine.signaturesMutex.RLock()
-					for sig := range engine.signatures {
-						se, err := sig.GetSelectedEvents()
-						if err != nil {
-							logger.Errorw("Getting selected events: " + err.Error())
-							continue
-						}
-						for _, sel := range se {
-							if sel.Source == "tracee" {
-								_ = sig.OnSignal(detect.SignalSourceComplete("tracee"))
-								break
-							}
-						}
-					}
-					engine.signaturesMutex.RUnlock()
-				}
-				engine.inputs.Tracee = nil
-				if engine.checkCompletion() {
-					return
-				}
-
-				continue
-			}
-			engine.processEvent(event)
-
-		case <-engine.ctx.Done():
-			goto drain
-		}
+	for event := range engine.inputs.Tracee {
+		engine.processEvent(event)
 	}
 
-drain:
-	// drain and process all remaining events
-	for {
-		select {
-		case event := <-engine.inputs.Tracee:
-			engine.processEvent(event)
-
-		default:
-			return
+	// Input channel closed: signal source completion to all signatures.
+	if !engine.config.NoSignatures {
+		engine.signaturesMutex.RLock()
+		for sig := range engine.signatures {
+			se, err := sig.GetSelectedEvents()
+			if err != nil {
+				logger.Errorw("Getting selected events: " + err.Error())
+				continue
+			}
+			for _, sel := range se {
+				if sel.Source == "tracee" {
+					_ = sig.OnSignal(detect.SignalSourceComplete("tracee"))
+					break
+				}
+			}
 		}
+		engine.signaturesMutex.RUnlock()
 	}
 }
 

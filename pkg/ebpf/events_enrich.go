@@ -1,7 +1,6 @@
 package ebpf
 
 import (
-	gocontext "context"
 	"sync"
 
 	"github.com/aquasecurity/tracee/common/cgroup"
@@ -49,7 +48,7 @@ import (
 //
 
 // enrichContainerEvents is a pipeline stage that enriches container events with metadata.
-func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.PipelineEvent,
+func (t *Tracee) enrichContainerEvents(in <-chan *events.PipelineEvent,
 ) (
 	chan *events.PipelineEvent, chan error,
 ) {
@@ -84,6 +83,14 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 	// wg tracks all goroutines that send to 'out' channel
 	var wg sync.WaitGroup
 
+	// writerDone is closed when the writer goroutine finishes draining the input
+	// channel. Reader and cleaner goroutines watch this to enter drain mode.
+	// NOTE: queueReady and queueClean are NEVER closed because they are used
+	// bidirectionally (read + write-back for rescheduling). Sending to a closed
+	// channel panics in Go, even inside a select with default. The writerDone
+	// signal replaces channel closing as the shutdown mechanism.
+	writerDone := make(chan struct{})
+
 	// Name function for symbolic reference
 	cleanupRoutine := func(out chan *events.PipelineEvent, errc chan error, wg *sync.WaitGroup) {
 		wg.Wait()
@@ -91,160 +98,286 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 		close(errc)
 	}
 
-	// queues map writer
+	// processEvent handles a single event from the input channel. It is called
+	// exclusively by the writer goroutine during its for-range loop, so
+	// queueReady and queueClean are guaranteed to be open (writerDone has not
+	// been closed yet). Non-blocking sends handle the case where internal
+	// channels are full.
+	processEvent := func(event *events.PipelineEvent) {
+		if event == nil {
+			return
+		}
+		eventID := event.EventID
+		// send out irrelevant events (non container or already enriched), don't skip the cgroup lifecycle events
+		if (event.Container.ID == "" || event.Container.Name != "") &&
+			eventID != events.CgroupMkdir &&
+			eventID != events.CgroupRmdir {
+			out <- event
+			return
+		}
+		cgroupId := uint64(event.CgroupID)
+		// CgroupMkdir: pick EventID from the event itself
+		if eventID == events.CgroupMkdir {
+			// avoid sending irrelevant cgroups
+			isHid, err := isCgroupEventInHid(event.Event, t.dataStoreRegistry.GetContainerManager())
+			if err != nil {
+				logger.Errorw("cgroup_mkdir event skipped enrichment: couldn't get cgroup hid", "error", err)
+				out <- event
+				return
+			}
+			if !isHid {
+				out <- event
+				return
+			}
+			cgroupId, err = parse.ArgVal[uint64](event.Args, "cgroup_id")
+			if err != nil {
+				logger.Errorw("cgroup_mkdir event failed to trigger enrichment: couldn't get cgroup_id", "error", err, "event_name", event.EventName)
+				out <- event
+				return
+			}
+		}
+		// CgroupRmdir: queue for cleanup
+		if eventID == events.CgroupRmdir {
+			select {
+			case queueClean <- event:
+			default:
+				// queueClean full, just send the event through
+				out <- event
+			}
+			return
+		}
+		// make sure a queue channel exists for this cgroupId
+		bLock.Lock()
+		if _, ok := queues[cgroupId]; !ok {
+			queues[cgroupId] = make(chan *events.PipelineEvent, contQueueSize)
+
+			go func(cgroupId uint64) {
+				metadata, err := t.dataStoreRegistry.GetContainerManager().EnrichCgroupInfo(cgroupId)
+				bLock.Lock()
+				enrichInfo[cgroupId] = &enrichResult{metadata, err}
+				enrichDone[cgroupId] = true
+				logger.Debugw("async enrich request in pipeline done", "cgroup_id", cgroupId)
+				bLock.Unlock()
+			}(cgroupId)
+		}
+		bLock.Unlock() // give parallel enrichment routine a chance!
+		bLock.RLock()
+		queue := queues[cgroupId]
+		bLock.RUnlock()
+		// enqueue the event and schedule the operation (channels are concurrent-safe)
+		select {
+		case queue <- event:
+			select {
+			case queueReady <- cgroupId:
+			default:
+				// queueReady full, drain the event we just added directly
+				if e := <-queue; e != nil {
+					out <- e
+				}
+			}
+		default:
+			// per-cgroup queue full, send event directly without enrichment
+			out <- event
+		}
+	}
+
+	// drainCgroupQueue drains all events from a single per-cgroup queue,
+	// enriching them if enrichment data is available.
+	drainCgroupQueue := func(cgroupId uint64, queue chan *events.PipelineEvent) {
+		for len(queue) > 0 {
+			event := <-queue
+			if event == nil {
+				continue
+			}
+			if enrichDone[cgroupId] {
+				i := enrichInfo[cgroupId]
+				if i != nil && i.err == nil && event.Container.Name == "" {
+					enrichEvent(event.Event, i.result)
+				}
+			}
+			out <- event
+		}
+	}
+
+	//
+	// Writer goroutine: reads from the pipeline input channel and distributes
+	// events to internal queues via processEvent. Uses for-range so it
+	// naturally drains all events when the upstream stage closes the input
+	// channel. Signals reader/cleaner via writerDone when finished.
+	//
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		for { // enqueue events
+		defer close(writerDone)
+
+		for event := range in {
+			processEvent(event)
+		}
+	}()
+
+	//
+	// Reader goroutine: de-queues events from per-cgroup queues and sends them
+	// downstream after enrichment. Uses a select loop to multiplex between
+	// queueReady (normal work) and writerDone (shutdown signal).
+	//
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		// dequeueAndEnrich processes a single cgroupId from queueReady.
+		dequeueAndEnrich := func(cgroupId uint64) {
+			bLock.RLock()
+			defer bLock.RUnlock()
+
+			if !enrichDone[cgroupId] {
+				// Enrichment not done yet: reschedule (non-blocking to avoid
+				// self-deadlock on full channel).
+				select {
+				case queueReady <- cgroupId:
+					logger.Debugw("rescheduled enrich trigger in enrich queue", "cgroup_id", cgroupId)
+				default:
+					// queueReady full, drain the queue directly
+					if queue, ok := queues[cgroupId]; ok {
+						drainCgroupQueue(cgroupId, queue)
+					}
+				}
+				return
+			}
+
+			// Enrichment done: de-queue one event
+			queue, ok := queues[cgroupId]
+			if !ok {
+				return
+			}
 			select {
-			case event := <-in:
+			case event := <-queue:
 				if event == nil {
-					continue // might happen during initialization (ctrl+c seg faults)
+					return
 				}
 				eventID := event.EventID
-				// send out irrelevant events (non container or already enriched), don't skip the cgroup lifecycle events
-				if (event.Container.ID == "" || event.Container.Name != "") &&
-					eventID != events.CgroupMkdir &&
-					eventID != events.CgroupRmdir {
-					out <- event
-					continue
-				}
-				cgroupId := uint64(event.CgroupID)
-				// CgroupMkdir: pick EventID from the event itself
 				if eventID == events.CgroupMkdir {
-					// avoid sending irrelevant cgroups
-					isHid, err := isCgroupEventInHid(event.Event, t.dataStoreRegistry.GetContainerManager())
-					if err != nil {
-						logger.Errorw("cgroup_mkdir event skipped enrichment: couldn't get cgroup hid", "error", err)
-						out <- event
-						continue
-					}
-					if !isHid {
-						out <- event
-						continue
-					}
-					cgroupId, err = parse.ArgVal[uint64](event.Args, "cgroup_id")
-					if err != nil {
-						logger.Errorw("cgroup_mkdir event failed to trigger enrichment: couldn't get cgroup_id", "error", err, "event_name", event.EventName)
-						out <- event
-						continue
+					i := enrichInfo[cgroupId]
+					if i.err == nil || i.result.ContainerId == "" {
+						logger.Debugw("done enriching in enrich queue", "cgroup_id", cgroupId)
+					} else {
+						logger.Errorw("failed enriching in enrich queue", "error", i.err, "cgroup_id", cgroupId)
 					}
 				}
-				// CgroupRmdir: clean up remaining events and maps
-				if eventID == events.CgroupRmdir {
-					queueClean <- event
-					continue
+				if event.Container.Name == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
+					i := enrichInfo[cgroupId]
+					if i.err == nil {
+						enrichEvent(event.Event, i.result)
+					}
 				}
-				// make sure a queue channel exists for this cgroupId
-				bLock.Lock()
-				if _, ok := queues[cgroupId]; !ok {
-					queues[cgroupId] = make(chan *events.PipelineEvent, contQueueSize)
-
-					go func(cgroupId uint64) {
-						metadata, err := t.dataStoreRegistry.GetContainerManager().EnrichCgroupInfo(cgroupId)
-						bLock.Lock()
-						enrichInfo[cgroupId] = &enrichResult{metadata, err}
-						enrichDone[cgroupId] = true
-						logger.Debugw("async enrich request in pipeline done", "cgroup_id", cgroupId)
-						bLock.Unlock()
-					}(cgroupId)
-				}
-				bLock.Unlock() // give parallel enrichment routine a chance!
-				bLock.RLock()
-				// enqueue the event and schedule the operation
-				queues[cgroupId] <- event
-				bLock.RUnlock()
-				queueReady <- cgroupId
-			case <-ctx.Done():
-				return
+				out <- event
+			default:
+				// Queue empty
 			}
 		}
-	}()
 
-	// queues map reader
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for { // de-queue events
+		// Normal operation: multiplex between queueReady and writerDone.
+		for {
 			select {
-			case cgroupId := <-queueReady: // queue for received cgroupId is ready
-				logger.Debugw("triggered enrich check in enrich queue", "cgroup_id", cgroupId)
-				bLock.RLock()
-				if !enrichDone[cgroupId] {
-					// re-schedule the operation if queue is not enriched
-					queueReady <- cgroupId
-					logger.Debugw("rescheduled enrich trigger in enrich queue", "cgroup_id", cgroupId)
-				} else {
-					// de-queue event if queue is enriched
-					if _, ok := queues[cgroupId]; ok {
-						event := <-queues[cgroupId]
-						if event == nil {
-							continue // might happen during initialization (ctrl+c seg faults)
+			case cgroupId := <-queueReady:
+				dequeueAndEnrich(cgroupId)
+			case <-writerDone:
+				// Writer finished: drain remaining items from queueReady
+				// without rescheduling, then drain all per-cgroup queues.
+				logger.Debugw("enrichContainerEvents: reader entering drain mode")
+				for {
+					select {
+					case cgroupId := <-queueReady:
+						bLock.RLock()
+						if queue, ok := queues[cgroupId]; ok {
+							drainCgroupQueue(cgroupId, queue)
 						}
-						eventID := event.EventID
-						if eventID == events.CgroupMkdir {
-							// only one cgroup_mkdir should make it here
-							// report enrich success or error once
-							i := enrichInfo[cgroupId]
-							if i.err == nil || i.result.ContainerId == "" {
-								logger.Debugw("done enriching in enrich queue", "cgroup_id", cgroupId)
-							} else {
-								logger.Errorw("failed enriching in enrich queue", "error", i.err, "cgroup_id", cgroupId)
-							}
-						}
-						// check if not enriched, and only enrich regular non cgroup related events
-						if event.Container.Name == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
-							// event is not enriched: enrich if enrichment worked
-							i := enrichInfo[cgroupId]
-							if i.err == nil {
-								enrichEvent(event.Event, i.result)
-							}
-						}
-						out <- event
-					} // TODO: place a unlikely to happen error in the printer
+						bLock.RUnlock()
+					default:
+						// queueReady empty
+						goto drainAllQueues
+					}
 				}
-				bLock.RUnlock()
-			// cleanup
-			case <-ctx.Done():
-				return
 			}
 		}
+	drainAllQueues:
+		logger.Debugw("enrichContainerEvents: draining all per-cgroup queues")
+		bLock.RLock()
+		for cgroupId, queue := range queues {
+			drainCgroupQueue(cgroupId, queue)
+		}
+		bLock.RUnlock()
+		logger.Debugw("enrichContainerEvents: per-cgroup queues drained")
 	}()
 
-	// queues cleaner
+	//
+	// Cleaner goroutine: processes CgroupRmdir events to clean up per-cgroup
+	// queues and enrichment state. Uses a select loop to multiplex between
+	// queueClean (normal work) and writerDone (shutdown signal).
+	//
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+
+		// processCleanEvent handles a single CgroupRmdir cleanup event.
+		processCleanEvent := func(event *events.PipelineEvent, canReschedule bool) {
+			bLock.Lock()
+			defer bLock.Unlock()
+
+			cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
+			if err != nil {
+				logger.Errorw("cgroup_rmdir event failed to trigger enrich queue clean: couldn't get cgroup_id", "error", err, "event_name", event.EventName)
+				out <- event
+				return
+			}
+			logger.Debugw("triggered enrich queue clean", "cgroup_id", cgroupId)
+			queue, ok := queues[cgroupId]
+			if !ok {
+				out <- event
+				return
+			}
+			if len(queue) > 0 && canReschedule {
+				// Queue not empty: try to reschedule (non-blocking)
+				select {
+				case queueClean <- event:
+					logger.Debugw("rescheduled enrich queue clean", "cgroup_id", cgroupId)
+					return
+				default:
+					// Fall through to drain
+				}
+			}
+			// Drain the queue, clean up, and send the rmdir event
+			for len(queue) > 0 {
+				queuedEvent := <-queue
+				if queuedEvent != nil {
+					out <- queuedEvent
+				}
+			}
+			close(queue)
+			delete(enrichDone, cgroupId)
+			delete(enrichInfo, cgroupId)
+			delete(queues, cgroupId)
+			out <- event
+			logger.Debugw("enrich queue clean done", "cgroup_id", cgroupId)
+		}
+
+		// Normal operation: multiplex between queueClean and writerDone.
 		for {
 			select {
 			case event := <-queueClean:
-				bLock.Lock()
-				cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
-				if err != nil {
-					logger.Errorw("cgroup_rmdir event failed to trigger enrich queue clean: couldn't get cgroup_id", "error", err, "event_name", event.EventName)
-					out <- event
-					continue
-				}
-				logger.Debugw("triggered enrich queue clean", "cgroup_id", cgroupId)
-				if queue, ok := queues[cgroupId]; ok {
-					// if queue is still full reschedule cleanup
-					if len(queue) > 0 {
-						queueClean <- event
-						logger.Debugw("rescheduled enrich queue clean", "cgroup_id", cgroupId)
-					} else {
-						close(queue)
-						// start queue cleanup
-						delete(enrichDone, cgroupId)
-						delete(enrichInfo, cgroupId)
-						delete(queues, cgroupId)
-						out <- event
+				processCleanEvent(event, true)
+			case <-writerDone:
+				// Writer finished: drain remaining items from queueClean
+				// without rescheduling.
+				logger.Debugw("enrichContainerEvents: cleaner entering drain mode")
+				for {
+					select {
+					case event := <-queueClean:
+						processCleanEvent(event, false)
+					default:
+						logger.Debugw("enrichContainerEvents: cleaner finished")
+						return
 					}
 				}
-				bLock.Unlock()
-				logger.Debugw("enrich queue clean done", "cgroup_id", cgroupId)
-
-			case <-ctx.Done():
-				return
 			}
 		}
 	}()

@@ -2,7 +2,6 @@ package printer_test
 
 import (
 	"bytes"
-	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -247,13 +246,11 @@ func TestPrinterFromStream(t *testing.T) {
 	p, err := printer.New([]config.Destination{destination})
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(t.Context())
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		p.FromStream(ctx, stream)
+		p.FromStream(stream)
 	}()
 
 	pbEvent, err := events.ConvertTraceeEventToProto(trace.Event{
@@ -263,14 +260,13 @@ func TestPrinterFromStream(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	sm.Publish(t.Context(), pbEvent, 0b1)
+	sm.Publish(pbEvent, 0b1)
 
 	time.Sleep(time.Millisecond * 10)
 
-	cancel()
-	wg.Wait() // Wait for goroutine to finish before closing
+	sm.Close() // Close stream first to unblock consumeFromStream
+	wg.Wait()  // Now goroutine can finish
 	p.Close()
-	sm.Close()
 
 	content, err := os.ReadFile(outPath)
 	require.NoError(t, err)

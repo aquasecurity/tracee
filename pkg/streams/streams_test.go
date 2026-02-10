@@ -1,7 +1,6 @@
 package streams
 
 import (
-	"context"
 	"sync"
 	"testing"
 
@@ -42,8 +41,6 @@ func TestStreamManager(t *testing.T) {
 		stream2Count int
 		stream3Count int
 	)
-
-	ctx := context.Background()
 
 	sm := NewStreamsManager()
 
@@ -87,21 +84,21 @@ func TestStreamManager(t *testing.T) {
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy1Event, 0b1)
+			sm.Publish(policy1Event, 0b1)
 		}
 		publishersWG.Done()
 	}()
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy2Event, 0b10)
+			sm.Publish(policy2Event, 0b10)
 		}
 		publishersWG.Done()
 	}()
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			sm.Publish(ctx, policy3Event, 0b100)
+			sm.Publish(policy3Event, 0b100)
 		}
 		publishersWG.Done()
 	}()

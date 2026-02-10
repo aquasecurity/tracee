@@ -77,6 +77,9 @@ func Analyze(cfg Config) {
 		logger.Fatalw("failed to initialize signature engine", "err", err)
 	}
 
+	// signalCtx (not Background) is needed here: analyze's consumer loop may
+	// stop reading engineOutput on SIGINT/SIGTERM, so matchHandler's ctx.Done() select
+	// acts as a deadlock safety valve to unblock the engine in that case.
 	go sigEngine.Start(signalCtx)
 
 	// decide process output

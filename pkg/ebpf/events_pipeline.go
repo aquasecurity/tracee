@@ -32,27 +32,28 @@ const noSyscall int32 = -1
 // handleEvents is the main pipeline of tracee. It receives events from the perf buffer
 // and passes them through a series of stages, each stage is a goroutine that performs a
 // specific task on the event. The pipeline is started in a separate goroutine.
-func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) {
+func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}, done chan<- struct{}) {
 	logger.Debugw("Starting handleEvents goroutine")
 	defer logger.Debugw("Stopped handleEvents goroutine")
+	defer close(done) // Signal that pipeline has fully drained
 
 	var errcList []<-chan error
 
 	// Decode stage: events are read from the perf buffer and decoded into trace.Event type.
 
-	eventsChan, errc := t.decodeEvents(ctx, t.eventsChannel)
+	eventsChan, errc := t.decodeEvents(t.eventsChannel)
 	t.stats.Channels["decode"] = eventsChan
 	errcList = append(errcList, errc)
 
 	// Sort stage: events go through a sorting function.
 
 	if t.config.Output.EventsSorting {
-		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan, t.config.Buffers.Kernel.Artifacts)
+		eventsChan, errc = t.eventsSorter.StartPipeline(eventsChan, t.config.Buffers.Kernel.Artifacts)
 		t.stats.Channels["sort"] = eventsChan
 		errcList = append(errcList, errc)
 	}
 
-	// Process events stage: events go through a processing functions.
+	// Process events stage: ctx needed for FtraceHook background goroutine.
 
 	eventsChan, errc = t.processEvents(ctx, eventsChan)
 	t.stats.Channels["process"] = eventsChan
@@ -61,18 +62,18 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	// Enrichment stage: container events are enriched with additional runtime data.
 
 	if t.config.EnrichmentEnabled {
-		eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
+		eventsChan, errc = t.enrichContainerEvents(eventsChan)
 		t.stats.Channels["enrich"] = eventsChan
 		errcList = append(errcList, errc)
 	}
 
 	// Derive events stage: events go through a derivation function.
 
-	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
+	eventsChan, errc = t.deriveEvents(eventsChan)
 	t.stats.Channels["derive"] = eventsChan
 	errcList = append(errcList, errc)
 
-	// Detect events stage: events go through the detector engine for detection.
+	// Detect events stage: ctx passed through to detector OnEvent interface.
 
 	eventsChan, errc = t.detectEvents(ctx, eventsChan)
 	t.stats.Channels["detect"] = eventsChan
@@ -81,14 +82,14 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 	// Engine events stage: events go through the signatures engine for detection.
 
 	if t.config.EngineConfig.Mode == engine.ModeSingleBinary {
-		eventsChan, errc = t.engineEvents(ctx, eventsChan)
+		eventsChan, errc = t.engineEvents(eventsChan)
 		t.stats.Channels["engine"] = eventsChan
 		errcList = append(errcList, errc)
 	}
 
 	// Sink pipeline stage: events go through printers.
 
-	errc = t.sinkEvents(ctx, eventsChan)
+	errc = t.sinkEvents(eventsChan)
 	t.stats.Channels["sink"] = eventsChan
 	errcList = append(errcList, errc)
 
@@ -104,7 +105,7 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 // decodeEvents is the event decoding pipeline stage. For each received event, it goes
 // through a decoding function that will decode the event from its raw format into a
 // PipelineEvent type.
-func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-chan *events.PipelineEvent, <-chan error) {
+func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEvent, <-chan error) {
 	out := make(chan *events.PipelineEvent, t.config.Buffers.Pipeline)
 	errc := make(chan error, 1)
 
@@ -299,12 +300,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				}
 			}
 
-			select {
-			case out <- evt:
-			case <-ctx.Done():
-				decoderPool.Put(ebpfMsgDecoder)
-				return
-			}
+			out <- evt
 
 			// Return decoder to pool for reuse
 			decoderPool.Put(ebpfMsgDecoder)
@@ -570,20 +566,18 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 			}
 
 		sendEvent:
-			select {
-			case out <- event:
-			case <-ctx.Done():
-				return
-			}
+			// NOTE: We do NOT check ctx.Done() here - we continue sending events
+			// until the input channel is closed. This ensures graceful drain.
+			out <- event
 		}
 	}()
 	return out, errc
 }
 
-// deriveEVents is the event derivation pipeline stage. For each received event, it runs
-// the event derivation logic, described in the derivation table, and send the derived
+// deriveEvents is the event derivation pipeline stage. For each received event, it runs
+// the event derivation logic, described in the derivation table, and sends the derived
 // events down the pipeline.
-func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *events.PipelineEvent) (
+func (t *Tracee) deriveEvents(in <-chan *events.PipelineEvent) (
 	<-chan *events.PipelineEvent, <-chan error,
 ) {
 	out := make(chan *events.PipelineEvent, t.config.Buffers.Pipeline)
@@ -593,56 +587,53 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *events.PipelineEve
 		defer close(out)
 		defer close(errc)
 
-		for {
-			select {
-			case event := <-in:
-				if event == nil {
-					continue // might happen during initialization (ctrl+c seg faults)
-				}
+		// NOTE: Use for-range to naturally exit when input channel is closed.
+		// This ensures all events are processed during graceful shutdown.
+		for event := range in {
+			if event == nil {
+				continue // might happen during initialization (ctrl+c seg faults)
+			}
 
-				// Derive events using original event pointer directly (no copying needed)
-				// We derive before sending the event downstream to avoid race conditions
-				// Extract trace.Event for derivation
-				derivatives, errors := t.eventDerivations.DeriveEvent(event.Event)
+			// Derive events using original event pointer directly (no copying needed)
+			// We derive before sending the event downstream to avoid race conditions
+			// Extract trace.Event for derivation
+			derivatives, errors := t.eventDerivations.DeriveEvent(event.Event)
 
-				// Send original event down the pipeline
-				out <- event
+			// Send original event down the pipeline
+			out <- event
 
-				for _, err := range errors {
-					t.handleError(err)
-				}
+			for _, err := range errors {
+				t.handleError(err)
+			}
 
-				for i := range derivatives {
-					// Passing "derivative" variable here will make the ptr address always
-					// be the same as the last item. This makes the printer to print 2 or
-					// 3 times the last event, instead of printing all derived events
-					// (when there are more than one).
-					//
-					// Nadav: Likely related to https://github.com/golang/go/issues/57969 (GOEXPERIMENT=loopvar).
-					//        Let's keep an eye on that moving from experimental for these and similar cases in tracee.
-					derivativeEvent := &derivatives[i]
+			for i := range derivatives {
+				// Passing "derivative" variable here will make the ptr address always
+				// be the same as the last item. This makes the printer to print 2 or
+				// 3 times the last event, instead of printing all derived events
+				// (when there are more than one).
+				//
+				// Nadav: Likely related to https://github.com/golang/go/issues/57969 (GOEXPERIMENT=loopvar).
+				//        Let's keep an eye on that moving from experimental for these and similar cases in tracee.
+				derivativeEvent := &derivatives[i]
 
-					// Wrap derived event in PipelineEvent
-					derivativePipelineEvent := events.NewPipelineEvent(derivativeEvent)
+				// Wrap derived event in PipelineEvent
+				derivativePipelineEvent := events.NewPipelineEvent(derivativeEvent)
 
-					// Skip events that dont work with filtering due to missing types
-					// being handled (https://github.com/aquasecurity/tracee/issues/2486)
-					switch events.ID(derivatives[i].EventID) {
-					case events.SymbolsLoaded, events.SharedObjectLoaded, events.PrintMemDump:
-					default:
-						// Derived events might need filtering as well
-						if t.matchPolicies(derivativePipelineEvent) == 0 {
-							_ = t.stats.EventsFiltered.Increment()
-							continue
-						}
+				// Skip events that dont work with filtering due to missing types
+				// being handled (https://github.com/aquasecurity/tracee/issues/2486)
+				switch events.ID(derivatives[i].EventID) {
+				case events.SymbolsLoaded, events.SharedObjectLoaded, events.PrintMemDump:
+				default:
+					// Derived events might need filtering as well
+					if t.matchPolicies(derivativePipelineEvent) == 0 {
+						_ = t.stats.EventsFiltered.Increment()
+						continue
 					}
-
-					// Process derived events
-					t.processEvent(derivativePipelineEvent)
-					out <- derivativePipelineEvent
 				}
-			case <-ctx.Done():
-				return
+
+				// Process derived events
+				t.processEvent(derivativePipelineEvent)
+				out <- derivativePipelineEvent
 			}
 		}
 	}()
@@ -668,95 +659,92 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 		defer close(out)
 		defer close(errc)
 
-		for {
-			select {
-			case event := <-in:
-				if event == nil {
-					continue
-				}
+		// NOTE: Use for-range to naturally exit when input channel is closed.
+		// All downstream stages (engine, sink) also use for-range with blocking
+		// sends, so the output channel is always being consumed. No event that
+		// has entered the pipeline will be dropped.
+		for event := range in {
+			if event == nil {
+				continue
+			}
 
-				// Capture policy context BEFORE sending event downstream to avoid race conditions
-				// The event may be modified or returned to pool by downstream stages
-				matchedPoliciesBitmap := event.MatchedPoliciesBitmap
+			// Capture policy context BEFORE sending event downstream to avoid race conditions
+			// The event may be modified or returned to pool by downstream stages
+			matchedPoliciesBitmap := event.MatchedPoliciesBitmap
 
-				// Convert to v1beta1.Event for detector API BEFORE sending downstream
-				// (uses cached conversion, but we get the pointer before potential race)
-				pbEvent := event.ToProto()
+			// Convert to v1beta1.Event for detector API BEFORE sending downstream
+			// (uses cached conversion, but we get the pointer before potential race)
+			pbEvent := event.ToProto()
 
-				// Dispatch to detectors FIRST (before sending downstream)
-				// This prevents race condition where sink stage might modify the cached proto
-				// while detectors are still reading from it
-				outputs, err := t.detectorEngine.DispatchToDetectors(ctx, pbEvent)
+			// Dispatch to detectors FIRST (before sending downstream)
+			// This prevents race condition where sink stage might modify the cached proto
+			// while detectors are still reading from it
+			outputs, err := t.detectorEngine.DispatchToDetectors(ctx, pbEvent)
 
-				// Send original event down the pipeline after dispatch completes
-				// (regardless of whether dispatch succeeded or failed)
-				out <- event
+			// Send original event downstream (blocking - sink always consumes)
+			out <- event
 
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
+			// Handle dispatch error
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
 
-				if len(outputs) == 0 {
-					continue
-				}
+			if len(outputs) == 0 {
+				continue
+			}
 
-				// All detector outputs in the chain inherit policy context from the original event
-				// since they're all derived from this single kernel event
+			// All detector outputs in the chain inherit policy context from the original event
+			// since they're all derived from this single kernel event
 
-				// Process detector outputs through breadth-first chain traversal
-				// Start queue with initial detector outputs (not the original event)
-				queue := outputs
+			// Process detector outputs through breadth-first chain traversal
+			// Start queue with initial detector outputs (not the original event)
+			queue := outputs
 
-				for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
-					var nextDepth []*pb.Event
+			for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
+				var nextDepth []*pb.Event
 
-					// Process all events at current depth
-					for _, protoEvent := range queue {
-						// Create proto-native PipelineEvent (similar to derive stage)
-						pipelineEvent := &events.PipelineEvent{
-							Event:                 nil, // proto-native, no trace.Event
-							EventID:               events.ID(protoEvent.Id),
-							Timestamp:             uint64(protoEvent.GetTimestamp().AsTime().UnixNano()),
-							MatchedPoliciesBitmap: matchedPoliciesBitmap,
-							ProtoEvent:            protoEvent,
-						}
-
-						// Apply policy filtering to detector outputs
-						if t.matchPoliciesProto(pipelineEvent) == 0 {
-							continue // Skip events not matching policy
-						}
-
-						// Dispatch to next level detectors FIRST (before sending to sink)
-						// This allows detectors to clone the proto before sink mutates it
-						nextOutputs, err := t.detectorEngine.DispatchToDetectors(ctx, protoEvent)
-						if err != nil {
-							t.handleError(err)
-							// Still send current event even if dispatch fails
-						}
-
-						// Now send to output (sink stage)
-						// Sink may mutate proto, but dispatch already completed its clone
-						out <- pipelineEvent
-
-						// Collect all outputs for next depth level
-						nextDepth = append(nextDepth, nextOutputs...)
+				// Process all events at current depth
+				for _, protoEvent := range queue {
+					// Create proto-native PipelineEvent (similar to derive stage)
+					pipelineEvent := &events.PipelineEvent{
+						Event:                 nil, // proto-native, no trace.Event
+						EventID:               events.ID(protoEvent.Id),
+						Timestamp:             uint64(protoEvent.GetTimestamp().AsTime().UnixNano()),
+						MatchedPoliciesBitmap: matchedPoliciesBitmap,
+						ProtoEvent:            protoEvent,
 					}
 
-					queue = nextDepth
+					// Apply policy filtering to detector outputs
+					if t.matchPoliciesProto(pipelineEvent) == 0 {
+						continue // Skip events not matching policy
+					}
+
+					// Dispatch to next level detectors FIRST (before sending to sink)
+					// This allows detectors to clone the proto before sink mutates it
+					nextOutputs, err := t.detectorEngine.DispatchToDetectors(ctx, protoEvent)
+					if err != nil {
+						t.handleError(err)
+						// Still send current event even if dispatch fails
+					}
+
+					// Send to output (blocking - sink always consumes)
+					out <- pipelineEvent
+
+					// Collect all outputs for next depth level
+					nextDepth = append(nextDepth, nextOutputs...)
 				}
 
-				// Safety check - log if max depth exceeded
-				if len(queue) > 0 {
-					t.detectorEngine.GetMetrics().ChainDepthExceeded.Inc()
-					_ = t.stats.ErrorCount.Increment()
-					logger.Errorw("Exceeded max detector chain depth",
-						"max_depth", maxDetectorChainDepth,
-						"remaining_events", len(queue))
-				}
+				queue = nextDepth
+			}
 
-			case <-ctx.Done():
-				return
+			// Safety check - log if max depth exceeded
+			if len(queue) > 0 {
+				t.detectorEngine.GetMetrics().ChainDepthExceeded.Inc()
+				_ = t.stats.ErrorCount.Increment()
+				logger.Errorw("Exceeded max detector chain depth",
+					"max_depth", maxDetectorChainDepth,
+					"remaining_events", len(queue))
 			}
 		}
 	}()
@@ -767,7 +755,7 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 // sinkEvents is the event sink pipeline stage. For each received event, it goes through a
 // series of printers that will print the event to the desired output. It also handles the
 // event pool, returning the event to the pool after it is processed.
-func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent) <-chan error {
+func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 	errc := make(chan error, 1)
 
 	go func() {
@@ -823,18 +811,13 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 			}
 
 			// Send the event to the streams.
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				if t.streamsManager.HasSubscribers() {
-					// Translate event ID to external format for streams (external API boundary)
-					pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
-					t.streamsManager.Publish(ctx, pbEvent, event.MatchedPoliciesBitmap)
-				}
-				_ = t.stats.EventCount.Increment()
-				t.eventsPool.Put(event)
+			if t.streamsManager.HasSubscribers() {
+				// Translate event ID to external format for streams (external API boundary)
+				pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
+				t.streamsManager.Publish(pbEvent, event.MatchedPoliciesBitmap)
 			}
+			_ = t.stats.EventCount.Increment()
+			t.eventsPool.Put(event)
 		}
 	}()
 

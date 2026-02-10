@@ -1,7 +1,6 @@
 package streams
 
 import (
-	"context"
 	"sync"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
@@ -19,7 +18,7 @@ type Stream struct {
 	eventFilter bool
 	// events is a channel that is used to receive events from the stream
 	events       chan *pb.Event
-	strategyPush func(context.Context, *pb.Event)
+	strategyPush func(*pb.Event)
 }
 
 // ReceiveEvents returns a read-only channel for receiving events from the stream
@@ -30,7 +29,7 @@ func (s *Stream) ReceiveEvents() <-chan *pb.Event {
 // Publish publishes an event to the stream,
 // but first check if this stream is interested in this event,
 // by checking the event's policy mask against the stream's policy mask.
-func (s *Stream) publish(ctx context.Context, event *pb.Event, policyBitmap uint64) {
+func (s *Stream) publish(event *pb.Event, policyBitmap uint64) {
 	if s.shouldIgnorePolicy(policyBitmap) {
 		return
 	}
@@ -44,24 +43,23 @@ func (s *Stream) publish(ctx context.Context, event *pb.Event, policyBitmap uint
 	// Due to the dynamic nature of this function the compiler doesn't
 	// inline this. A condition is faster (and cheaper) than a function call
 	// should we change it with a condition?
-	s.strategyPush(ctx, event)
+	s.strategyPush(event)
 }
 
 // blockPublish publishes an event to the stream, blocking if the channel is full.
-func (s *Stream) blockPublish(ctx context.Context, event *pb.Event) {
-	select {
-	case s.events <- event:
-	case <-ctx.Done():
-		return
-	}
+// NOTE: We do NOT check ctx.Done() here anymore - we must send all events
+// to ensure graceful drain during shutdown. The channel will be closed
+// when the stream is unsubscribed, which properly terminates consumers.
+func (s *Stream) blockPublish(event *pb.Event) {
+	s.events <- event
 }
 
 // dropPublish publishes an event to the stream, dropping the event if the channel is full.
-func (s *Stream) dropPublish(ctx context.Context, event *pb.Event) {
+// NOTE: We do NOT check ctx.Done() here anymore - we must attempt to send all events
+// to ensure graceful drain during shutdown.
+func (s *Stream) dropPublish(event *pb.Event) {
 	select {
 	case s.events <- event:
-	case <-ctx.Done():
-		return
 	default:
 		// Probably this is going to be too verbose
 		logger.Debugw("stream channel full, dropping message")
@@ -130,12 +128,12 @@ func (sm *StreamsManager) Unsubscribe(stream *Stream) {
 
 // Publish publishes an event to all streams.
 // The event is a pb.Event pointer and the policyBitmap indicates which policies matched.
-func (sm *StreamsManager) Publish(ctx context.Context, event *pb.Event, policyBitmap uint64) {
+func (sm *StreamsManager) Publish(event *pb.Event, policyBitmap uint64) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
 	for stream := range sm.subscribers {
-		stream.publish(ctx, event, policyBitmap)
+		stream.publish(event, policyBitmap)
 	}
 }
 

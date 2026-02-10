@@ -1,8 +1,6 @@
 package printer
 
 import (
-	"context"
-
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/metrics"
@@ -64,15 +62,10 @@ func (b *Broadcast) Epilogue(stats metrics.Stats) {
 }
 
 // FromStream receives events from the stream and broadcasts them to all underlying printers.
-// It runs until the context is cancelled or the stream is closed.
-func (b *Broadcast) FromStream(ctx context.Context, stream *streams.Stream) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case e := <-stream.ReceiveEvents():
-			b.Print(e)
-		}
+// It runs until the stream's event channel is closed, ensuring all events are drained during shutdown.
+func (b *Broadcast) FromStream(stream *streams.Stream) {
+	for e := range stream.ReceiveEvents() {
+		b.Print(e)
 	}
 }
 

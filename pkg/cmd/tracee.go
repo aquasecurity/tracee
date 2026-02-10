@@ -135,7 +135,7 @@ func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 			p.Preamble()
 
 			// blocks
-			p.FromStream(ctx, stream)
+			p.FromStream(stream)
 		}()
 
 		streamList = append(streamList, stream)
