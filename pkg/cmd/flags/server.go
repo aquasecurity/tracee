@@ -154,7 +154,7 @@ func (s *ServerConfig) enableHttpEndpoints() error {
 		s.http.EnableMetricsEndpoint()
 	}
 	if s.Healthz {
-		s.http.EnableHealthzEndpoint()
+		s.http.SetHealthzEnabled()
 	}
 	if s.Pprof {
 		s.http.EnablePProfEndpoint()

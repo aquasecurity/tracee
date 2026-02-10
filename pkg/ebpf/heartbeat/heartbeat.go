@@ -117,7 +117,7 @@ func (h *Heartbeat) setHealth(status bool) {
 	h.isHealthy = status
 }
 
-// IsAlive returns the current health status of the Heartbeat instance.
+// IsAlive reports whether the heartbeat is alive.
 func (h *Heartbeat) IsAlive() bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
