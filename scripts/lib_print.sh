@@ -156,3 +156,29 @@ print_section_banner() {
     info "${print_section_banner_title}"
     info "${print_section_banner_border}"
 }
+
+# print_cmd runs a command, captures its output, and prints each line via info.
+# This ensures all output is consistently formatted with the log prefix.
+#
+# $@: COMMAND - Command and arguments to execute.
+#
+# Usage:
+#   print_cmd COMMAND [ARGS...]
+#
+# Example:
+#   print_cmd uname -a
+#   print_cmd free -h
+#   print_cmd cat /etc/os-release
+#
+# Returns: the command's exit code.
+print_cmd() {
+    print_cmd_output=""
+    print_cmd_rc=0
+    print_cmd_output=$("$@" 2>&1) || print_cmd_rc=$?
+    if [ -n "${print_cmd_output}" ]; then
+        printf '%s\n' "${print_cmd_output}" | while IFS= read -r print_cmd_line; do
+            info "${print_cmd_line}"
+        done
+    fi
+    return ${print_cmd_rc}
+}
