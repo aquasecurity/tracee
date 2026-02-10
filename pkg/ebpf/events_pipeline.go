@@ -510,11 +510,17 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 	errc := make(chan error, 1)
 
 	// Some "informational" events are started here (TODO: API server?)
-	t.invokeInitEvents(ctx, out)
+	// initEventsWg tracks background goroutines (e.g. FtraceHookEvent) that send
+	// to out. We must wait for them to finish before closing out.
+	var initEventsWg sync.WaitGroup
+	t.invokeInitEvents(ctx, out, &initEventsWg)
 
 	go func() {
+		// Defers run LIFO: initWg.Wait() first, then close(errc), then close(out).
+		// This ensures init goroutines finish before the output channel is closed.
 		defer close(out)
 		defer close(errc)
+		defer initEventsWg.Wait()
 
 		for event := range in { // For each received event...
 			if event == nil {

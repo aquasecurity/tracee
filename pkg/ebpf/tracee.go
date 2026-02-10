@@ -1792,18 +1792,6 @@ const pollTimeout int = 300
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
-	// Some events need initialization before the perf buffers are polled
-
-	go t.hookedSyscallTableRoutine(ctx)
-
-	t.triggerSeqOpsIntegrityCheck(trace.Event{})
-	errs := t.triggerMemDump(trace.Event{})
-	for _, err := range errs {
-		logger.Warnw("Memory dump", "error", err)
-	}
-
-	go t.lkmSeekerRoutine(ctx)
-
 	// Start control plane
 	t.controlPlane.Start()
 	go t.controlPlane.Run(ctx)
@@ -1854,6 +1842,18 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	// triggered before the perf buffer is being polled, causing them to be lost.
 
 	<-pipelineReady
+
+	// Now that the pipeline is ready, start routines that trigger uprobe-based
+	// events (syscall table check, seq ops, mem dump, lkm seeker).
+
+	go t.hookedSyscallTableRoutine(ctx)
+	t.triggerSeqOpsIntegrityCheck(trace.Event{})
+	errs := t.triggerMemDump(trace.Event{})
+	for _, err := range errs {
+		logger.Warnw("Memory dump", "error", err)
+	}
+	go t.lkmSeekerRoutine(ctx)
+
 	t.running.Store(true)      // Tracee is now fully ready to capture events
 	t.invokeReadyCallback(ctx) // executes ready callback, non blocking
 	<-ctx.Done()               // block until ctx is cancelled elsewhere
@@ -2126,8 +2126,9 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 
 // invokeInitEvents emits Tracee events, called Initialization Events, that are generated from the
 // userland process itself, and not from the kernel. These events usually serve as informational
-// events for the signatures engine/logic.
-func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.PipelineEvent) {
+// events for the signatures engine/logic. The wg tracks background goroutines that send to out;
+// the caller must wait on wg before closing out.
+func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.PipelineEvent, wg *sync.WaitGroup) {
 	var matchedPolicies uint64
 
 	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
@@ -2148,7 +2149,7 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 		traceeDataEvent := events.TraceeInfoEvent(t.bootTime, t.startTime)
 		setMatchedPolicies(&traceeDataEvent, matchedPolicies)
 		out <- events.NewPipelineEvent(&traceeDataEvent)
-		_ = t.stats.EventCount.Increment()
+		// Note: EventCount is incremented in sinkEvents stage, not here
 	}
 
 	matchedPolicies = policiesMatch(events.InitNamespaces)
@@ -2156,7 +2157,7 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 		systemInfoEvent := events.InitNamespacesEvent()
 		setMatchedPolicies(&systemInfoEvent, matchedPolicies)
 		out <- events.NewPipelineEvent(&systemInfoEvent)
-		_ = t.stats.EventCount.Increment()
+		// Note: EventCount is incremented in sinkEvents stage, not here
 	}
 
 	// Initial existing containers events (1 event per container)
@@ -2168,7 +2169,7 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 			event := &(existingContainerEvents[i])
 			setMatchedPolicies(event, matchedPolicies)
 			out <- events.NewPipelineEvent(event)
-			_ = t.stats.EventCount.Increment()
+			// Note: EventCount is incremented in sinkEvents stage, not here
 		}
 	}
 
@@ -2187,7 +2188,8 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 		// once that happens.
 		selfLoadedFtraceProgs := t.getSelfLoadedPrograms(true)
 
-		go events.FtraceHookEvent(ctx, t.stats.EventCount, out, ftraceBaseEvent, selfLoadedFtraceProgs)
+		wg.Add(1)
+		go events.FtraceHookEvent(ctx, wg, out, ftraceBaseEvent, selfLoadedFtraceProgs)
 	}
 }
 
