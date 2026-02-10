@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       tracee_ref:
-        description: 'Tracee ref to checkout'
+        description: "Tracee ref to checkout"
         required: true
-        default: 'main'
+        default: "main"
         type: string
 
   pull_request:
@@ -180,7 +180,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0 # Fetch full history for codecov base comparison
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
       - name: Run Unit Tests
@@ -217,7 +217,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0 # Fetch full history for codecov base comparison
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
       - name: Run Unit Tests
@@ -261,7 +261,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0 # Fetch full history for codecov base comparison
       # NOTE: Git ownership fix not needed when running on host (only required in containers).
       # - name: Fix Git ownership
       #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -309,7 +309,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0 # Fetch full history for codecov base comparison
       # NOTE: Git ownership fix not needed when running on host (only required in containers).
       # - name: Fix Git ownership
       #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -352,7 +352,8 @@ jobs:
     name: Generate Test Matrix
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
     outputs:
-      matrix01: ${{ steps.generate.outputs.matrix }}
+      ami_matrix: ${{ steps.generate.outputs.ami_matrix }}
+      mainline_matrix: ${{ steps.generate.outputs.mainline_matrix }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -361,7 +362,7 @@ jobs:
       - name: Generate Matrix
         id: generate
         uses: ./.github/actions/generate-kernel-matrix
-  kernel-tests:
+  kernel-tests-ami:
     name: ${{ matrix.job_name }}
     needs:
       - generate-matrix
@@ -372,7 +373,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{fromJson(needs.generate-matrix.outputs.matrix01)}}
+        include: ${{fromJson(needs.generate-matrix.outputs.ami_matrix)}}
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -440,3 +441,55 @@ jobs:
           job-name: ${{ matrix.job_name }}
           run-id: ${{ github.run_id }}
           run-attempt: ${{ github.run_attempt }}
+
+  kernel-tests-mainline:
+    name: ${{ matrix.job_name }}
+    needs:
+      - generate-matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{fromJson(needs.generate-matrix.outputs.mainline_matrix)}}
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    steps:
+      - name: Prepare Environment
+        run: |
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+          # Increase space if needed? Ubuntu runners usually have plenty for this.
+      - name: "Checkout"
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          submodules: true
+          ref: ${{ env.TRACEE_REF }}
+
+      - name: "Setup Mainline Kernel"
+        run: |
+          chmod +x ./scripts/setup-mainline-kernel.sh
+          ./scripts/setup-mainline-kernel.sh "${{ matrix.kernel_version }}"
+
+      - name: "Install Tooling & Dependencies"
+        run: |
+          ./scripts/installation/install-deps-ubuntu.sh
+          ./scripts/installation/install-clang.sh
+
+      - name: "Build Tracee"
+        run: |
+          make tracee
+
+      - name: "Run Tests in QEMU"
+        run: |
+          chmod +x ./tests/e2e-kernel-test-qemu.sh
+          # Pass required env vars? The script handles it.
+          ./tests/e2e-kernel-test-qemu.sh "${{ env.KERNEL_RELEASE }}"
+
+      - name: Upload Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-logs-${{ matrix.job_name }}
+          path: /tmp/tracee*
