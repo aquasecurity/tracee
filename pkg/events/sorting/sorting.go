@@ -100,7 +100,6 @@
 package sorting
 
 import (
-	gocontext "context"
 	"math"
 	"sync"
 	"time"
@@ -142,29 +141,39 @@ func InitEventSorter() (*EventsChronologicalSorter, error) {
 	return &newSorter, nil
 }
 
-func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in <-chan *events.PipelineEvent, outChanSize int) (
+func (sorter *EventsChronologicalSorter) StartPipeline(in <-chan *events.PipelineEvent, outChanSize int) (
 	chan *events.PipelineEvent, chan error) {
 	out := make(chan *events.PipelineEvent, outChanSize)
 	errc := make(chan error, 1)
-	go sorter.Start(in, out, ctx, errc)
+	go sorter.Start(in, out, errc)
 	return out, errc
 }
 
 // Start is the main function of the EventsChronologicalSorter class, which orders input events from events channels
 // and pass forward all ordered events to the output channel after each interval.
 // When exits, the sorter will send forward all buffered events in ordered matter.
-func (sorter *EventsChronologicalSorter) Start(in <-chan *events.PipelineEvent, out chan<- *events.PipelineEvent,
-	ctx gocontext.Context, errc chan error) {
+//
+// NOTE: We use a select loop (not for-range) because we need to multiplex
+// between the input channel and the ticker. We do NOT watch ctx.Done() --
+// instead we rely on the upstream stage closing the input channel, which
+// triggers a full drain of all buffered events before closing the output.
+// This ensures no event that entered the pipeline is dropped.
+func (sorter *EventsChronologicalSorter) Start(in <-chan *events.PipelineEvent, out chan<- *events.PipelineEvent, errc chan error) {
 	sorter.errorChan = errc
 	defer close(out)
 	defer close(errc)
 	ticker := time.NewTicker(sorter.eventsPassingInterval)
+	defer ticker.Stop()
 	for {
 		select {
-		case newEvent := <-in:
-			if newEvent == nil {
+		case newEvent, ok := <-in:
+			if !ok {
+				// Input channel closed: flush all buffered events and exit.
 				sorter.sendEvents(out, math.MaxUint64)
 				return
+			}
+			if newEvent == nil {
+				continue // might happen during initialization
 			}
 			sorter.addEvent(newEvent)
 		case <-ticker.C:
@@ -174,10 +183,6 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *events.PipelineEvent, 
 				sorter.extractionSavedTimestamps = sorter.extractionSavedTimestamps[1:]
 				sorter.sendEvents(out, extractionTimestamp)
 			}
-
-		case <-ctx.Done():
-			sorter.sendEvents(out, math.MaxUint64)
-			return
 		}
 	}
 }

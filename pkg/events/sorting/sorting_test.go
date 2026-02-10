@@ -1,7 +1,6 @@
 package sorting
 
 import (
-	"context"
 	"errors"
 	"sort"
 	"testing"
@@ -277,12 +276,9 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			require.NoError(t, err)
 			newSorter.cpuEventsQueues = make([]cpuEventsQueue, testCase.cpuAmount)
 			newSorter.eventsPassingInterval = sendingInterval // Make sure that interval high enough for test
-			ctx := context.Background()
-			ctx, cancel := context.WithCancel(ctx)
 			inputChan := sendTestEvents(testCase.eventsPools)
-			go newSorter.Start(inputChan, outputChan, ctx, fatalErrorsChan)
+			go newSorter.Start(inputChan, outputChan, fatalErrorsChan)
 			outputList, sorterErr := retrieveEventsFromSorter(testCase.eventsAmount, outputChan, fatalErrorsChan)
-			cancel()
 			close(inputChan)
 			require.NoError(t, sorterErr)
 			assert.Empty(t, errChan)

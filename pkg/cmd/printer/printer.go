@@ -3,7 +3,6 @@ package printer
 import (
 	"bufio"
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,7 +36,7 @@ type EventPrinter interface {
 	// Print prints a single event
 	Print(event *pb.Event)
 	// Receive events from stream
-	FromStream(ctx context.Context, stream *streams.Stream)
+	FromStream(stream *streams.Stream)
 	// Mainly created for testing purposes. Might be useful also in other context
 	Kind() string
 	// dispose of resources
@@ -362,8 +361,8 @@ func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 }
 
 // FromStream receives events from the stream and prints them in the table format.
-func (p *tableEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	consumeFromStream(ctx, stream, p)
+func (p *tableEventPrinter) FromStream(stream *streams.Stream) {
+	consumeFromStream(stream, p)
 }
 
 // Kind returns the kind of the tableEventPrinter.
@@ -422,8 +421,8 @@ func (p templateEventPrinter) Print(event *pb.Event) {
 func (p templateEventPrinter) Epilogue(stats metrics.Stats) {}
 
 // FromStream receives events from the stream and prints them using the template format.
-func (p *templateEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	consumeFromStream(ctx, stream, p)
+func (p *templateEventPrinter) FromStream(stream *streams.Stream) {
+	consumeFromStream(stream, p)
 }
 
 // Kind returns the kind of the templateEventPrinter.
@@ -506,8 +505,8 @@ func (p *jsonEventPrinter) Epilogue(stats metrics.Stats) {
 }
 
 // FromStream receives events from the stream and prints them in JSON format.
-func (p *jsonEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	consumeFromStream(ctx, stream, p)
+func (p *jsonEventPrinter) FromStream(stream *streams.Stream) {
+	consumeFromStream(stream, p)
 }
 
 // Kind returns the kind of the jsonEventPrinter.
@@ -547,7 +546,7 @@ func (p *ignoreEventPrinter) Print(event *pb.Event) {}
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
 // FromStream receives events from the stream but ignores them.
-func (p *ignoreEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {}
+func (p *ignoreEventPrinter) FromStream(stream *streams.Stream) {}
 
 // Kind returns the kind of the ignoreEventPrinter.
 func (p *ignoreEventPrinter) Kind() string {
@@ -698,8 +697,8 @@ func (p *forwardEventPrinter) Print(event *pb.Event) {
 func (p *forwardEventPrinter) Epilogue(stats metrics.Stats) {}
 
 // FromStream receives events from the stream and sends them to the Forward destination.
-func (p *forwardEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	consumeFromStream(ctx, stream, p)
+func (p *forwardEventPrinter) FromStream(stream *streams.Stream) {
+	consumeFromStream(stream, p)
 }
 
 // Kind returns the kind of the forwardEventPrinter.
@@ -813,8 +812,8 @@ func (ws *webhookEventPrinter) Print(event *pb.Event) {
 func (ws *webhookEventPrinter) Epilogue(stats metrics.Stats) {}
 
 // FromStream receives events from the stream and sends them to the webhook endpoint.
-func (ws *webhookEventPrinter) FromStream(ctx context.Context, stream *streams.Stream) {
-	consumeFromStream(ctx, stream, ws)
+func (ws *webhookEventPrinter) FromStream(stream *streams.Stream) {
+	consumeFromStream(stream, ws)
 }
 
 // Kind returns the kind of the webhookEventPrinter.
@@ -826,16 +825,9 @@ func (ws *webhookEventPrinter) Kind() string {
 func (ws *webhookEventPrinter) Close() {}
 
 // consumeFromStream consumes events from a stream and prints them using the provided printer.
-// It runs until the context is cancelled or the stream is closed.
-func consumeFromStream(ctx context.Context, stream *streams.Stream, printer EventPrinter) {
-	eventChan := stream.ReceiveEvents()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case e := <-eventChan:
-			printer.Print(e)
-		}
+// It runs until the stream's event channel is closed, ensuring all events are drained during shutdown.
+func consumeFromStream(stream *streams.Stream, printer EventPrinter) {
+	for e := range stream.ReceiveEvents() {
+		printer.Print(e)
 	}
 }

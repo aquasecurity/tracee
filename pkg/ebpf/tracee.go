@@ -1821,13 +1821,14 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		}
 	}
 
-	// Main event loop (polling events perf buffer)
+	// Start perf buffer polling and event pipeline
 
 	t.eventsPerfMap.Poll(pollTimeout)
 
 	pipelineReady := make(chan struct{}, 1)
+	pipelineDone := make(chan struct{})
 	go t.processLostEvents() // termination signaled by closing t.done
-	go t.handleEvents(ctx, pipelineReady)
+	go t.handleEvents(ctx, pipelineReady, pipelineDone)
 
 	// Parallel perf buffer with file writes events
 
@@ -1848,14 +1849,20 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.bpfLogsPerfMap.Poll(pollTimeout)
 	go t.processBPFLogs(ctx)
 
-	// Management
+	// Wait for pipeline to be ready before triggering events that produce
+	// data through the perf buffer. This avoids a race where events are
+	// triggered before the perf buffer is being polled, causing them to be lost.
 
 	<-pipelineReady
 	t.running.Store(true)      // Tracee is now fully ready to capture events
 	t.invokeReadyCallback(ctx) // executes ready callback, non blocking
 	<-ctx.Done()               // block until ctx is cancelled elsewhere
 
+	logger.Debugw("Shutdown initiated")
+	shutdownStart := time.Now()
+
 	// Stop perf buffers (close them when no more events are being processed)
+	// This triggers the cascade: perf buffer closes -> channels close -> stages drain
 
 	t.eventsPerfMap.Stop()
 	err := t.controlPlane.Stop()
@@ -1869,6 +1876,19 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 		t.netCapPerfMap.Stop()
 	}
 	t.bpfLogsPerfMap.Stop()
+
+	// Wait for pipeline to drain with a timeout
+	// The pipeline should drain quickly once input is closed, but we add a timeout
+	// to prevent indefinite hangs if a stage is stuck
+	pipelineDrainTimeout := 30 * time.Second
+	select {
+	case <-pipelineDone:
+		logger.Debugw("Pipeline drained successfully", "duration", time.Since(shutdownStart))
+	case <-time.After(pipelineDrainTimeout):
+		logger.Warnw("Pipeline drain timeout exceeded, forcing shutdown",
+			"timeout", pipelineDrainTimeout,
+			"duration", time.Since(shutdownStart))
+	}
 
 	// TODO: move logic below somewhere else (related to file writes)
 
