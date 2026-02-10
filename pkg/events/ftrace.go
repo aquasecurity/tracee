@@ -7,13 +7,13 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	"github.com/aquasecurity/tracee/common/capabilities"
-	"github.com/aquasecurity/tracee/common/counter"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/timeutil"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -61,7 +61,11 @@ func GetFtraceBaseEvent() *trace.Event {
 
 // FtraceHookEvent check for ftrace hooks periodically and reports them.
 // It wakes up every random time to check if there was a change in the hooks.
-func FtraceHookEvent(ctx context.Context, eventsCounter *counter.Counter, out chan *PipelineEvent, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
+// The caller must call wg.Add(1) before launching this goroutine; wg.Done()
+// is called when the goroutine exits, allowing the caller to wait before
+// closing the out channel.
+func FtraceHookEvent(ctx context.Context, wg *sync.WaitGroup, out chan *PipelineEvent, baseEvent *trace.Event, selfLoadedProgs map[string]int) {
+	defer wg.Done()
 	logger.Debugw("Starting ftraceHook goroutine")
 	defer logger.Debugw("Stopped ftraceHook goroutine")
 
@@ -73,7 +77,7 @@ func FtraceHookEvent(ctx context.Context, eventsCounter *counter.Counter, out ch
 
 	// Trigger from time to time or on demand
 	for {
-		err := checkFtraceHooks(ctx, eventsCounter, out, baseEvent, &def, selfLoadedProgs)
+		err := checkFtraceHooks(ctx, out, baseEvent, &def, selfLoadedProgs)
 		if err != nil {
 			// Context cancelled - exit gracefully
 			if ctx.Err() != nil {
@@ -139,7 +143,7 @@ func initFtraceArgs(fields []DataField) []trace.Argument {
 }
 
 // checkFtraceHooks checks for ftrace hooks
-func checkFtraceHooks(ctx context.Context, eventsCounter *counter.Counter, out chan *PipelineEvent, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
+func checkFtraceHooks(ctx context.Context, out chan *PipelineEvent, baseEvent *trace.Event, ftraceDef *Definition, selfLoadedProgs map[string]int) error {
 	ftraceHooksBytes, err := getFtraceHooksData()
 	if err != nil {
 		return err
@@ -208,13 +212,9 @@ func checkFtraceHooks(ctx context.Context, eventsCounter *counter.Counter, out c
 		event.Args = args
 		event.ArgsNum = len(args)
 
-		// Use select to avoid sending on closed channel during shutdown
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case out <- NewPipelineEvent(&event):
-			_ = eventsCounter.Increment()
-		}
+		// Safe to send: processEvents waits for our WaitGroup before
+		// closing the out channel, so out is guaranteed to be open.
+		out <- NewPipelineEvent(&event)
 	}
 
 	return nil
