@@ -1,151 +1,127 @@
 [
-  {
-    "name": "GKE 5.4",
-    "ami": "0013845506cbdf2ca",
-    "arch": "x86_64"
-  },
-  {
-    "name": "GKE 5.10",
-    "ami": "049b1b3a4a5fdf9fd",
-    "arch": "x86_64"
-  },
-  {
-    "name": "GKE 5.15 x86_64",
-    "ami": "01f6d4f80f256ffe4",
-    "arch": "x86_64"
-  },
-  {
-    "name": "GKE 5.15 aarch64",
-    "ami": "079f308677600eebf",
-    "arch": "aarch64"
-  },
-  {
-    "name": "AMZN2 5.10 x86_64",
-    "ami": "05d03d50b6008ede7",
-    "arch": "x86_64"
-  },
-  {
-    "name": "AMZN2 5.10 aarch64",
-    "ami": "05e46d0a87c96bf69",
-    "arch": "aarch64"
-  },
-  {
-    "name": "RHEL8 4.18 x86_64",
-    "ami": "0e6e8bf2181db9d65",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Focal 5.4 x86_64",
-    "ami": "0c75089aa342ffa26",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Focal 5.13 x86_64",
-    "ami": "094d5310a281c8679",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Ubuntu 20.04 generic (5.13.0-52) [aarch64]",
-    "ami_name": "ubuntu-20.04-generic-5.13.0-52-aarch64",
-    "ami": "07872810c50fe4ac1",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Jammy 5.15 x86_64",
-    "ami": "0d01de8f7b26afe02",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Jammy 5.15 aarch64",
-    "ami": "08e91aa07134e6a36",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Jammy 5.19 x86_64",
-    "ami": "02691308713b4cec2",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Jammy 5.19 aarch64",
-    "ami": "046579f8e52acb104",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Lunar 6.2 x86_64",
-    "ami": "034e03e1bdb7c205f",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Lunar 6.2 aarch64",
-    "ami": "04b03463ee4e32182",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Mantic 6.5 x86_64",
-    "ami": "0a44ad46e5c42e499",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Mantic 6.5 aarch64",
-    "ami": "0387f77c4820c98db",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Mantic 6.6 x86_64",
-    "ami": "05b5ac8f6c43b3ca5",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Mantic 6.6 aarch64",
-    "ami": "05c9d6cd9343f0a43",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Ubuntu 24.04 generic (6.8.0-90) [x86_64]",
-    "ami_name": "ubuntu-24.04-generic-6.8.0-90-x86_64",
-    "ami": "0aa4a09a843b6fa93",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Ubuntu 24.04 generic (6.8.0-90) [aarch64]",
-    "ami_name": "ubuntu-24.04-generic-6.8.0-90-aarch64",
-    "ami": "01a8165c076aa2864",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Ubuntu 24.04 generic (6.11.0-29) [x86_64]",
-    "ami_name": "ubuntu-24.04-generic-6.11.0-29-x86_64",
-    "ami": "03dbff05cae3a30d0",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Ubuntu 24.04 generic (6.11.0-29) [aarch64]",
-    "ami_name": "ubuntu-24.04-generic-6.11.0-29-aarch64",
-    "ami": "07774797557132122",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Ubuntu Mainline 6.12 (x86_64)",
-    "type": "mainline",
-    "kernel_version": "v6.12",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Ubuntu Mainline 6.11 (x86_64)",
-    "type": "mainline",
-    "kernel_version": "v6.11",
-    "arch": "x86_64"
-  },
-  {
-    "name": "Ubuntu Mainline 6.12 (aarch64)",
-    "type": "mainline",
-    "kernel_version": "v6.12",
-    "arch": "aarch64"
-  },
-  {
-    "name": "Ubuntu Mainline 6.11 (aarch64)",
-    "type": "mainline",
-    "kernel_version": "v6.11",
-    "arch": "aarch64"
-  }
+    {
+        "name": "GKE 5.4",
+        "ami": "0013845506cbdf2ca",
+        "arch": "x86_64"
+    },
+    {
+        "name": "GKE 5.10",
+        "ami": "049b1b3a4a5fdf9fd",
+        "arch": "x86_64"
+    },
+    {
+        "name": "GKE 5.15 x86_64",
+        "ami": "01f6d4f80f256ffe4",
+        "arch": "x86_64"
+    },
+    {
+        "name": "GKE 5.15 aarch64",
+        "ami": "079f308677600eebf",
+        "arch": "aarch64"
+    },
+    {
+        "name": "AMZN2 5.10 x86_64",
+        "ami": "05d03d50b6008ede7",
+        "arch": "x86_64"
+    },
+    {
+        "name": "AMZN2 5.10 aarch64",
+        "ami": "05e46d0a87c96bf69",
+        "arch": "aarch64"
+    },
+    {
+        "name": "RHEL8 4.18 x86_64",
+        "ami": "0e6e8bf2181db9d65",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Focal 5.4 x86_64",
+        "ami": "0c75089aa342ffa26",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Focal 5.13 x86_64",
+        "ami": "094d5310a281c8679",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Ubuntu 20.04 generic (5.13.0-52) [aarch64]",
+        "ami_name": "ubuntu-20.04-generic-5.13.0-52-aarch64",
+        "ami": "07872810c50fe4ac1",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Jammy 5.15 x86_64",
+        "ami": "0d01de8f7b26afe02",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Jammy 5.15 aarch64",
+        "ami": "08e91aa07134e6a36",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Jammy 5.19 x86_64",
+        "ami": "02691308713b4cec2",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Jammy 5.19 aarch64",
+        "ami": "046579f8e52acb104",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Lunar 6.2 x86_64",
+        "ami": "034e03e1bdb7c205f",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Lunar 6.2 aarch64",
+        "ami": "04b03463ee4e32182",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Mantic 6.5 x86_64",
+        "ami": "0a44ad46e5c42e499",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Mantic 6.5 aarch64",
+        "ami": "0387f77c4820c98db",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Mantic 6.6 x86_64",
+        "ami": "05b5ac8f6c43b3ca5",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Mantic 6.6 aarch64",
+        "ami": "05c9d6cd9343f0a43",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Ubuntu 24.04 generic (6.8.0-90) [x86_64]",
+        "ami_name": "ubuntu-24.04-generic-6.8.0-90-x86_64",
+        "ami": "0aa4a09a843b6fa93",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Ubuntu 24.04 generic (6.8.0-90) [aarch64]",
+        "ami_name": "ubuntu-24.04-generic-6.8.0-90-aarch64",
+        "ami": "01a8165c076aa2864",
+        "arch": "aarch64"
+    },
+    {
+        "name": "Ubuntu 24.04 generic (6.11.0-29) [x86_64]",
+        "ami_name": "ubuntu-24.04-generic-6.11.0-29-x86_64",
+        "ami": "03dbff05cae3a30d0",
+        "arch": "x86_64"
+    },
+    {
+        "name": "Ubuntu 24.04 generic (6.11.0-29) [aarch64]",
+        "ami_name": "ubuntu-24.04-generic-6.11.0-29-aarch64",
+        "ami": "07774797557132122",
+        "arch": "aarch64"
+    }
 ]

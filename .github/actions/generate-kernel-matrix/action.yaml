@@ -4,19 +4,13 @@ description: |
   Adds timestamp suffix for unique runner identification.
 inputs:
   data-file-path:
-    description: "Path to the kernel matrix JSON data file"
+    description: 'Path to the kernel matrix JSON data file'
     required: false
-    default: ".github/data/kernel-test-matrix.json"
+    default: '.github/data/kernel-test-matrix.json'
 outputs:
   matrix:
-    description: "Generated JSON matrix for GitHub Actions (AMI)"
-    value: ${{ steps.generate.outputs.ami_matrix }}
-  ami_matrix:
-    description: "Generated JSON matrix for AMI-based tests"
-    value: ${{ steps.generate.outputs.ami_matrix }}
-  mainline_matrix:
-    description: "Generated JSON matrix for Mainline kernel tests"
-    value: ${{ steps.generate.outputs.mainline_matrix }}
+    description: 'Generated JSON matrix for GitHub Actions'
+    value: ${{ steps.generate.outputs.matrix }}
 runs:
   using: composite
   steps:
@@ -24,36 +18,20 @@ runs:
       id: generate
       run: |
         DATA_FILE="${{ inputs.data-file-path }}"
-
+        
         if [ ! -f "$DATA_FILE" ]; then
           echo "Error: Data file not found at $DATA_FILE"
           exit 1
         fi
-
+        
         # Read the JSON file and add timestamp suffix to each entry
         timestamp=$(date +%s)
-        # Read JSON, add default type="ami" if missing, add suffix/job_name
-        # Then split into two arrays
-
-        # Pre-process: Add defaults and common fields
-        processed=$(jq --arg ts "$timestamp" -c 'map(
-          (.type //= "ami") | 
-          (. + {sufix: $ts, job_name: .name})
-        )' "$DATA_FILE")
-
-        # Filter AMI matrix
-        ami_matrix=$(echo "$processed" | jq -c 'map(select(.type == "ami"))')
-        # Filter Mainline matrix
-        mainline_matrix=$(echo "$processed" | jq -c 'map(select(.type == "mainline"))')
-
-        echo "Generated AMI matrix:"
-        echo "$ami_matrix" | jq .
-
-        echo "Generated Mainline matrix:"
-        echo "$mainline_matrix" | jq .
-
-        # Output artifacts
-        echo "ami_matrix=$ami_matrix" >> $GITHUB_OUTPUT
-        echo "mainline_matrix=$mainline_matrix" >> $GITHUB_OUTPUT
-        echo "matrix=$ami_matrix" >> $GITHUB_OUTPUT # Backwards compatibility
+        matrix=$(jq --arg ts "$timestamp" -c '[.[] | . + {sufix: $ts, job_name: .name}]' "$DATA_FILE")
+        
+        echo "Generated matrix (pretty printed for display):"
+        echo "$matrix" | jq .
+        
+        # Output the matrix as a single line (compact JSON)
+        echo "matrix=$matrix" >> $GITHUB_OUTPUT
       shell: bash
+

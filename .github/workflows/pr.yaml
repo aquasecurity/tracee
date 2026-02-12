@@ -443,7 +443,7 @@ jobs:
           run-attempt: ${{ github.run_attempt }}
 
   kernel-tests-mainline:
-    name: "Mainline ${{ matrix.kernel_version }} (${{ matrix.arch }})"
+    name: "Mainline Kernels (${{ matrix.arch }})"
     runs-on:
       - ${{ matrix.runner_label }}
       - EXECUTION_TYPE=SHORT
@@ -452,17 +452,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - kernel_version: "v6.12"
-            arch: "x86_64"
+          - arch: "x86_64"
             runner_label: "graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123"
-          - kernel_version: "v6.11"
-            arch: "x86_64"
-            runner_label: "graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123"
-          - kernel_version: "v6.12"
-            arch: "aarch64"
-            runner_label: "graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}"
-          - kernel_version: "v6.11"
-            arch: "aarch64"
+          - arch: "aarch64"
             runner_label: "graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}"
     steps:
       - name: Prepare Environment
@@ -478,11 +470,6 @@ jobs:
       - name: "Disable Unattended Upgrades"
         run: |
           sudo ./scripts/disable-unattended-upgrades.sh
-
-      - name: "Setup Mainline Kernel"
-        run: |
-          chmod +x ./scripts/setup-mainline-kernel.sh
-          sudo ./scripts/setup-mainline-kernel.sh "${{ matrix.kernel_version }}" --arch "${{ matrix.arch }}"
 
       - name: "Install Tooling & Dependencies"
         run: |
@@ -503,9 +490,25 @@ jobs:
 
       - name: "Run Tests in QEMU"
         run: |
+          chmod +x ./scripts/setup-mainline-kernel.sh
           chmod +x ./tests/e2e-kernel-test-qemu.sh
           chmod +x ./tests/e2e-kernel-test-qemu-exec.sh
-          ./tests/e2e-kernel-test-qemu.sh "${{ matrix.kernel_version }}" "${{ matrix.arch }}"
+
+          # Iterate through target kernels
+          for KERNEL in "v6.11" "v6.12"; do
+            echo "::group::Testing Kernel ${KERNEL} on ${{ matrix.arch }}"
+            
+            echo "Setting up Mainline Kernel ${KERNEL}..."
+            sudo ./scripts/setup-mainline-kernel.sh "${KERNEL}" --arch "${{ matrix.arch }}"
+            
+            echo "Running Tests..."
+            ./tests/e2e-kernel-test-qemu.sh "${KERNEL}" "${{ matrix.arch }}"
+            
+            # Clean up kernel artifacts if needed to save space? 
+            # (setup script often handles this or overwrites, but let's trust it for now)
+            
+            echo "::endgroup::"
+          done
 
       - name: Upload Logs
         if: always()
