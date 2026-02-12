@@ -135,5 +135,17 @@
     "type": "mainline",
     "kernel_version": "v6.11",
     "arch": "x86_64"
+  },
+  {
+    "name": "Ubuntu Mainline 6.12 (aarch64)",
+    "type": "mainline",
+    "kernel_version": "v6.12",
+    "arch": "aarch64"
+  },
+  {
+    "name": "Ubuntu Mainline 6.11 (aarch64)",
+    "type": "mainline",
+    "kernel_version": "v6.11",
+    "arch": "aarch64"
   }
 ]
