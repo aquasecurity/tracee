@@ -456,6 +456,11 @@ jobs:
             runner_label: "graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123"
           - arch: "aarch64"
             runner_label: "graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}"
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
     steps:
       - name: Prepare Environment
         run: |
