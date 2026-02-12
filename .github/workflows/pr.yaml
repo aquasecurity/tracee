@@ -443,14 +443,27 @@ jobs:
           run-attempt: ${{ github.run_attempt }}
 
   kernel-tests-mainline:
-    name: ${{ matrix.job_name }}
-    needs:
-      - generate-matrix
-    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    name: "Mainline ${{ matrix.kernel_version }} (${{ matrix.arch }})"
+    runs-on:
+      - ${{ matrix.runner_label }}
+      - EXECUTION_TYPE=SHORT
+      - INSTANCE_TYPE=MEDIUM
     strategy:
       fail-fast: false
       matrix:
-        include: ${{fromJson(needs.generate-matrix.outputs.mainline_matrix)}}
+        include:
+          - kernel_version: "v6.12"
+            arch: "x86_64"
+            runner_label: "graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123"
+          - kernel_version: "v6.11"
+            arch: "x86_64"
+            runner_label: "graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123"
+          - kernel_version: "v6.12"
+            arch: "aarch64"
+            runner_label: "graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}"
+          - kernel_version: "v6.11"
+            arch: "aarch64"
+            runner_label: "graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}"
     steps:
       - name: Prepare Environment
         run: |
