@@ -41,7 +41,7 @@ install_virtme_ng() {
         echo "Detected aarch64. Using hybrid install (pip + cargo) to fix binary mismatch..."
         
         # 1. Install via pip to get the 'vng' CLI tool and python structure
-        pip3 install virtme-ng
+        pip3 install --break-system-packages virtme-ng
 
         # 2. Build the 'virtme-ng-init' binary from source using cargo (native aarch64)
         sudo apt-get update && sudo apt-get install -y rustc cargo libclang-dev git pkg-config cpu-checker
@@ -67,7 +67,7 @@ install_virtme_ng() {
             fi
         fi
     else
-        pip3 install virtme-ng
+        pip3 install --break-system-packages virtme-ng
     fi
 
     if ! command -v vng >/dev/null 2>&1; then
