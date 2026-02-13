@@ -126,7 +126,7 @@ fi
 
 # Locate installed files
 echo "Checking installed kernel files in /boot..."
-INSTALLED_KERNEL=$(ls /boot/vmlinuz* 2>/dev/null | grep "$VERSION_CLEAN" | grep -v "old" | sort -V | tail -n1 || true)
+INSTALLED_KERNEL=$(ls /boot/vmlinuz* 2>/dev/null | grep "$VERSION_CLEAN" | grep -v "old" | grep -v "64k" | sort -V | tail -n1 || true)
 
 if [ -z "$INSTALLED_KERNEL" ]; then
     echo "Error: Could not find vmlinuz for $VERSION_CLEAN in /boot"

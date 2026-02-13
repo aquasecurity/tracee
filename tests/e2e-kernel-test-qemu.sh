@@ -106,7 +106,7 @@ install_virtme_ng
 # Locate kernel image and release
 if [[ "$KERNEL_VERSION" == v* ]]; then
     VERSION_NUM=${KERNEL_VERSION#v}
-    KERNEL_RELEASE=$(ls /boot/vmlinuz* 2>/dev/null | grep "$VERSION_NUM" | sort -V | tail -n1 | sed 's/.*vmlinuz-//' || true)
+    KERNEL_RELEASE=$(ls /boot/vmlinuz* 2>/dev/null | grep "$VERSION_NUM" | grep -v "64k" | sort -V | tail -n1 | sed 's/.*vmlinuz-//' || true)
 else
     KERNEL_RELEASE=$KERNEL_VERSION
 fi
