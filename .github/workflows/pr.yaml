@@ -484,9 +484,9 @@ jobs:
           # Install QEMU for kernel testing via virtme-ng
           sudo apt-get update
           if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
-            sudo apt-get install -y qemu-system-arm qemu-user-static
+            sudo apt-get install -y qemu-system-arm qemu-user-static python3-pip
           else
-            sudo apt-get install -y qemu-system-x86 qemu-user-static
+            sudo apt-get install -y qemu-system-x86 qemu-user-static python3-pip
           fi
 
       - name: "Build Tracee"
