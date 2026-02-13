@@ -1,0 +1,8 @@
+name: duplicate-names
+scenarios:
+  - name: smoke
+    events:
+      - security_file_open
+  - name: smoke
+    events:
+      - ptrace
