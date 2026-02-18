@@ -14,6 +14,7 @@ import (
 	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/fileutil"
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/stringutil"
 	"github.com/aquasecurity/tracee/pkg/datastores/container"
@@ -344,7 +345,7 @@ func (t *Tracee) processPrintMemDump(event *trace.Event) error {
 	if err := unix.Uname(&utsName); err != nil {
 		return errfmt.WrapError(err)
 	}
-	arch = string(stringutil.TrimTrailingNUL(utsName.Machine[:]))
+	arch = intern.String(string(stringutil.TrimTrailingNUL(utsName.Machine[:])))
 	err = events.SetArgValue(event, "arch", arch)
 	if err != nil {
 		return err

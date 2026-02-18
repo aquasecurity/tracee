@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/timeutil"
 )
@@ -259,7 +260,7 @@ func (pt *ProcessTree) FeedFromExec(feed *ExecFeed) error {
 
 	execTimestamp := timeutil.NsSinceEpochToTime(feed.TimeStamp)
 	basename := filepath.Base(feed.CmdPath)
-	comm := string([]byte(basename[:min(len(basename), COMM_LEN)]))
+	comm := intern.String(string([]byte(basename[:min(len(basename), COMM_LEN)])))
 
 	// NOTE: override all the fields of the taskInfoFeed, to avoid any previous data.
 	taskFeed := pt.GetTaskInfoFeedFromPool()
@@ -284,7 +285,7 @@ func (pt *ProcessTree) FeedFromExec(feed *ExecFeed) error {
 	// NOTE: override all the fields of the fileInfoFeed, to avoid any previous data.
 	fileInfoFeed := pt.GetFileInfoFeedFromPool()
 
-	fileInfoFeed.Path = feed.PathName
+	fileInfoFeed.Path = intern.String(feed.PathName)
 	fileInfoFeed.Dev = feed.Dev
 	fileInfoFeed.Ctime = feed.Ctime
 	fileInfoFeed.Inode = feed.Inode

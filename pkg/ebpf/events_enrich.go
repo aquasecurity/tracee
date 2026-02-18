@@ -6,6 +6,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/cgroup"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -256,15 +257,15 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *events.
 
 func enrichEvent(evt *trace.Event, cont container.Container) {
 	evt.Container = trace.Container{
-		ID:          cont.ContainerId,
-		ImageName:   cont.Image,
-		ImageDigest: cont.ImageDigest,
-		Name:        cont.Name,
+		ID:          intern.String(cont.ContainerId),
+		ImageName:   intern.String(cont.Image),
+		ImageDigest: intern.String(cont.ImageDigest),
+		Name:        intern.String(cont.Name),
 	}
 	evt.Kubernetes = trace.Kubernetes{
-		PodName:      cont.Pod.Name,
-		PodNamespace: cont.Pod.Namespace,
-		PodUID:       cont.Pod.UID,
+		PodName:      intern.String(cont.Pod.Name),
+		PodNamespace: intern.String(cont.Pod.Namespace),
+		PodUID:       intern.String(cont.Pod.UID),
 	}
 }
 

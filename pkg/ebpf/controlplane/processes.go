@@ -1,6 +1,7 @@
 package controlplane
 
 import (
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -154,10 +155,12 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 	if err != nil {
 		return err
 	}
+	execFeed.CmdPath = intern.String(execFeed.CmdPath)
 	execFeed.PathName, err = parse.ArgVal[string](args, "pathname")
 	if err != nil {
 		return err
 	}
+	execFeed.PathName = intern.String(execFeed.PathName)
 	execFeed.Dev, err = parse.ArgVal[uint32](args, "dev")
 	if err != nil {
 		return err
@@ -186,6 +189,7 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 	if err != nil {
 		return err
 	}
+	execFeed.Interp = intern.String(execFeed.Interp)
 
 	// Others
 	execFeed.StdinType, err = parse.ArgVal[uint16](args, "stdin_type")
@@ -196,6 +200,7 @@ func (ctrl *Controller) procTreeExecProcessor(args []trace.Argument) error {
 	if err != nil {
 		return err
 	}
+	execFeed.StdinPath = intern.String(execFeed.StdinPath)
 	execFeed.InvokedFromKernel, err = parse.ArgVal[bool](args, "invoked_from_kernel")
 	if err != nil {
 		return err

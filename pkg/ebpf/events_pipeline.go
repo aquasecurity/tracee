@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/common/capabilities"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/stringutil"
 	"github.com/aquasecurity/tracee/common/timeutil"
@@ -165,8 +166,12 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			_, containerInfo := t.dataStoreRegistry.GetContainerManager().GetCgroupInfo(eCtx.CgroupID)
 
-			commStr := string(stringutil.TrimTrailingNUL(eCtx.Comm[:]))       // clean potential trailing null
-			utsNameStr := string(stringutil.TrimTrailingNUL(eCtx.UtsName[:])) // clean potential trailing null
+			// Intern frequently repeated strings to reduce RSS memory usage.
+			// ProcessName (comm) and HostName (utsname) are created from byte buffers
+			// on every event, but typically have a small set of unique values. Interning
+			// ensures identical strings share the same backing array.
+			commStr := intern.String(string(stringutil.TrimTrailingNUL(eCtx.Comm[:])))
+			utsNameStr := intern.String(string(stringutil.TrimTrailingNUL(eCtx.UtsName[:])))
 
 			flags := parseContextFlags(containerInfo.ContainerId, eCtx.Flags)
 
@@ -234,17 +239,20 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 			evt.ProcessName = commStr
 			evt.HostName = utsNameStr
 			evt.CgroupID = uint(eCtx.CgroupID)
-			evt.ContainerID = containerInfo.ContainerId
+			// Intern container and Kubernetes metadata strings. These repeat for
+			// every event from the same cgroup/pod but are re-assigned per event.
+			containerId := intern.String(containerInfo.ContainerId)
+			evt.ContainerID = containerId
 			evt.Container = trace.Container{
-				ID:          containerInfo.ContainerId,
-				ImageName:   containerInfo.Image,
-				ImageDigest: containerInfo.ImageDigest,
-				Name:        containerInfo.Name,
+				ID:          containerId,
+				ImageName:   intern.String(containerInfo.Image),
+				ImageDigest: intern.String(containerInfo.ImageDigest),
+				Name:        intern.String(containerInfo.Name),
 			}
 			evt.Kubernetes = trace.Kubernetes{
-				PodName:      containerInfo.Pod.Name,
-				PodNamespace: containerInfo.Pod.Namespace,
-				PodUID:       containerInfo.Pod.UID,
+				PodName:      intern.String(containerInfo.Pod.Name),
+				PodNamespace: intern.String(containerInfo.Pod.Namespace),
+				PodUID:       intern.String(containerInfo.Pod.UID),
 			}
 			evt.EventName = evtName
 			evt.PoliciesVersion = eCtx.PoliciesVersion

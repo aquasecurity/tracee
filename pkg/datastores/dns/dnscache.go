@@ -9,6 +9,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -131,6 +132,7 @@ func (nc *DNSCache) addRootNode(dns *trace.ProtoDNS, timestamp time.Time) {
 		value = strings.TrimSuffix(value, reverseQueryIPv4Suffix)
 		value = strings.TrimSuffix(value, reverseQueryIPv6Suffix)
 	}
+	value = intern.String(value)
 
 	// maximum value for time.Time in go
 	// this is used so root nodes will never expire
