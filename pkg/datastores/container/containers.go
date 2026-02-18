@@ -17,6 +17,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/cgroup"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 	"github.com/aquasecurity/tracee/pkg/k8s"
@@ -302,16 +303,16 @@ func (c *Manager) EnrichCgroupInfo(cgroupId uint64) (Container, error) {
 	_, ok = c.cgroupsMap[uint32(cgroupId)]
 	if ok {
 		container = Container{
-			ContainerId: containerId,
+			ContainerId: intern.String(containerId),
 			Runtime:     container.Runtime,
 			CreatedAt:   container.CreatedAt,
-			Name:        enrichRes.ContName,
-			Image:       enrichRes.Image,
-			ImageDigest: enrichRes.ImageDigest,
+			Name:        intern.String(enrichRes.ContName),
+			Image:       intern.String(enrichRes.Image),
+			ImageDigest: intern.String(enrichRes.ImageDigest),
 			Pod: Pod{
-				Name:      enrichRes.PodName,
-				Namespace: enrichRes.Namespace,
-				UID:       enrichRes.UID,
+				Name:      intern.String(enrichRes.PodName),
+				Namespace: intern.String(enrichRes.Namespace),
+				UID:       intern.String(enrichRes.UID),
 				Sandbox:   enrichRes.Sandbox,
 			},
 		}

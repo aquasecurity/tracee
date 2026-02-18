@@ -3,6 +3,7 @@ package dns
 import (
 	"time"
 
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/set"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -54,5 +55,6 @@ func makeNodeFromAnswer(parent *dnsNode, answer *trace.ProtoDNSResourceRecord, t
 	case "PTR":
 		value = answer.PTR
 	}
+	value = intern.String(value)
 	return &dnsNode{value, nodeType, timestamp.Add(time.Duration(answer.TTL) * time.Second), newNodeSet(parent), newNodeSet()}
 }

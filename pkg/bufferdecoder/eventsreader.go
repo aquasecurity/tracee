@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/common/parsers"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -125,6 +126,11 @@ func readArgFromBuff(
 		}
 		for int(argNum) > len(strSlice) {
 			strSlice = append(strSlice, "?")
+		}
+		// Intern each element to deduplicate common argv entries
+		// (e.g., "/usr/bin/bash", "-c", "--") across events.
+		for i, s := range strSlice {
+			strSlice[i] = intern.String(s)
 		}
 		decodedValue = strSlice
 	case data.BYTES_T:
@@ -289,6 +295,9 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 // readStringFromBuff reads strings from the event buffer using the following format:
 //
 // [32bit:string_size][string_size-1:byte_buffer][8bit:null_terminator]
+//
+// The returned string is interned so that identical argument values (file paths,
+// program names, etc.) across events share the same backing memory.
 func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	var err error
 	var size uint32
@@ -310,7 +319,7 @@ func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	if err != nil {
 		return "", errfmt.Errorf("error reading string arg: %v", err)
 	}
-	return string(res), nil
+	return intern.String(string(res)), nil
 }
 
 // readSunPathFromBuffer reads a null-terminated string from the ebpf buffer where the size is not
