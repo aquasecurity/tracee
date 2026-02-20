@@ -2,19 +2,18 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"math/rand"
 	"os"
 	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 )
 
 func printAndExit(msg string, args ...any) {
@@ -26,32 +25,41 @@ func chooseWord(list []string) string {
 	return list[rand.Intn(len(list))]
 }
 
-func contaminate(ctx context.Context, client v1beta1.DataSourceServiceClient) error {
-	stream, err := client.WriteStream(ctx)
-	if err != nil {
-		return fmt.Errorf("error establishing stream: %v", err)
-	}
+func contaminate(ctx context.Context, client datastores.DataStoreServiceClient) error {
+	// Collect all entries for batch write
+	entries := make([]*datastores.DataEntry, 0, 1000)
+
 	for i := 0; i < 1000; i++ {
 		randomKey := chooseWord(wordList)
 		randomValue := chooseWord(wordList)
-		err := stream.Send(&v1beta1.WriteDataSourceRequest{
-			Id:        "demo",
-			Namespace: "e2e_inst",
-			Key:       structpb.NewStringValue(randomKey),
-			Value:     structpb.NewStringValue(randomValue),
-		})
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
 
-			return err
+		// Convert strings to anypb.Any
+		keyAny, err := anypb.New(structpb.NewStringValue(randomKey))
+		if err != nil {
+			return fmt.Errorf("failed to create key anypb: %v", err)
 		}
+
+		valueAny, err := anypb.New(structpb.NewStringValue(randomValue))
+		if err != nil {
+			return fmt.Errorf("failed to create value anypb: %v", err)
+		}
+
+		entries = append(entries, &datastores.DataEntry{
+			Key:  keyAny,
+			Data: valueAny,
+		})
 	}
-	_, err = stream.CloseAndRecv()
+
+	// Write all entries in a batch
+	_, err := client.WriteBatchData(ctx, &datastores.WriteBatchDataRequest{
+		StoreName: "demo",     // Store name matches the datasource ID
+		Source:    "e2e_inst", // Source matches the namespace
+		Entries:   entries,
+	})
 	if err != nil {
-		return fmt.Errorf("error closing stream: %v", err)
+		return fmt.Errorf("error writing batch data: %v", err)
 	}
+
 	return nil
 }
 
@@ -87,16 +95,30 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 
-	client := v1beta1.NewDataSourceServiceClient(conn)
+	client := datastores.NewDataStoreServiceClient(conn)
 	err = contaminate(ctx, client)
 	if err != nil {
 		printAndExit("error contaminating data source: %v\n", err)
 	}
-	_, err = client.Write(ctx, &v1beta1.WriteDataSourceRequest{
-		Id:        "demo",
-		Namespace: "e2e_inst",
-		Key:       structpb.NewStringValue(key),
-		Value:     structpb.NewStringValue(value),
+
+	// Write the final key-value pair
+	keyAny, err := anypb.New(structpb.NewStringValue(key))
+	if err != nil {
+		printAndExit("failed to create key anypb: %v\n", err)
+	}
+
+	valueAny, err := anypb.New(structpb.NewStringValue(value))
+	if err != nil {
+		printAndExit("failed to create value anypb: %v\n", err)
+	}
+
+	_, err = client.WriteData(ctx, &datastores.WriteDataRequest{
+		StoreName: "demo",     // Store name matches the datasource ID
+		Source:    "e2e_inst", // Source matches the namespace
+		Entry: &datastores.DataEntry{
+			Key:  keyAny,
+			Data: valueAny,
+		},
 	})
 
 	if err != nil {
