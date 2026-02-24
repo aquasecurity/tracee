@@ -1,0 +1,19 @@
+# Performance gate scenarios for Tracee (evt stress)
+# Uses only events with existing evt triggers: ptrace, security_bpf_prog, security_path_notify
+# See performance-gate-workflow-spec.md and evt-events-file-design.md
+
+name: tracee-performance-gate
+description: Performance gate scenarios using current evt triggers
+
+scenarios:
+  - name: smoke
+    description: Minimal ptrace sanity check
+    events:
+      - ptrace:instances=2:ops=200
+
+  - name: security
+    description: LSM and security hooks
+    events:
+      - ptrace:instances=2:ops=200
+      - security_bpf_prog:instances=1:ops=50
+      - security_path_notify:instances=2:ops=100

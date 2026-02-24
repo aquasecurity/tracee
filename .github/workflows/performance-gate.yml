@@ -1,0 +1,196 @@
+#
+# Performance Gate: Run evt stress against Tracee on tag push or manual dispatch.
+# Collects metrics, pprof, and generates charts. Runs on x86_64 and arm64.
+#
+name: Performance Gate
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Ref to checkout (branch or tag)'
+        required: false
+        default: ''
+        type: string
+      scenario:
+        description: 'Scenario to run (smoke, security) or empty for all'
+        required: false
+        default: ''
+        type: string
+      retention_days:
+        description: 'Artifact retention days'
+        required: false
+        default: ''
+        type: string
+      profile_seconds:
+        description: 'CPU profile duration in seconds (default 120)'
+        required: false
+        default: ''
+        type: string
+
+concurrency:
+  group: perf-gate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  perf-gate-x86_64:
+    name: Performance Gate (x86_64)
+    runs-on: graas_ami-03dbff05cae3a30d0_${{ github.event.number || '0' }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123
+    timeout-minutes: 90
+    env:
+      EXECUTION_TYPE: LONG
+      INSTANCE_TYPE: MEDIUM
+      PROFILE_SECONDS: ${{ github.event.inputs.profile_seconds || '120' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          submodules: true
+
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-ubuntu
+
+      - name: Cache Go modules
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
+      - name: Install graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Build Tracee
+        run: make tracee
+
+      - name: Build evt
+        run: make evt
+
+      - name: Build evt-trigger-runner
+        run: make evt-trigger-runner
+
+      - name: Run evt stress (smoke)
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'smoke' || github.event_name == 'push'
+        run: |
+          ./scripts/run-evt-stress-with-collection.sh \
+            --scenario smoke \
+            --stop-tracee
+
+      - name: Run evt stress (security)
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'security' || github.event_name == 'push'
+        run: |
+          ./scripts/run-evt-stress-with-collection.sh \
+            --scenario security
+
+      - name: Upload smoke artifacts
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'smoke' || github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate-x86_64-smoke-${{ github.run_id }}
+          path: artifacts-smoke/
+          if-no-files-found: warn
+
+      - name: Upload security artifacts
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'security' || github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate-x86_64-security-${{ github.run_id }}
+          path: artifacts-security/
+          if-no-files-found: warn
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate-x86_64-logs-failure-${{ github.run_id }}
+          path: |
+            artifacts-smoke/
+            artifacts-security/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  perf-gate-arm64:
+    name: Performance Gate (arm64)
+    runs-on: graas_ami-07774797557132122_${{ github.event.number || '0' }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}
+    timeout-minutes: 90
+    env:
+      EXECUTION_TYPE: LONG
+      INSTANCE_TYPE: MEDIUM
+      PROFILE_SECONDS: ${{ github.event.inputs.profile_seconds || '120' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          submodules: true
+
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-ubuntu
+
+      - name: Cache Go modules
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
+
+      - name: Install graphviz
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz
+
+      - name: Build Tracee
+        run: make tracee
+
+      - name: Build evt
+        run: make evt
+
+      - name: Build evt-trigger-runner
+        run: make evt-trigger-runner
+
+      - name: Run evt stress (smoke)
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'smoke' || github.event_name == 'push'
+        run: |
+          ./scripts/run-evt-stress-with-collection.sh \
+            --scenario smoke \
+            --stop-tracee
+
+      - name: Run evt stress (security)
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'security' || github.event_name == 'push'
+        run: |
+          ./scripts/run-evt-stress-with-collection.sh \
+            --scenario security
+
+      - name: Upload smoke artifacts
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'smoke' || github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate-arm64-smoke-${{ github.run_id }}
+          path: artifacts-smoke/
+          if-no-files-found: warn
+
+      - name: Upload security artifacts
+        if: github.event.inputs.scenario == '' || github.event.inputs.scenario == 'security' || github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate-arm64-security-${{ github.run_id }}
+          path: artifacts-security/
+          if-no-files-found: warn
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-gate-arm64-logs-failure-${{ github.run_id }}
+          path: |
+            artifacts-smoke/
+            artifacts-security/
+          retention-days: 7
+          if-no-files-found: ignore
