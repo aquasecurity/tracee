@@ -40,10 +40,13 @@ jobs:
     runs-on: graas_ami-03dbff05cae3a30d0_${{ github.event.number || '0' }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123
     timeout-minutes: 90
     env:
+      HOME: "/tmp/root"
       EXECUTION_TYPE: LONG
       INSTANCE_TYPE: MEDIUM
       PROFILE_SECONDS: ${{ github.event.inputs.profile_seconds || '120' }}
     steps:
+      - name: Prepare Environment
+        run: mkdir -p "${HOME}"
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -120,10 +123,13 @@ jobs:
     runs-on: graas_ami-07774797557132122_${{ github.event.number || '0' }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}
     timeout-minutes: 90
     env:
+      HOME: "/tmp/root"
       EXECUTION_TYPE: LONG
       INSTANCE_TYPE: MEDIUM
       PROFILE_SECONDS: ${{ github.event.inputs.profile_seconds || '120' }}
     steps:
+      - name: Prepare Environment
+        run: mkdir -p "${HOME}"
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
