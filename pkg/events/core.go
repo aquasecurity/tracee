@@ -14502,8 +14502,8 @@ var CoreEvents = map[ID]Definition{
 					{handle: probes.FilpClose, required: true},
 					{handle: probes.FileUpdateTime, required: true},
 					{handle: probes.FileUpdateTimeRet, required: true},
-					{handle: probes.FileModified, required: false},    // not required because doesn't ...
-					{handle: probes.FileModifiedRet, required: false}, // ... exist in kernels < 5.3
+					{handle: probes.FileModified, required: false},    // doesn't exist in kernels < 5.3
+					{handle: probes.FileModifiedRet, required: false}, // doesn't exist in kernels < 5.3
 				},
 			},
 		},
