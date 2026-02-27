@@ -1,6 +1,8 @@
 package filters
 
 import (
+	"strings"
+
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -223,10 +225,16 @@ func addContainer[T any](f *ScopeFilter, filter Filter[T], operatorAndValues str
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	if err = f.containerFilter.add(true, Equal); err != nil {
-		return errfmt.WrapError(err)
+	// Only require container scope when using equality operator (=).
+	// When using inequality operator (!=), allow host events to pass through,
+	// as host events have empty container/pod fields which should not match
+	// the excluded values.
+	if !strings.HasPrefix(operatorAndValues, "!=") {
+		if err = f.containerFilter.add(true, Equal); err != nil {
+			return errfmt.WrapError(err)
+		}
+		f.containerFilter.Enable()
 	}
-	f.containerFilter.Enable()
 	return nil
 }
 
