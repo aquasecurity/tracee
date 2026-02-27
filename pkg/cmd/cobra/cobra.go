@@ -161,19 +161,15 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	enrichmentConfig, err := flags.PrepareEnrichment(enrichmentFlags)
+	enrichmentFlagsConfig, err := flags.PrepareEnrichment(enrichmentFlags)
 	if err != nil {
 		return runner, err
 	}
 
-	sockets, err := enrichmentConfig.GetRuntimeSockets()
+	cfg.Enrichment, err = enrichmentFlagsConfig.GetEnrichmentConfig()
 	if err != nil {
 		return runner, err
 	}
-	cfg.Sockets = sockets
-	cfg.EnrichmentEnabled = enrichmentConfig.Container.Enabled
-	cfg.CgroupFSPath = enrichmentConfig.Container.Cgroupfs.Path
-	cfg.CgroupFSForce = enrichmentConfig.Container.Cgroupfs.Force
 
 	// Stores command line flags
 	storesFlags, err := flags.GetFlagsFromViper(flags.StoresFlag)
@@ -292,25 +288,14 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	containerMode := cmd.GetContainerMode(
-		containerFilterEnabled(), cfg.EnrichmentEnabled)
+		containerFilterEnabled(), cfg.Enrichment.EnrichContainers())
 
-	output, err := flags.PrepareOutput(outputFlags, containerMode)
+	output, err := flags.PrepareOutput(outputFlags, containerMode, cfg.Enrichment)
 	if err != nil {
 		return runner, err
 	}
 
 	cfg.Output = output
-
-	// Apply enrichment config to output config
-	// TODO: refactor it to maybe encapsulate enrichemnt as part of the output config,
-	// or as its own field on the config struct
-	cfg.Output.Environment = enrichmentConfig.Environment
-	cfg.Output.UserStack = enrichmentConfig.UserStack
-	cfg.Output.FdPaths = enrichmentConfig.FdPaths
-	cfg.Output.DecodedData = enrichmentConfig.DecodedData
-	if enrichmentConfig.ExecutableHash.Enabled || enrichmentConfig.ExecutableHash.Mode != "" {
-		cfg.Output.CalcHashes = enrichmentConfig.GetCalcHashesOption()
-	}
 
 	// Check kernel lockdown
 	lockdown, err := environment.Lockdown()

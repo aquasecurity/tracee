@@ -60,7 +60,7 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}) 
 
 	// Enrichment stage: container events are enriched with additional runtime data.
 
-	if t.config.EnrichmentEnabled {
+	if t.config.Enrichment.EnrichContainers() {
 		eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
 		t.stats.Channels["enrich"] = eventsChan
 		errcList = append(errcList, errc)
@@ -160,7 +160,7 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 
 			// Add stack trace if needed
 			var stackAddresses []uint64
-			if t.config.Output.UserStack {
+			if t.config.Enrichment.EnrichUserStack() {
 				stackAddresses = t.getStackAddresses(eCtx.StackID)
 			}
 
@@ -807,14 +807,14 @@ func (t *Tracee) sinkEvents(ctx context.Context, in <-chan *events.PipelineEvent
 			pbEvent.Policies.Matched = t.policyManager.MatchedNames(event.MatchedPoliciesBitmap)
 
 			// Parse arguments for output formatting if enabled.
-			if t.config.Output.DecodedData {
+			if t.config.Enrichment.EnrichDecodedData() {
 				err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id))
 				if err != nil {
 					t.handleError(err)
 				}
 			}
 
-			if t.config.Output.FdPaths {
+			if t.config.Enrichment.EnrichFDPaths() {
 				// Use original timestamp from pipeline metadata for BPF map lookup
 				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, t.FDArgPathMap)
 				if err != nil {

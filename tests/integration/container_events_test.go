@@ -48,12 +48,16 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		Capabilities: &config.CapabilitiesConfig{
 			BypassCaps: true,
 		},
-		EnrichmentEnabled: true, // Enable container enrichment for this test
+		Enrichment: &config.EnrichmentConfig{
+			Container: config.ContainerEnrichmentConfig{
+				Enabled: true, // Enable container enrichment for this test
+			},
+			Sockets: runtime.Sockets{},
+		},
 	}
 
 	// Register docker socket for the test
-	cfg.Sockets = runtime.Sockets{}
-	cfg.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
+	cfg.Enrichment.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
 
 	// Enable container events (derived events from cgroup operations)
 	containerEvents := []events.ID{
@@ -242,12 +246,16 @@ func Test_ExistingContainers(t *testing.T) {
 		Capabilities: &config.CapabilitiesConfig{
 			BypassCaps: true,
 		},
-		EnrichmentEnabled: true, // Enable container enrichment for this test
+		Enrichment: &config.EnrichmentConfig{
+			Container: config.ContainerEnrichmentConfig{
+				Enabled: true, // Enable container enrichment for this test
+			},
+			Sockets: runtime.Sockets{},
+		},
 	}
 
 	// Register docker socket for the test
-	cfg.Sockets = runtime.Sockets{}
-	cfg.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
+	cfg.Enrichment.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
 
 	// Enable ExistingContainer event
 	existingContainerEvents := []events.ID{
