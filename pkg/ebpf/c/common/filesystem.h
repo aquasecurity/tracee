@@ -78,6 +78,12 @@ statfunc u64 get_ctime_nanosec_from_inode(struct inode *inode)
         ts = BPF_CORE_READ(old_inode_v66, i_ctime);
     }
 
+    // Kernels >= 6.13 (commit 4e40eff) with CONFIG_FS_MGTIME use bit 31 of tv_nsec
+    // as an internal multigranularity floor flag (MG_FLOOR). The kernel's
+    // inode_get_ctime() strips it, but BPF reads the raw field. Safe to mask
+    // unconditionally since valid tv_nsec values (0-999999999) never reach bit 31.
+    ts.tv_nsec &= ~(1L << 31);
+
     return get_time_nanosec_timespec(&ts);
 }
 

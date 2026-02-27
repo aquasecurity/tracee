@@ -370,7 +370,7 @@ struct file_modification_map {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __uint(max_entries, 10240);
     __type(key, file_mod_key_t);
-    __type(value, s32);
+    __type(value, file_mod_value_t);
 } file_modification_map SEC(".maps");
 
 typedef struct file_modification_map file_modification_map_t;
