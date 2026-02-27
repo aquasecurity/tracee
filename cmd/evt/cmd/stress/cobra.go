@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -101,10 +100,23 @@ func init() {
 			"\t\t\t\tExample: security_file_open:instances=10:ops=1000:sleep=1ms\n"+
 			"\t\t\t\tDefaults: instances=1, ops=100, sleep=10ns",
 	)
-	if err := stressCmd.MarkFlagRequired("events"); err != nil {
-		stressCmd.PrintErrf("marking required flag: %v\n", err)
-		os.Exit(1)
-	}
+
+	stressCmd.Flags().StringSliceP(
+		"events-file",
+		"E",
+		[]string{},
+		"<path>\t\t\tPath(s) to YAML suite file(s). May be passed multiple times.",
+	)
+	stressCmd.Flags().StringArray(
+		"scenario",
+		[]string{},
+		"<name>\t\t\tScenario(s) to run (repeatable). Mutually exclusive with --all-scenarios.",
+	)
+	stressCmd.Flags().Bool(
+		"all-scenarios",
+		false,
+		"\t\t\tRun all scenarios from the loaded suite file(s). Mutually exclusive with --scenario.",
+	)
 
 	stressCmd.Flags().String(
 		"image",
@@ -185,14 +197,70 @@ func init() {
 	)
 }
 
-func getStress(cmd *cobra.Command) (*stress, error) {
-	eventSpecs, err := cmd.Flags().GetStringSlice("events")
+// buildEventSpecs returns the merged list of event specs: from --events-file (if set)
+// then --events. At least one spec is required.
+func buildEventSpecs(cmd *cobra.Command) ([]string, error) {
+	eventsFilePaths, err := cmd.Flags().GetStringSlice("events-file")
 	if err != nil {
 		return nil, err
 	}
+	scenarioNames, err := cmd.Flags().GetStringArray("scenario")
+	if err != nil {
+		return nil, err
+	}
+	allScenarios, err := cmd.Flags().GetBool("all-scenarios")
+	if err != nil {
+		return nil, err
+	}
+	cliEvents, err := cmd.Flags().GetStringSlice("events")
+	if err != nil {
+		return nil, err
+	}
+	return eventSpecsFromFilesAndCLI(eventsFilePaths, scenarioNames, allScenarios, cliEvents)
+}
+
+// eventSpecsFromFilesAndCLI builds the merged event spec list from suite files and CLI events.
+// Used by buildEventSpecs; exported for testing.
+func eventSpecsFromFilesAndCLI(eventsFilePaths, scenarioNames []string, allScenarios bool, cliEvents []string) ([]string, error) {
+	var eventSpecs []string
+	if len(eventsFilePaths) > 0 {
+		suites, err := LoadSuitesFromFiles(eventsFilePaths)
+		if err != nil {
+			return nil, err
+		}
+		scenarios, err := ResolveScenarios(suites, scenarioNames, allScenarios)
+		if err != nil {
+			return nil, err
+		}
+		for _, sc := range scenarios {
+			eventSpecs = append(eventSpecs, FlattenScenario(sc)...)
+		}
+	}
+	eventSpecs = append(eventSpecs, cliEvents...)
 
 	if len(eventSpecs) == 0 {
-		return nil, errors.New("at least one event must be specified")
+		return nil, errors.New("at least one event must be specified (use --events and/or --events-file with --scenario or --all-scenarios)")
+	}
+	return eventSpecs, nil
+}
+
+// uniqueEventNames returns event names from triggers in first-occurrence order, no duplicates.
+func uniqueEventNames(triggers []triggerConfig) []string {
+	seen := make(map[string]struct{})
+	var out []string
+	for _, tc := range triggers {
+		if _, ok := seen[tc.event]; !ok {
+			seen[tc.event] = struct{}{}
+			out = append(out, tc.event)
+		}
+	}
+	return out
+}
+
+func getStress(cmd *cobra.Command) (*stress, error) {
+	eventSpecs, err := buildEventSpecs(cmd)
+	if err != nil {
+		return nil, err
 	}
 
 	// Parse event specifications into trigger configs
@@ -278,11 +346,8 @@ func getStress(cmd *cobra.Command) (*stress, error) {
 		return nil, err
 	}
 
-	// Extract event names from triggers for Tracee
-	eventNames := make([]string, 0, len(triggers))
-	for _, tc := range triggers {
-		eventNames = append(eventNames, tc.event)
-	}
+	// Extract event names for Tracee (unique, first occurrence order)
+	eventNames := uniqueEventNames(triggers)
 
 	s := &stress{
 		triggers:           triggers,
