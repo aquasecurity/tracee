@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestAntiDebugging_GetDefinition(t *testing.T) {
@@ -44,8 +45,8 @@ func TestAntiDebugging_Init(t *testing.T) {
 	detector := &AntiDebugging{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -56,8 +57,8 @@ func TestAntiDebugging_OnEvent_PtraceTraceme(t *testing.T) {
 	detector := &AntiDebugging{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -86,8 +87,8 @@ func TestAntiDebugging_OnEvent_MultiplePtraceTracemeCalls(t *testing.T) {
 	detector := &AntiDebugging{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -114,8 +115,8 @@ func TestAntiDebugging_Close(t *testing.T) {
 	detector := &AntiDebugging{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)

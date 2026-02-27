@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestKubernetesCertificateTheft(t *testing.T) {
@@ -58,7 +59,7 @@ func TestKubernetesCertificateTheft(t *testing.T) {
 			t.Parallel()
 
 			detector := &KubernetesCertificateTheft{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -109,7 +110,7 @@ func TestKubernetesCertificateTheft_Rename(t *testing.T) {
 			t.Parallel()
 
 			detector := &KubernetesCertificateTheft{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{

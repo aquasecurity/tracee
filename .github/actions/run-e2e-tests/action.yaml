@@ -1,6 +1,7 @@
 name: Run E2E Tests
 description: |
-  Run end-to-end tests including build, compatibility, instrumentation, network, and kernel tests.
+  Run end-to-end tests including compatibility, core, network, and kernel tests.
+  Build dependencies are handled automatically by make rules.
   Handles test failure detection and artifact uploads.
 inputs:
   job-name:
@@ -15,40 +16,37 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Build Tracee
-      run: make tracee
-      shell: bash
     - name: Compatibility Test
       run: env "PATH=$PATH" make test-compatibility
       shell: bash
-    - name: Instrumentation Test
-      id: e2e-inst-test
+    - name: E2E Test (Core and Extended)
+      id: e2e-test
       run: |
-        ./tests/e2e-inst-test.sh --keep-artifacts 2>&1 | tee /tmp/e2e-inst-test.log
+        make test-e2e E2E_ARGS="--keep-artifacts" 2>&1 | tee /tmp/e2e-test.log
         exit ${PIPESTATUS[0]}
       shell: bash
-    - name: Network Test
+    - name: E2E Network Test
       id: e2e-net-test
       run: |
-        ./tests/e2e-net-test.sh 2>&1 | tee /tmp/e2e-net-test.log
+        make test-e2e-net E2E_ARGS="--keep-artifacts" 2>&1 | tee /tmp/e2e-test-net.log
         exit ${PIPESTATUS[0]}
       shell: bash
-    - name: Kernel Test
+    - name: E2E Kernel Test
       id: e2e-kernel-test
       run: |
-        ./tests/e2e-kernel-test.sh 2>&1 | tee /tmp/e2e-kernel-test.log
+        make test-e2e-kernel E2E_ARGS="--keep-artifacts" 2>&1 | tee /tmp/e2e-test-kernel.log
         exit ${PIPESTATUS[0]}
       shell: bash
     - name: Determine Failed Test
       id: failed-test
       if: failure() && (
-        steps.e2e-inst-test.conclusion == 'failure' ||
+        steps.e2e-test.conclusion == 'failure' ||
         steps.e2e-net-test.conclusion == 'failure' || 
         steps.e2e-kernel-test.conclusion == 'failure'
         )
       run: |
-        if [[ "${{ steps.e2e-inst-test.conclusion }}" == "failure" ]]; then
-          echo "name=inst" >> $GITHUB_OUTPUT
+        if [[ "${{ steps.e2e-test.conclusion }}" == "failure" ]]; then
+          echo "name=e2e" >> $GITHUB_OUTPUT
         elif [[ "${{ steps.e2e-net-test.conclusion }}" == "failure" ]]; then
           echo "name=net" >> $GITHUB_OUTPUT
         elif [[ "${{ steps.e2e-kernel-test.conclusion }}" == "failure" ]]; then
