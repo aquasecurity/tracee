@@ -39,12 +39,19 @@ runs:
         ./tests/e2e-kernel-test.sh 2>&1 | tee /tmp/e2e-kernel-test.log
         exit ${PIPESTATUS[0]}
       shell: bash
+    - name: Capture Test
+      id: e2e-capture-test
+      run: |
+        ./tests/e2e-capture-test.sh 2>&1 | tee /tmp/e2e-capture-test.log
+        exit ${PIPESTATUS[0]}
+      shell: bash
     - name: Determine Failed Test
       id: failed-test
       if: failure() && (
         steps.e2e-inst-test.conclusion == 'failure' ||
         steps.e2e-net-test.conclusion == 'failure' || 
-        steps.e2e-kernel-test.conclusion == 'failure'
+        steps.e2e-kernel-test.conclusion == 'failure' ||
+        steps.e2e-capture-test.conclusion == 'failure'
         )
       run: |
         if [[ "${{ steps.e2e-inst-test.conclusion }}" == "failure" ]]; then
@@ -53,6 +60,8 @@ runs:
           echo "name=net" >> $GITHUB_OUTPUT
         elif [[ "${{ steps.e2e-kernel-test.conclusion }}" == "failure" ]]; then
           echo "name=kernel" >> $GITHUB_OUTPUT
+        elif [[ "${{ steps.e2e-capture-test.conclusion }}" == "failure" ]]; then
+          echo "name=capture" >> $GITHUB_OUTPUT
         else
           echo "No failed tests. Should not reach this point."
           exit 1
