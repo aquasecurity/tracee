@@ -235,7 +235,7 @@ nav:
           - Access Tracee Metrics in Grafana and Prometheus: tutorials/deploy-grafana-dashboard.md
           - Using Tracee Container Image with Vagrant on Mac: tutorials/tracee-vagrant.md
           - Working with Tracee's Policies on Kubernetes: tutorials/k8s-policies.md
-          - Accessing Tracee Logs through Promtail and Loki: tutorials/promtail.md
+          - Accessing Tracee Logs through Grafana Alloy and Loki: tutorials/grafana-alloy-loki.md
           - Additional Resources: tutorials/additional-resources.md
     - Contributing:
           - Overview: contributing/overview.md
