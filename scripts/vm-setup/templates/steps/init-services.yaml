@@ -1,0 +1,9 @@
+  # Initialize logging, services, and fix common cloud-image quirks
+  - |
+    echo "Tracee VM initialization started at $(date)" | tee -a /var/log/tracee-vm-init.log
+    systemctl enable ssh
+    systemctl start ssh
+    
+    # Fix home directory ownership (user may pre-exist in cloud images,
+    # cloud-init user module can leave /home/<user> owned by root)
+    chown -R ${USERNAME}:${USERNAME} /home/${USERNAME}

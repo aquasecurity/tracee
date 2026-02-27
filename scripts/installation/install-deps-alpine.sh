@@ -112,6 +112,31 @@ Please create the checksum file with the SHA256 from https://go.dev/dl/"
     # Verify installation
     go version
     info "Go ${GOLANG_VERSION} installed successfully"
+    
+    # Configure Go environment for user if USER_NAME and USER_HOME are set
+    if [ -n "${USER_NAME}" ] && [ -n "${USER_HOME}" ] && [ -d "${USER_HOME}" ]; then
+        info "Configuring Go environment for ${USER_NAME} in ${USER_HOME}/.profile"
+        
+        # Add Go paths to .profile if not already present (Alpine uses ash/sh, not bash)
+        if ! grep -q "GOROOT" "${USER_HOME}/.profile" 2>/dev/null; then
+            cat >> "${USER_HOME}/.profile" << 'EOF'
+
+# Go environment configuration
+export GOROOT="/usr/local/go"
+export GOPATH="${HOME}/go"
+export GOCACHE="${HOME}/.cache/go-build"
+export PATH="${GOROOT}/bin:${GOPATH}/bin:${PATH}"
+EOF
+            info "Go environment added to ${USER_HOME}/.profile"
+        else
+            info "Go environment already configured in .profile"
+        fi
+        
+        # Create Go directories with proper ownership
+        mkdir -p "${USER_HOME}/go" "${USER_HOME}/.cache/go-build"
+        chown -R "${USER_NAME}:${USER_NAME}" "${USER_HOME}/go" "${USER_HOME}/.cache"
+        info "Go directories created in ${USER_HOME}"
+    fi
 }
 
 install_clang() {
@@ -161,16 +186,55 @@ install_go_tools() {
     info "Go tools installed successfully"
 }
 
-check_docker() {
-    info "Checking Docker availability"
+install_docker() {
+    info "Installing Docker"
 
-    # In GitHub Actions containers, Docker is available from the host
-    # We don't need to install it, just verify it's accessible
-    if command -v docker > /dev/null 2>&1; then
-        info "Docker is available from host system"
-    else
-        info "Docker not available - will be provided by GitHub Actions runner"
+    # Install Docker from Alpine repositories
+    apk add docker docker-cli-compose
+
+    info "Docker installed successfully"
+    
+    # Add user to docker group if USER_NAME is set and not root
+    if [ -n "${USER_NAME}" ] && [ "${USER_NAME}" != "root" ]; then
+        if getent group docker >/dev/null 2>&1; then
+            addgroup "${USER_NAME}" docker
+            info "Added ${USER_NAME} to docker group"
+        else
+            info "Docker group not found, skipping group assignment"
+        fi
     fi
+}
+
+setup_user_vars() {
+    # Setup USER_NAME and USER_HOME variables for user-specific configuration
+    # Use USER_NAME env var if set, otherwise default to current user ($USER)
+    # Caller can override with: USER_NAME=myuser ./install-deps-alpine.sh
+    
+    USER_NAME="${USER_NAME:-${USER}}"
+    
+    # Verify user exists
+    if ! id "${USER_NAME}" >/dev/null 2>&1; then
+        info "User ${USER_NAME} not found, skipping user-specific configuration"
+        USER_NAME=""
+        USER_HOME=""
+        return 0
+    fi
+    
+    # Get home directory from passwd database
+    USER_HOME=$(getent passwd "${USER_NAME}" | cut -d: -f6)
+    
+    if [ -z "${USER_HOME}" ]; then
+        info "Could not determine home directory for user ${USER_NAME}, skipping user-specific configuration"
+        USER_NAME=""
+        USER_HOME=""
+        return 0
+    fi
+    
+    info "User configuration will be applied to: ${USER_NAME} (home: ${USER_HOME})"
+    
+    # Export for child processes
+    export USER_NAME
+    export USER_HOME
 }
 
 verify_installation() {
@@ -199,11 +263,14 @@ verify_installation() {
 main() {
     info "=== Tracee Dependencies Installation ==="
 
+    # Setup user variables for user-specific configuration
+    setup_user_vars
+    
     install_base_packages
     install_golang
     install_clang
     install_go_tools
-    check_docker
+    install_docker
     verify_installation
 
     info "=== Tracee dependencies installation completed successfully! ==="
