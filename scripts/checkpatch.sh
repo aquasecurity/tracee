@@ -226,7 +226,7 @@ verify_analyze_code() {
                     print_info "See https://clang.llvm.org/docs/ClangFormat.html for more details."
                     ;;
                 "goimports-reviser")
-                    print_info "Install with: go install github.com/incu6us/goimports-reviser/v3@v3.8.2"
+                    print_info "Install with: go install github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7" # v3.12.6
                     ;;
             esac
 
@@ -249,7 +249,7 @@ verify_analyze_code() {
         if echo "$output" | grep -q "missing required tool"; then
             local missing_tool=$(echo "$output" | grep "missing required tool" | sed 's/.*missing required tool //')
             print_warning "Missing required tool: $missing_tool"
-            print_info "Install with: go install github.com/mgechev/revive@v1.7.0"
+            print_info "Install with: go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d" # v1.7.0
 
             if $IGNORE_MISSING_TOOLS; then
                 print_warning "Ignoring missing tool error and continuing..."
@@ -300,7 +300,7 @@ verify_analyze_code() {
         if echo "$output" | grep -q "missing required tool"; then
             local missing_tool=$(echo "$output" | grep "missing required tool" | sed 's/.*missing required tool //')
             print_warning "Missing required tool: $missing_tool"
-            print_info "Install with: go install honnef.co/go/tools/cmd/staticcheck@2025.1"
+            print_info "Install with: go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c" # 2025.1
             if $IGNORE_MISSING_TOOLS; then
                 print_warning "Ignoring missing tool error and continuing..."
             else
@@ -321,7 +321,7 @@ verify_analyze_code() {
         if echo "$output" | grep -q "missing required tool"; then
             local missing_tool=$(echo "$output" | grep "missing required tool" | sed 's/.*missing required tool //')
             print_warning "Missing required tool: $missing_tool"
-            print_info "Install with: go install github.com/kisielk/errcheck@v1.9.0"
+            print_info "Install with: go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34" # v1.9.0
             if $IGNORE_MISSING_TOOLS; then
                 print_warning "Ignoring missing tool error and continuing..."
             else
@@ -434,11 +434,11 @@ check_dependencies() {
 
     # Check for optional tools and warn if missing
     local optional_tools=(
-        "revive:github.com/mgechev/revive@v1.7.0:go install"
-        "staticcheck:honnef.co/go/tools/cmd/staticcheck@2025.1:go install"
-        "errcheck:github.com/kisielk/errcheck@v1.9.0:go install"
+        "revive:github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d:go install" # v1.7.0
+        "staticcheck:honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c:go install" # 2025.1
+        "errcheck:github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34:go install" # v1.9.0
         "clang-format-12:Install via official package manager (e.g., 'sudo apt-get install clang-format-12'):Refer to your OS package manager"
-        "goimports-reviser:github.com/incu6us/goimports-reviser/v3@v3.8.2:go install"
+        "goimports-reviser:github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7:go install" # v3.12.6
     )
 
     for tool_info in "${optional_tools[@]}"; do

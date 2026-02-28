@@ -6,13 +6,6 @@ ARG BTFHUB=0
 ARG FLAVOR=tracee-core
 
 #
-# Version
-#
-
-ARG GO_VERSION=1.24.13
-
-
-#
 # tracee-base
 #
 

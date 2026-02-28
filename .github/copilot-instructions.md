@@ -68,9 +68,9 @@ make check-pr               # Full PR validation suite
 ```
 
 **Tool Installation**: If you get "missing required tool" errors, install via:
-- `goimports-reviser`: `go install github.com/incu6us/goimports-reviser/v3@v3.8.2`
-- `staticcheck`: `go install honnef.co/go/tools/cmd/staticcheck@2025.1`
-- `errcheck`: `go install github.com/kisielk/errcheck@v1.9.0`
+- `goimports-reviser` (v3.12.6): `go install github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7`
+- `staticcheck` (2025.1): `go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c`
+- `errcheck` (v1.9.0): `go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34`
 - `clang-format-19`: Use system package manager or download binary
 
 ### Build Flags & Options

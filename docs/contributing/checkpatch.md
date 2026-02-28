@@ -94,9 +94,9 @@ make check-pr ARGS="--fast --skip-docs HEAD~1"  # Pass arguments through make
 ### Optional Tools
 The script will warn if these tools are missing but continue with available checks:
 
-- **revive**: `go install github.com/mgechev/revive@v1.7.0`
-- **staticcheck**: `go install honnef.co/go/tools/cmd/staticcheck@2025.1`
-- **errcheck**: `go install github.com/kisielk/errcheck@v1.9.0`
+- **revive** (v1.7.0): `go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d`
+- **staticcheck** (2025.1): `go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c`
+- **errcheck** (v1.9.0): `go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34`
 
 ## Installation of Optional Tools
 
@@ -104,9 +104,9 @@ To install all optional tools at once:
 
 ```bash
 # Install linting and static analysis tools
-go install github.com/mgechev/revive@v1.7.0
-go install honnef.co/go/tools/cmd/staticcheck@2025.1
-go install github.com/kisielk/errcheck@v1.9.0
+go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d                   # v1.7.0
+go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c          # 2025.1
+go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34                 # v1.9.0
 
 # Ensure tools are in PATH
 export PATH=$PATH:$(go env GOPATH)/bin
@@ -150,7 +150,7 @@ Many IDEs can be configured to run external scripts. Configure your IDE to run `
 
 **Missing Tools Warning**
 ```
-⚠ revive not found. Install with: go install github.com/mgechev/revive@v1.7.0
+⚠ revive not found. Install with: go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d # v1.7.0
 ```
 *Solution*: Install the missing tool or ignore if you don't need that specific check.
 
