@@ -17,10 +17,10 @@ info "Starting Tracee dependency installation on Alpine Linux"
 #   scripts/installation/checksums/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
 #   scripts/installation/checksums/go${GOLANG_VERSION}.linux-arm64.tar.gz.sha256
 # Get checksums from: https://go.dev/dl/ (click "Show checksum" for each file)
-GOLANG_VERSION="1.24.13"
+GOLANG_VERSION="1.26.0"
 STATICCHECK_VERSION="2025.1"
 REVIVE_VERSION="v1.7.0"
-GOIMPORTS_REVISER_VERSION="v3.8.2"
+GOIMPORTS_REVISER_VERSION="v3.12.6"
 ERRCHECK_VERSION="v1.9.0"
 
 install_base_packages() {

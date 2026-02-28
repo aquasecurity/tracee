@@ -15,7 +15,7 @@ runs:
       run: |
         sudo rm -f /usr/bin/go
         sudo rm -f /usr/bin/gofmt
-        curl -L -o /tmp/golang.tar.gz https://go.dev/dl/go1.24.13.linux-amd64.tar.gz
+        curl -L -o /tmp/golang.tar.gz https://go.dev/dl/go1.26.0.linux-amd64.tar.gz
         sudo tar -C /usr/local -xzf /tmp/golang.tar.gz
         sudo ln -s /usr/local/go/bin/go /usr/bin/go
         sudo ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
@@ -36,7 +36,7 @@ runs:
       shell: bash
     - name: Install goimports-reviser
       run: |
-        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@v3.8.2
+        GOROOT=/usr/local/go GOPATH=$HOME/go go install github.com/incu6us/goimports-reviser/v3@v3.12.6
         sudo cp $HOME/go/bin/goimports-reviser /usr/bin/
       shell: bash
     - name: Install errcheck
