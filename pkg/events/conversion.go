@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/gopacket/layers"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
@@ -32,63 +31,90 @@ func ConvertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 }
 
 // ConvertToProto converts a trace.Event to v1beta1.Event.
+// This allocates a fresh slab from the pool. For pipeline use, prefer
+// PipelineEvent.ToProto() which manages slab lifecycle automatically.
 func ConvertToProto(e *trace.Event) *pb.Event {
-	event := &pb.Event{
-		Id:   pb.EventId(e.EventID),
-		Name: sanitizeStringForProtobuf(e.EventName),
-	}
+	slab := protoSlabPool.Get().(*eventSlab)
+	slab.reset()
+	return FillProtoSlab(e, slab)
+}
+
+// FillProtoSlab converts a trace.Event into the slab-allocated pb.Event.
+// All sub-objects (Workload, Process, Thread, etc.) point into the slab
+// instead of being individually heap-allocated.
+func FillProtoSlab(e *trace.Event, s *eventSlab) *pb.Event {
+	event := &s.event
+	event.Id = pb.EventId(e.EventID)
+	event.Name = sanitizeStringForProtobuf(e.EventName)
 
 	if e.Timestamp != 0 {
-		event.Timestamp = timestamppb.New(time.Unix(0, int64(e.Timestamp)))
+		t := time.Unix(0, int64(e.Timestamp))
+		s.timestamps[0].Seconds = t.Unix()
+		s.timestamps[0].Nanos = int32(t.Nanosecond())
+		event.Timestamp = &s.timestamps[0]
 	}
 
-	// Build workload
-	workload := &pb.Workload{}
+	// Build workload using slab-allocated sub-objects
+	workload := &s.workload
 	hasWorkload := false
 
 	// Process info
 	if e.ProcessID != 0 || e.ProcessName != "" {
 		var userStackTrace *pb.UserStackTrace
 		if len(e.StackAddresses) > 0 {
-			userStackTrace = &pb.UserStackTrace{
-				Addresses: getStackAddress(e.StackAddresses),
-			}
+			s.userStackTrace.Addresses = getStackAddress(e.StackAddresses)
+			userStackTrace = &s.userStackTrace
 		}
 
-		thread := &pb.Thread{
-			Name:           sanitizeStringForProtobuf(e.ProcessName),
-			UniqueId:       wrapperspb.UInt32(e.ThreadEntityId),
-			Tid:            wrapperspb.UInt32(uint32(e.ThreadID)),
-			HostTid:        wrapperspb.UInt32(uint32(e.HostThreadID)),
-			Syscall:        sanitizeStringForProtobuf(e.Syscall),
-			Compat:         e.ContextFlags.IsCompat, // Compat mode (32-bit on 64-bit)
-			UserStackTrace: userStackTrace,
-		}
+		thread := &s.thread
+		thread.Name = sanitizeStringForProtobuf(e.ProcessName)
+		s.uint32s[0].Value = e.ThreadEntityId
+		thread.UniqueId = &s.uint32s[0]
+		s.uint32s[1].Value = uint32(e.ThreadID)
+		thread.Tid = &s.uint32s[1]
+		s.uint32s[2].Value = uint32(e.HostThreadID)
+		thread.HostTid = &s.uint32s[2]
+		thread.Syscall = sanitizeStringForProtobuf(e.Syscall)
+		thread.Compat = e.ContextFlags.IsCompat
+		thread.UserStackTrace = userStackTrace
+
 		if e.ThreadStartTime != 0 {
-			thread.StartTime = timestamppb.New(time.Unix(0, int64(e.ThreadStartTime)))
+			t := time.Unix(0, int64(e.ThreadStartTime))
+			s.timestamps[1].Seconds = t.Unix()
+			s.timestamps[1].Nanos = int32(t.Nanosecond())
+			thread.StartTime = &s.timestamps[1]
 		}
 
-		process := &pb.Process{
-			Pid:      wrapperspb.UInt32(uint32(e.ProcessID)),
-			HostPid:  wrapperspb.UInt32(uint32(e.HostProcessID)),
-			UniqueId: wrapperspb.UInt32(e.ProcessEntityId),
-			RealUser: &pb.User{
-				Id: wrapperspb.UInt32(uint32(e.UserID)),
-			},
-			Thread: thread,
-		}
+		process := &s.process
+		s.uint32s[3].Value = uint32(e.ProcessID)
+		process.Pid = &s.uint32s[3]
+		s.uint32s[4].Value = uint32(e.HostProcessID)
+		process.HostPid = &s.uint32s[4]
+		s.uint32s[5].Value = e.ProcessEntityId
+		process.UniqueId = &s.uint32s[5]
+
+		user := &s.user
+		s.uint32s[6].Value = uint32(e.UserID)
+		user.Id = &s.uint32s[6]
+		process.RealUser = user
+
+		process.Thread = thread
+
 		if e.Executable.Path != "" {
-			process.Executable = &pb.Executable{Path: sanitizeStringForProtobuf(e.Executable.Path)}
+			s.executable.Path = sanitizeStringForProtobuf(e.Executable.Path)
+			process.Executable = &s.executable
 		}
+
 		// Add parent/ancestor info if present
 		if e.ParentEntityId != 0 {
-			process.Ancestors = []*pb.Process{
-				{
-					UniqueId: wrapperspb.UInt32(e.ParentEntityId),
-					HostPid:  wrapperspb.UInt32(uint32(e.HostParentProcessID)),
-					Pid:      wrapperspb.UInt32(uint32(e.ParentProcessID)),
-				},
-			}
+			ancestor := &s.ancestor
+			s.uint32s[7].Value = e.ParentEntityId
+			ancestor.UniqueId = &s.uint32s[7]
+			s.uint32s[8].Value = uint32(e.HostParentProcessID)
+			ancestor.HostPid = &s.uint32s[8]
+			s.uint32s[9].Value = uint32(e.ParentProcessID)
+			ancestor.Pid = &s.uint32s[9]
+			process.Ancestors = []*pb.Process{ancestor}
 		}
 
 		workload.Process = process
@@ -97,33 +123,34 @@ func ConvertToProto(e *trace.Event) *pb.Event {
 
 	// Container info
 	if e.Container.ID != "" {
-		workload.Container = &pb.Container{
-			Id:      sanitizeStringForProtobuf(e.Container.ID),
-			Name:    sanitizeStringForProtobuf(e.Container.Name),
-			Started: e.ContextFlags.ContainerStarted,
-		}
+		container := &s.container
+		container.Id = sanitizeStringForProtobuf(e.Container.ID)
+		container.Name = sanitizeStringForProtobuf(e.Container.Name)
+		container.Started = e.ContextFlags.ContainerStarted
+
 		if e.Container.ImageName != "" {
-			workload.Container.Image = &pb.ContainerImage{
-				Name: sanitizeStringForProtobuf(e.Container.ImageName),
-			}
+			img := &s.containerImage
+			img.Name = sanitizeStringForProtobuf(e.Container.ImageName)
 			if e.Container.ImageDigest != "" {
-				workload.Container.Image.RepoDigests = []string{sanitizeStringForProtobuf(e.Container.ImageDigest)}
+				img.RepoDigests = []string{sanitizeStringForProtobuf(e.Container.ImageDigest)}
 			}
+			container.Image = img
 		}
+		workload.Container = container
 		hasWorkload = true
 	}
 
 	// Kubernetes info
 	if e.Kubernetes.PodName != "" {
-		workload.K8S = &pb.K8S{
-			Namespace: &pb.K8SNamespace{
-				Name: sanitizeStringForProtobuf(e.Kubernetes.PodNamespace),
-			},
-			Pod: &pb.Pod{
-				Name: e.Kubernetes.PodName,
-				Uid:  e.Kubernetes.PodUID,
-			},
-		}
+		k8s := &s.k8s
+		ns := &s.k8sNamespace
+		ns.Name = sanitizeStringForProtobuf(e.Kubernetes.PodNamespace)
+		k8s.Namespace = ns
+		pod := &s.pod
+		pod.Name = e.Kubernetes.PodName
+		pod.Uid = e.Kubernetes.PodUID
+		k8s.Pod = pod
+		workload.K8S = k8s
 		hasWorkload = true
 	}
 
@@ -133,9 +160,8 @@ func ConvertToProto(e *trace.Event) *pb.Event {
 
 	// Policies
 	if len(e.MatchedPolicies) > 0 {
-		event.Policies = &pb.Policies{
-			Matched: sanitizeStringArrayForProtobuf(e.MatchedPolicies),
-		}
+		s.policies.Matched = sanitizeStringArrayForProtobuf(e.MatchedPolicies)
+		event.Policies = &s.policies
 	}
 
 	// Threat info from metadata
@@ -143,11 +169,10 @@ func ConvertToProto(e *trace.Event) *pb.Event {
 		event.Threat = getThreat(e.Metadata.Description, e.Metadata.Properties)
 	}
 
-	// Convert event data (Args) to Data field
-	eventData, err := getEventData(*e)
+	// Convert event data (Args) using slab-allocated EventValues
+	eventData, err := getEventDataSlab(*e, s)
 	if err != nil {
 		logger.Errorw("Failed to convert event data", "event", e.EventName, "error", err)
-		// Continue with partial conversion rather than failing completely
 	}
 	event.Data = eventData
 
@@ -317,6 +342,136 @@ func getEventData(e trace.Event) ([]*pb.EventValue, error) {
 	}
 
 	return data, nil
+}
+
+// getEventDataSlab converts trace.Event.Args to protobuf EventValue array,
+// using the slab's pre-allocated EventValue slots for the first maxSlabArgs args.
+func getEventDataSlab(e trace.Event, s *eventSlab) ([]*pb.EventValue, error) {
+	data := make([]*pb.EventValue, 0, len(e.Args))
+	slabIdx := 0
+
+	for _, arg := range e.Args {
+		if arg.ArgMeta.Name == "detectedFrom" {
+			continue
+		}
+
+		var ev *pb.EventValue
+		if slabIdx < maxSlabArgs {
+			ev = &s.dataValues[slabIdx]
+			s.dataPtrs[slabIdx] = ev
+			err := fillEventValue(ev, arg)
+			if err != nil {
+				return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
+			}
+			// fillEventValue returns a nil-value sentinel for unsupported types
+			if ev.Value == nil && arg.Value != nil {
+				// Try struct conversion as fallback (allocates)
+				allocated, err := convertToStruct(arg)
+				if err != nil {
+					return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
+				}
+				if allocated == nil {
+					logger.Errorw(
+						"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingDataStruct interface.",
+						"name", arg.Name,
+						"type", fmt.Sprintf("%T", arg.Value),
+					)
+					continue
+				}
+				allocated.Name = sanitizeStringForProtobuf(arg.ArgMeta.Name)
+				data = append(data, allocated)
+				continue
+			}
+			slabIdx++
+		} else {
+			// Overflow: fall back to heap-allocated EventValue
+			var err error
+			ev, err = parseArgument(arg)
+			if err != nil {
+				return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
+			}
+			if ev == nil {
+				logger.Errorw(
+					"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingDataStruct interface.",
+					"name", arg.Name,
+					"type", fmt.Sprintf("%T", arg.Value),
+				)
+				continue
+			}
+		}
+
+		ev.Name = sanitizeStringForProtobuf(arg.ArgMeta.Name)
+		data = append(data, ev)
+	}
+
+	return data, nil
+}
+
+// fillEventValue sets the value on an existing (slab-allocated) EventValue
+// instead of allocating a new one. Returns nil error on success.
+// For unsupported types, it leaves ev.Value as nil so the caller can try
+// struct conversion.
+func fillEventValue(ev *pb.EventValue, arg trace.Argument) error {
+	switch v := arg.Value.(type) {
+	case nil:
+		ev.Value = nil
+	case int:
+		ev.Value = &pb.EventValue_Int64{Int64: int64(v)}
+	case int32:
+		ev.Value = &pb.EventValue_Int32{Int32: v}
+	case uint8:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case uint16:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case uint32:
+		ev.Value = &pb.EventValue_UInt32{UInt32: v}
+	case int64:
+		ev.Value = &pb.EventValue_Int64{Int64: v}
+	case uint64:
+		ev.Value = &pb.EventValue_UInt64{UInt64: v}
+	case bool:
+		ev.Value = &pb.EventValue_Bool{Bool: v}
+	case string:
+		ev.Value = &pb.EventValue_Str{Str: sanitizeStringForProtobuf(v)}
+	case []string:
+		ev.Value = &pb.EventValue_StrArray{StrArray: &pb.StringArray{Value: sanitizeStringArrayForProtobuf(v)}}
+	case []byte:
+		ev.Value = &pb.EventValue_Bytes{Bytes: v}
+	case uintptr:
+		ev.Value = &pb.EventValue_UInt64{UInt64: uint64(v)}
+	case trace.Pointer:
+		ev.Value = &pb.EventValue_Pointer{Pointer: uint64(v)}
+	case time.Time:
+		ev.Value = &pb.EventValue_UInt64{UInt64: uint64(v.UnixNano())}
+	case layers.TCPPort:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case layers.UDPPort:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case []uint64:
+		ev.Value = &pb.EventValue_UInt64Array{UInt64Array: &pb.UInt64Array{Value: v}}
+	case float64:
+		ev.Value = &pb.EventValue_Timespec{Timespec: &pb.Timespec{Value: wrapperspb.Double(v)}}
+	case [2]int32:
+		intArray := make([]int32, 0, len(v))
+		for _, i := range v {
+			intArray = append(intArray, i)
+		}
+		ev.Value = &pb.EventValue_Int32Array{Int32Array: &pb.Int32Array{Value: intArray}}
+	default:
+		// For complex types (network protocols, maps, SlimCred, etc.), delegate to
+		// parseArgument which handles all remaining cases. The caller detects this
+		// by checking ev.Value == nil && arg.Value != nil.
+		result, err := parseArgument(arg)
+		if err != nil {
+			return err
+		}
+		if result != nil {
+			ev.Name = result.Name
+			ev.Value = result.Value
+		}
+		// If result is nil, ev.Value stays nil — caller handles unsupported type
+	}
+	return nil
 }
 
 // parseArgument converts a single trace.Argument to protobuf EventValue
