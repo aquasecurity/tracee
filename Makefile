@@ -11,6 +11,12 @@ SHELL = /bin/sh
 BUILD_TYPE_FLAG := COMMON_BUILD
 GO_TAGS_EBPF := core,ebpf,lsmsupport
 
+# Go 1.26 randomizes the heap base address, which breaks the eBPF stack_pivot
+# detector's Go heap recognition (vma_is_golang_heap in common/memory.h relies
+# on arenas starting at 0xc000000000). Disable until the eBPF code is updated
+# to handle randomized heap bases.
+export GOEXPERIMENT ?= norandomizedheapbase64
+
 EXCLUDED_MODULES := ./3rdparty/*
 
 # load extended-pre Makefile, if exists

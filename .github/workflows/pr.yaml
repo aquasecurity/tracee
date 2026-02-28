@@ -40,6 +40,9 @@ concurrency:
   cancel-in-progress: true
 env:
   TRACEE_REF: ${{ github.event.inputs.tracee_ref || github.ref }}
+  # Go 1.26 randomizes the heap base address, breaking the eBPF stack_pivot
+  # detector's Go heap recognition (see plans/tracee/stack-pivot-go126-issue.md).
+  GOEXPERIMENT: norandomizedheapbase64
   TESTS: >
     TRC-102
     TRC-103
