@@ -1,8 +1,6 @@
 module github.com/aquasecurity/tracee/api
 
-go 1.24.0
-
-toolchain go1.24.13
+go 1.26.0
 
 require (
 	github.com/stretchr/testify v1.8.4

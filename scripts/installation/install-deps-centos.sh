@@ -13,17 +13,6 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 
 info "Starting Tracee dependency installation on CentOS/RHEL"
 
-# Configuration
-# When changing GOLANG_VERSION, update the corresponding checksum files in:
-#   scripts/installation/checksums/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
-#   scripts/installation/checksums/go${GOLANG_VERSION}.linux-arm64.tar.gz.sha256
-# Get checksums from: https://go.dev/dl/ (click "Show checksum" for each file)
-GOLANG_VERSION="1.24.13"
-STATICCHECK_VERSION="2025.1"
-REVIVE_VERSION="v1.7.0"
-GOIMPORTS_REVISER_VERSION="v3.8.2"
-ERRCHECK_VERSION="v1.9.0"
-
 # Detect package manager (dnf preferred over yum)
 detect_pkg_manager() {
     if command -v dnf > /dev/null 2>&1; then
@@ -89,59 +78,7 @@ install_base_packages() {
 }
 
 install_golang() {
-    info "Installing Go ${GOLANG_VERSION}"
-    require_cmds curl tar
-
-    # Detect architecture for Go download
-    local arch
-    arch=$(uname -m)
-    local goarch
-    case "${arch}" in
-        x86_64) goarch="amd64" ;;
-        aarch64) goarch="arm64" ;;
-        *)
-            die "Unsupported architecture: ${arch}"
-            ;;
-    esac
-
-    local tarball_name="go${GOLANG_VERSION}.linux-${goarch}.tar.gz"
-    local checksum_file="${SCRIPT_DIR}/checksums/${tarball_name}.sha256"
-    local download_url="https://go.dev/dl/${tarball_name}"
-
-    # Check that the checksum file exists
-    if [[ ! -f "${checksum_file}" ]]; then
-        die "Go checksum file not found: ${checksum_file}
-Please create the checksum file with the SHA256 from https://go.dev/dl/"
-    fi
-
-    # Remove any existing Go installation
-    rm -f /usr/bin/go /usr/bin/gofmt
-    rm -rf /usr/local/go
-
-    # Download Go tarball
-    info "Downloading Go ${GOLANG_VERSION}..."
-    if ! curl -fsSL -o "/tmp/${tarball_name}" "${download_url}"; then
-        die "Failed to download Go tarball from ${download_url}"
-    fi
-
-    # Verify the checksum before extraction
-    if ! verify_sha256_checksum "/tmp/${tarball_name}" "${checksum_file}" "Go ${GOLANG_VERSION}"; then
-        rm -f "/tmp/${tarball_name}"
-        die "Aborting Go installation due to checksum verification failure"
-    fi
-
-    # Checksum verified, proceed with extraction
-    info "Extracting Go to /usr/local..."
-    tar -C /usr/local -xzf "/tmp/${tarball_name}"
-    rm -f "/tmp/${tarball_name}"
-
-    # Create symlinks
-    ln -s /usr/local/go/bin/go /usr/bin/go
-    ln -s /usr/local/go/bin/gofmt /usr/bin/gofmt
-
-    # Verify installation
-    go version
-    info "Go ${GOLANG_VERSION} installed successfully"
+    "${SCRIPT_DIR}/install-golang.sh"
 }
 
 install_clang() {
@@ -155,40 +92,7 @@ install_clang() {
 }
 
 install_go_tools() {
-    info "Installing Go development tools"
-    require_cmds go
-
-    export GOROOT=/usr/local/go
-    export GOPATH=/tmp/go
-    export PATH=${GOROOT}/bin:${GOPATH}/bin:${PATH}
-
-    # Create GOPATH
-    mkdir -p "${GOPATH}/bin"
-
-    # Install staticcheck
-    info "Installing staticcheck ${STATICCHECK_VERSION}"
-    go install "honnef.co/go/tools/cmd/staticcheck@${STATICCHECK_VERSION}"
-    cp "${GOPATH}/bin/staticcheck" /usr/bin/
-
-    # Install revive
-    info "Installing revive ${REVIVE_VERSION}"
-    go install "github.com/mgechev/revive@${REVIVE_VERSION}"
-    cp "${GOPATH}/bin/revive" /usr/bin/
-
-    # Install goimports-reviser
-    info "Installing goimports-reviser ${GOIMPORTS_REVISER_VERSION}"
-    go install "github.com/incu6us/goimports-reviser/v3@${GOIMPORTS_REVISER_VERSION}"
-    cp "${GOPATH}/bin/goimports-reviser" /usr/bin/
-
-    # Install errcheck
-    info "Installing errcheck ${ERRCHECK_VERSION}"
-    go install "github.com/kisielk/errcheck@${ERRCHECK_VERSION}"
-    cp "${GOPATH}/bin/errcheck" /usr/bin/
-
-    # Clean up GOPATH
-    rm -rf "${GOPATH}"
-
-    info "Go tools installed successfully"
+    "${SCRIPT_DIR}/install-go-tools.sh"
 }
 
 install_docker() {
