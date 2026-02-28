@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"time"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -9,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
+	"github.com/aquasecurity/tracee/pkg/server"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
 	"github.com/aquasecurity/tracee/pkg/streams"
@@ -32,6 +34,17 @@ func (r Runner) Run(ctx context.Context) error {
 	t.AddReadyCallback(
 		func(ctx context.Context) {
 			logger.Debugw("Tracee is ready callback")
+
+			// Initialize heartbeat first (shared between HTTP and gRPC servers)
+			// interval defines how often the heartbeat signal should be sent.
+			heartbeatSignalInterval := time.Duration(1 * time.Second)
+			// timeout specifies the maximum duration to wait for a heartbeat acknowledgment
+			heartbeatAckTimeout := time.Duration(2 * time.Second)
+			heartbeat.Init(ctx, heartbeatSignalInterval, heartbeatAckTimeout)
+			// Set callback for InvokeHeartbeat (defined in server package)
+			// The uprobe is attached to this function, so it must always be set
+			heartbeat.GetInstance().SetCallback(server.InvokeHeartbeat)
+			heartbeat.GetInstance().Start()
 
 			// Start HTTP server if configured
 			if r.HTTP != nil {
