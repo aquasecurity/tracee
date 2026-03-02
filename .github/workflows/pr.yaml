@@ -180,13 +180,11 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
-        with:
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
 
   unit-tests-arm64:
     name: Unit Tests (ARM64)
@@ -217,13 +215,11 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
-        with:
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
   #
   # INTEGRATION TESTS
   #
@@ -261,7 +257,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0
       # NOTE: Git ownership fix not needed when running on host (only required in containers).
       # - name: Fix Git ownership
       #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -273,8 +269,6 @@ jobs:
         uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
-        with:
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
   integration-tests-arm64:
     name: Integration Tests (ARM64)
     needs:
@@ -309,7 +303,7 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
-          fetch-depth: 0  # Fetch full history for codecov base comparison
+          fetch-depth: 0
       # NOTE: Git ownership fix not needed when running on host (only required in containers).
       # - name: Fix Git ownership
       #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -321,8 +315,6 @@ jobs:
         uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
-        with:
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
   #
   # PERFORMANCE TESTS
   #
