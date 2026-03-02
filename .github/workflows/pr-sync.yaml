@@ -11,7 +11,8 @@ on:
         description: "PR Number"
         required: true
         type: number
-
+permissions:
+  contents: read
 jobs:
   pr-sync:
     name: PR Sync

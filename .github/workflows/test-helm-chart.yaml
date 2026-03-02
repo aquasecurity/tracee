@@ -4,7 +4,8 @@ on:
   pull_request:
     paths:
       - "deploy/helm/**"
-
+permissions:
+  contents: read
 jobs:
   test:
     runs-on: ubuntu-24.04

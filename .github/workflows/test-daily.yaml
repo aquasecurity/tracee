@@ -8,6 +8,8 @@ on:
     # Daily At 03:00
     - cron: "0 3 * * *"
   workflow_call:
+permissions:
+  contents: read
 jobs:
   compile-tracee:
     name: Test Latest libbpfgo
