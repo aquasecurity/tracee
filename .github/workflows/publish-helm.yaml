@@ -11,6 +11,8 @@ on:
       ref:
         description: The branch, tag or SHA to publish, e.g. v0.0.1
         required: true
+permissions:
+  contents: read
 env:
   HELM_REP: helm-charts
   GH_OWNER: aquasecurity

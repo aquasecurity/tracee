@@ -35,6 +35,8 @@ on:
       - "**.sh"
       - "**/pr.yaml"
       - "**/action.yaml"
+permissions:
+  contents: read
 concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

@@ -8,6 +8,8 @@ on:
       ref:
         description: The tag to be released, e.g. v0.0.1
         required: true
+permissions:
+  contents: write
 jobs:
   deploy:
     name: Deploy the latest documentation
