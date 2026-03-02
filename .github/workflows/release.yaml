@@ -42,15 +42,19 @@ jobs:
           make -f builder/Makefile.release release
         shell: bash
       - name: Publish to docker.io registry
+        env:
+          REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
+          TAG=$(echo "$REF" | sed -e "s/v//gI")
           ARCH=$(uname -m)
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
           docker image push aquasec/tracee:${ARCH}-${TAG}
         shell: bash
       - name: Sign Docker image
+        env:
+          REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
+          TAG=$(echo "$REF" | sed -e "s/v//gI")
           ARCH=$(uname -m)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
         shell: bash
@@ -87,15 +91,19 @@ jobs:
           make -f builder/Makefile.release release
         shell: bash
       - name: Publish to docker.io registry
+        env:
+          REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
+          TAG=$(echo "$REF" | sed -e "s/v//gI")
           ARCH=$(uname -m)
           docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
           docker image push aquasec/tracee:${ARCH}-${TAG}
         shell: bash
       - name: Sign Docker image
+        env:
+          REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
+          TAG=$(echo "$REF" | sed -e "s/v//gI")
           ARCH=$(uname -m)
           cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
         shell: bash
@@ -124,8 +132,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Publish to docker.io registry
+        env:
+          REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
+          TAG=$(echo "$REF" | sed -e "s/v//gI")
           export DOCKER_CLI_EXPERIMENTAL=enabled
           docker manifest create aquasec/tracee:latest \
             aquasec/tracee:x86_64-${TAG} \
@@ -137,8 +147,10 @@ jobs:
           docker manifest push aquasec/tracee:${TAG}
         shell: bash
       - name: Sign the latest manifest with Cosign
+        env:
+          REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo ${{ github.event.inputs.ref }} | sed -e "s/v//gI")
+          TAG=$(echo "$REF" | sed -e "s/v//gI")
           cosign sign -y aquasec/tracee:latest
           cosign sign -y aquasec/tracee:${TAG}
         shell: bash
