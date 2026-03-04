@@ -16,7 +16,7 @@ permissions:
 jobs:
   pr-sync:
     name: PR Sync
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     container:
       image: alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
 
