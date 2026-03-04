@@ -77,17 +77,18 @@ env:
 jobs:
   debug-runner-label:
     name: Debug Runner Label
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     steps:
       - name: Debug Runner Label
         run: |
-          echo "Runner label: ${{ vars.UBUNTU_X86_RUNNER_LABEL }}"
+          echo "Repository owner: ${{ github.repository_owner }}"
+          echo "Runner label: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}"
   #
   # DOC VERIFICATION
   #
   verify-docs:
     name: Verify Documentation
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -101,7 +102,7 @@ jobs:
   #
   verify-analyze-code:
     name: Verify and Analyze Code
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -143,7 +144,7 @@ jobs:
     name: Verify Other Tools
     needs:
       - verify-analyze-code
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -173,7 +174,7 @@ jobs:
     name: Unit Tests (x86_64)
     needs:
       - verify-analyze-code
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -192,7 +193,7 @@ jobs:
     name: Unit Tests (ARM64)
     needs:
       - verify-analyze-code
-    runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04-arm') }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
@@ -324,7 +325,7 @@ jobs:
     name: Performance Tests
     needs:
       - verify-analyze-code
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
@@ -344,7 +345,7 @@ jobs:
   #
   generate-matrix:
     name: Generate Test Matrix
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     outputs:
       matrix01: ${{ steps.generate.outputs.matrix }}
     steps:
