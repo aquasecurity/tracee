@@ -8826,16 +8826,16 @@ make<span class="w"> </span>check-pr<span class="w"> </span><span class="nv">ARG
 <h3 id="optional-tools">Optional Tools<a class="headerlink" href="#optional-tools" title="Permanent link">&para;</a></h3>
 <p>The script will warn if these tools are missing but continue with available checks:</p>
 <ul>
-<li><strong>revive</strong>: <code>go install github.com/mgechev/revive@v1.7.0</code></li>
-<li><strong>staticcheck</strong>: <code>go install honnef.co/go/tools/cmd/staticcheck@2025.1</code></li>
-<li><strong>errcheck</strong>: <code>go install github.com/kisielk/errcheck@v1.9.0</code></li>
+<li><strong>revive</strong> (v1.7.0): <code>go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d</code></li>
+<li><strong>staticcheck</strong> (2025.1): <code>go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c</code></li>
+<li><strong>errcheck</strong> (v1.9.0): <code>go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34</code></li>
 </ul>
 <h2 id="installation-of-optional-tools">Installation of Optional Tools<a class="headerlink" href="#installation-of-optional-tools" title="Permanent link">&para;</a></h2>
 <p>To install all optional tools at once:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Install linting and static analysis tools</span>
-go<span class="w"> </span>install<span class="w"> </span>github.com/mgechev/revive@v1.7.0
-go<span class="w"> </span>install<span class="w"> </span>honnef.co/go/tools/cmd/staticcheck@2025.1
-go<span class="w"> </span>install<span class="w"> </span>github.com/kisielk/errcheck@v1.9.0
+go<span class="w"> </span>install<span class="w"> </span>github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d<span class="w">                   </span><span class="c1"># v1.7.0</span>
+go<span class="w"> </span>install<span class="w"> </span>honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c<span class="w">          </span><span class="c1"># 2025.1</span>
+go<span class="w"> </span>install<span class="w"> </span>github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34<span class="w">                 </span><span class="c1"># v1.9.0</span>
 
 <span class="c1"># Ensure tools are in PATH</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="k">$(</span>go<span class="w"> </span>env<span class="w"> </span>GOPATH<span class="k">)</span>/bin
@@ -8870,7 +8870,7 @@ make<span class="w"> </span>check-pr-fast<span class="w"> </span><span class="o"
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
 <p><strong>Missing Tools Warning</strong>
-<div class="highlight"><pre><span></span><code>⚠ revive not found. Install with: go install github.com/mgechev/revive@v1.7.0
+<div class="highlight"><pre><span></span><code>⚠ revive not found. Install with: go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d # v1.7.0
 </code></pre></div>
 <em>Solution</em>: Install the missing tool or ignore if you don't need that specific check.</p>
 <p><strong>Documentation Mismatch</strong>
