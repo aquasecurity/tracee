@@ -73,7 +73,51 @@ install_clang_alpine() {
     setup_alpine_symlinks
 }
 
+# Set up symlinks for LLVM tools (used by both Alpine and Ubuntu)
+setup_llvm_tool_symlinks() {
+    info "Setting up LLVM tool symlinks for version ${CLANG_VERSION}"
+
+    # LLVM tools that need symlinks (excluding clang/clang++ which use alternatives on Ubuntu)
+    LLVM_TOOLS="llc lld clangd clang-format llvm-strip llvm-config ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf opt"
+
+    # Possible locations for LLVM tools:
+    # Alpine: /usr/lib/llvm${VERSION}/bin/ (without dash)
+    # Ubuntu/Debian:
+    #   1. /usr/lib/llvm-${VERSION}/bin/ (with dash, from llvm-15-dev)
+    #   2. /usr/lib/llvm${VERSION}/bin/ (without dash, from llvm-15-tools)
+    #   3. /usr/bin/ (as versioned binaries like llvm-strip-15)
+
+    for tool in $LLVM_TOOLS; do
+        target_path="/usr/bin/${tool}"
+        source_path=""
+
+        # Check Alpine location first (without dash, simpler structure)
+        if [ -f "/usr/lib/llvm${CLANG_VERSION}/bin/${tool}" ]; then
+            # Alpine location (without dash)
+            source_path="/usr/lib/llvm${CLANG_VERSION}/bin/${tool}"
+        elif [ -f "/usr/lib/llvm-${CLANG_VERSION}/bin/${tool}" ]; then
+            # Ubuntu location with dash (from llvm-15-dev)
+            source_path="/usr/lib/llvm-${CLANG_VERSION}/bin/${tool}"
+        elif [ -f "/usr/bin/${tool}-${CLANG_VERSION}" ]; then
+            # Versioned binary in /usr/bin/
+            source_path="/usr/bin/${tool}-${CLANG_VERSION}"
+        elif [ -f "/usr/lib/llvm-${CLANG_VERSION}/bin/${tool}-${CLANG_VERSION}" ]; then
+            # Versioned binary in llvm directory
+            source_path="/usr/lib/llvm-${CLANG_VERSION}/bin/${tool}-${CLANG_VERSION}"
+        fi
+
+        if [ -n "$source_path" ] && [ -f "$source_path" ]; then
+            rm -f "$target_path"
+            ln -sf "$source_path" "$target_path"
+            info "Created symlink: ${target_path} -> ${source_path}"
+        else
+            warn "LLVM tool not found: ${tool} (checked multiple locations)"
+        fi
+    done
+}
+
 # Set up symlinks for Alpine (no update-alternatives available)
+# Uses setup_llvm_tool_symlinks() for LLVM tools, handles clang/clang++ separately
 setup_alpine_symlinks() {
     info "Setting up Clang ${CLANG_VERSION} symlinks"
 
@@ -82,23 +126,13 @@ setup_alpine_symlinks() {
         rm -f "/usr/bin/${tool}"
     done
 
-    # Create new symlinks
+    # Create symlinks for clang/clang++
     ln -s /usr/lib/llvm${CLANG_VERSION}/bin/clang /usr/bin/cc
     ln -s /usr/lib/llvm${CLANG_VERSION}/bin/clang /usr/bin/clang
     ln -s /usr/lib/llvm${CLANG_VERSION}/bin/clang++ /usr/bin/clang++
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llc /usr/bin/llc
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/lld /usr/bin/lld
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/clangd /usr/bin/clangd
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/clang-format /usr/bin/clang-format
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llvm-strip /usr/bin/llvm-strip
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llvm-config /usr/bin/llvm-config
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/lld /usr/bin/ld.lld
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llvm-ar /usr/bin/llvm-ar
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llvm-nm /usr/bin/llvm-nm
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llvm-objcopy /usr/bin/llvm-objcopy
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llvm-objdump /usr/bin/llvm-objdump
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/llvm-readelf /usr/bin/llvm-readelf
-    ln -s /usr/lib/llvm${CLANG_VERSION}/bin/opt /usr/bin/opt
+
+    # Use shared function for LLVM tools (llvm-strip, llvm-config, etc.)
+    setup_llvm_tool_symlinks
 }
 
 # Add LLVM APT repository for newer Clang versions
@@ -151,6 +185,8 @@ install_clang_ubuntu() {
     # Install base LLVM and Clang packages
     apt-get install -y \
         llvm-${CLANG_VERSION} \
+        llvm-${CLANG_VERSION}-tools \
+        llvm-${CLANG_VERSION}-dev \
         clang-${CLANG_VERSION} \
         clang-tools-${CLANG_VERSION}
 
@@ -162,6 +198,7 @@ install_clang_ubuntu() {
     fi
 
     setup_ubuntu_alternatives
+    setup_llvm_tool_symlinks
 }
 
 # Set up update-alternatives for Ubuntu/Debian
