@@ -1,0 +1,11 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: dns-ds-test
+  annotations:
+    description: test tracee's dns data store events
+spec:
+  scope: 
+    - comm=ping
+  rules:
+    - event: DNS_DATA_STORE

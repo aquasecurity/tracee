@@ -51,13 +51,18 @@ make test-integration  # Full system tests with real eBPF programs
 ```
 **Note**: Integration tests require root privileges and kernel eBPF support.
 
-### E2E Tests
+### E2E Tests (Requires Root)
 ```bash
-# Network signature tests
-make e2e-net-signatures
-# Instrumentation signature tests
-make e2e-inst-signatures
+# Core E2E tests (detectors, events, data sources)
+make test-e2e
+
+# Network E2E tests (network protocol detectors)
+make test-e2e-net
+
+# Kernel E2E tests (kernel-specific functionality)
+make test-e2e-kernel
 ```
+**Note**: E2E tests require root privileges and run actual Tracee instances.
 
 ### Coverage Reports
 ```bash
@@ -114,5 +119,6 @@ defer trc.Unsubscribe(stream)
 ### Test File Organization
 - Unit tests: Alongside source files (`pkg/*/`)
 - Integration tests: `tests/integration/`
-- E2E tests: `tests/e2e-*/`
+- E2E tests: `tests/e2e/` (core, net, kernel subdirectories)
+- E2E detectors: `detectors/e2e/` (built with e2e/e2e_net tags)
 - Test utilities: `tests/testutils/`

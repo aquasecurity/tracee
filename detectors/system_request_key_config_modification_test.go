@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestSystemRequestKeyConfigModification(t *testing.T) {
@@ -47,7 +48,7 @@ func TestSystemRequestKeyConfigModification(t *testing.T) {
 			t.Parallel()
 
 			detector := &SystemRequestKeyConfigModification{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{

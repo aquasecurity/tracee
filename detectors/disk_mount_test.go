@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestDiskMount_OnEvent(t *testing.T) {
@@ -44,7 +45,7 @@ func TestDiskMount_OnEvent(t *testing.T) {
 
 			detector := &DiskMount{}
 			params := detection.DetectorParams{
-				Logger: &mockLogger{},
+				Logger: &testutil.MockLogger{},
 			}
 			err := detector.Init(params)
 			require.NoError(t, err)

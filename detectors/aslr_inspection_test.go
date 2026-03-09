@@ -10,6 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/parsers"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestAslrInspection_GetDefinition(t *testing.T) {
@@ -45,8 +46,8 @@ func TestAslrInspection_Init(t *testing.T) {
 	detector := &AslrInspection{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -57,8 +58,8 @@ func TestAslrInspection_OnEvent_ReadOperation(t *testing.T) {
 	detector := &AslrInspection{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -98,8 +99,8 @@ func TestAslrInspection_OnEvent_WriteOperation(t *testing.T) {
 	detector := &AslrInspection{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -125,8 +126,8 @@ func TestAslrInspection_OnEvent_MissingFlags(t *testing.T) {
 	detector := &AslrInspection{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -152,8 +153,8 @@ func TestAslrInspection_OnEvent_MultipleReadOperations(t *testing.T) {
 	detector := &AslrInspection{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)
@@ -181,8 +182,8 @@ func TestAslrInspection_Close(t *testing.T) {
 	detector := &AslrInspection{}
 
 	params := detection.DetectorParams{
-		Logger:     &mockLogger{},
-		DataStores: &mockDataStoreRegistry{},
+		Logger:     &testutil.MockLogger{},
+		DataStores: &testutil.MockDataStoreRegistry{},
 	}
 
 	err := detector.Init(params)

@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestScheduledTaskModification_FileOpen(t *testing.T) {
@@ -53,7 +54,7 @@ func TestScheduledTaskModification_FileOpen(t *testing.T) {
 			t.Parallel()
 
 			detector := &ScheduledTaskModification{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -123,7 +124,7 @@ func TestScheduledTaskModification_CommandExecution(t *testing.T) {
 			t.Parallel()
 
 			detector := &ScheduledTaskModification{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{
@@ -188,7 +189,7 @@ func TestScheduledTaskModification_Rename(t *testing.T) {
 			t.Parallel()
 
 			detector := &ScheduledTaskModification{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			event := &v1beta1.Event{

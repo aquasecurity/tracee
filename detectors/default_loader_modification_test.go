@@ -9,6 +9,7 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/detectors/testutil"
 )
 
 func TestDefaultLoaderModification(t *testing.T) {
@@ -100,7 +101,7 @@ func TestDefaultLoaderModification(t *testing.T) {
 			t.Parallel()
 
 			detector := &DefaultLoaderModification{}
-			err := detector.Init(detection.DetectorParams{Logger: &mockLogger{}})
+			err := detector.Init(detection.DetectorParams{Logger: &testutil.MockLogger{}})
 			require.NoError(t, err)
 
 			var data []*v1beta1.EventValue
