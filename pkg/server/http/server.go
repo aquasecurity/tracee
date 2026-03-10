@@ -11,14 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/aquasecurity/tracee/common/logger"
-	"github.com/aquasecurity/tracee/pkg/ebpf/heartbeat"
 )
-
-// interval defines how often the heartbeat signal should be sent.
-const heartbeatSignalInterval = time.Duration(1 * time.Second)
-
-// timeout specifies the maximum duration to wait for a heartbeat acknowledgment
-const heartbeatAckTimeout = time.Duration(2 * time.Second)
 
 // Server represents a http server
 type Server struct {
@@ -89,14 +82,6 @@ func (s *Server) Start(ctx context.Context) {
 
 		srvCancel()
 	}()
-
-	// Initialize heartbeat monitoring
-	heartbeatCtx, cancelHeartbeat := context.WithCancel(srvCtx)
-	defer cancelHeartbeat()
-
-	heartbeat.Init(heartbeatCtx, heartbeatSignalInterval, heartbeatAckTimeout)
-	heartbeat.GetInstance().SetCallback(invokeHeartbeat)
-	heartbeat.GetInstance().Start()
 
 	select {
 	case <-ctx.Done():
@@ -173,9 +158,4 @@ func (s *Server) IsPyroscopeEnabled() bool {
 // Address returns the address of the server
 func (s *Server) Address() string {
 	return s.address
-}
-
-//go:noinline
-func invokeHeartbeat() {
-	// Intentionally left empty
 }
