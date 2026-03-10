@@ -660,6 +660,12 @@ enum file_modification_op {
     FILE_MODIFICATION_DONE,
 };
 
+typedef struct file_mod_value {
+    s32 op;
+    u64 open_ctime;
+    u64 open_size;
+} file_mod_value_t;
+
 #define MAX_STACK_DEPTH 20 // max depth of each stack trace to track
 
 typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
