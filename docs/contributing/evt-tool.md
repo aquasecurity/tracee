@@ -72,13 +72,15 @@ evt trigger --event security_file_open --bypass-flags
 
 Run comprehensive stress tests with multiple event types in isolated containers.
 
+Events can be specified via **CLI flags** (`--events` / `-e`) and/or **YAML suite files** (`--events-file`). At least one event must be provided from any source.
+
 **Usage:**
 
 ```bash
-evt stress --events <event_specs> [flags]
+evt stress [--events <spec> ...] [--events-file <path> ... [--scenario <name> ... | --all-scenarios]] [flags]
 ```
 
-**Event Specification Format:**
+**Event Specification Format (CLI):**
 
 ```
 event[:instances=N:ops=N:sleep=dur]
@@ -89,13 +91,35 @@ event[:instances=N:ops=N:sleep=dur]
 - `ops`: Operations per worker
 - `sleep`: Sleep between operations
 
+**Event Suites (YAML):**
+
+You can load events from YAML suite files with `--events-file` / `-E`. A suite defines named **scenarios** (e.g. smoke, filesystem); each scenario lists event specs (same format as CLI) and optional **groups** for organization. Use `--scenario` to run one or more scenarios (repeatable) or `--all-scenarios` to run all. Events from the selected scenario(s) are merged, then any `--events` / `-e` are appended.
+
+- Format: top-level `name`/`description` (optional), required `scenarios` list. Each scenario has `name`, optional `description`, and either `events` (list of specs) or `groups` (each with `name` and `events`).
+- Example file: [evt-suite-example.yaml](evt-suite-example.yaml). Full schema and behavior: [evt-events-file-design.md](evt-events-file-design.md).
+
 **Examples:**
 
 ```bash
-# Basic stress test with default settings
+# Basic stress test with CLI events (default settings)
 evt stress --events security_file_open --events ptrace
 
-# Multiple events with custom configurations
+# From a suite file: single scenario (implicit if only one scenario in file)
+evt stress --events-file evt-suite-example.yaml
+
+# From a suite file: named scenario
+evt stress --events-file evt-suite-example.yaml --scenario smoke
+
+# Multiple scenarios from a suite (repeatable --scenario)
+evt stress --events-file evt-suite-example.yaml --scenario smoke --scenario filesystem
+
+# All scenarios from the loaded file(s)
+evt stress --events-file evt-suite-example.yaml --all-scenarios
+
+# Merge suite and CLI: scenario events first, then -e
+evt stress --events-file evt-suite-example.yaml --scenario smoke -e security_bpf_prog
+
+# Multiple events with custom configurations (CLI only)
 evt stress \
   --events security_file_open:instances=10:ops=1000:sleep=1ms \
   --events ptrace:instances=2:ops=100:sleep=100ms
@@ -121,9 +145,14 @@ evt stress \
 **Flags:**
 
 **Event Configuration:**
-- `--events, -e <spec>`: Events to stress test (required, repeatable)
+- `--events, -e <spec>`: Event specs to stress test (repeatable). Merge with events from `--events-file` if both are used.
   - Format: `event[:instances=N:ops=N:sleep=dur]`
   - Example: `security_file_open:instances=10:ops=1000:sleep=1ms`
+- `--events-file, -E <path>`: Path(s) to YAML suite file(s). May be passed multiple times. Use with `--scenario` or `--all-scenarios` to select which scenarios to run.
+- `--scenario <name>`: Scenario(s) to run from the loaded suite file(s). Repeatable (e.g. `--scenario smoke --scenario filesystem`). Mutually exclusive with `--all-scenarios`.
+- `--all-scenarios`: Run all scenarios from the loaded suite file(s). Mutually exclusive with `--scenario`.
+
+At least one event must be specified in total (from `--events` and/or from the selected scenario(s) in `--events-file`).
 
 **Container Configuration:**
 - `--image <name:tag>`: Trigger runner container image
@@ -373,6 +402,8 @@ make -f builder/Makefile.performance dashboard-stop
 
 ## See Also
 
+- [evt Events-File Design](evt-events-file-design.md) - YAML suite format, scenarios, and CLI behavior
+- [evt Events-File Implementation Plan](evt-events-file-implementation-plan.md) - Implementation and task tracking
 - [Performance Considerations](performance.md) - Tracee profiling and benchmarking
 - [Testing Coverage](testing-coverage.md) - Tracee testing framework
 - [Building](building/building.md) - Building Tracee from source
