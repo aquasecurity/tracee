@@ -1,4 +1,4 @@
-FROM squidfunk/mkdocs-material:9.6.20@sha256:86d21da4f45f16e30774bf911e5b4795da13ce0cd197dbf8d3d059f256b2cc37
+FROM squidfunk/mkdocs-material:9.7.5@sha256:c3739993c3e7c92cfe649ba03cbc04f4fa9b1497886abd16267eb413cda8aecf
 
 RUN pip install --upgrade pip
 RUN pip install git+https://github.com/jimporter/mike.git@6b876a40892f6d16d984247821d5a3ae85745e36 # v2.1.3
