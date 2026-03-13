@@ -14,7 +14,8 @@ updates:
           - "*"
 
   - package-ecosystem: "docker"
-    directory: "/"
+    directories:
+      - "/**"
     schedule:
       interval: "monthly"
     groups:
@@ -22,8 +23,11 @@ updates:
         patterns:
           - "*"
 
+  # open-pull-requests-limit: 0 disables version update PRs.
+  # Security alerts and updates are configured separately in repo settings.
   - package-ecosystem: "gomod"
-    directory: "/"
+    directories:
+      - "/**"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
     open-pull-requests-limit: 0
