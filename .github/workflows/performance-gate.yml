@@ -10,6 +10,8 @@ on:
       - main
   merge_group:
   push:
+    branches:
+      - tdpaiva/add-performance-gate-workflow
     tags:
       - 'v*'
   workflow_dispatch:
