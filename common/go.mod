@@ -2,6 +2,8 @@ module github.com/aquasecurity/tracee/common
 
 go 1.26.0
 
+toolchain go1.26.1
+
 require (
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru v1.0.2
