@@ -140,6 +140,10 @@ jobs:
       - name: Check with errcheck
         run: |
           make check-err
+      - name: Check with govulncheck (informational)
+        continue-on-error: true
+        run: |
+          make check-vulncheck
   #
   # TOOLS BUILD VERIFICATION
   #

@@ -121,7 +121,7 @@ verify_installation() {
     info "Verifying installation"
 
     # Check critical tools
-    require_cmds go gofmt clang staticcheck revive goimports-reviser errcheck
+    require_cmds go gofmt clang staticcheck revive goimports-reviser errcheck govulncheck
 
     # Show versions
     info "Installation verification:"

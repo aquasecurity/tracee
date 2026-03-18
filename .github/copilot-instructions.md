@@ -64,6 +64,7 @@ make fix-fmt                # Auto-fix formatting issues
 make check-vet              # Go vet checks
 make check-staticcheck      # Static analysis (needs staticcheck tool)
 make check-err              # Error checking (needs errcheck tool)
+make check-vulncheck        # Vulnerability checking (needs govulncheck tool)
 make check-pr               # Full PR validation suite
 ```
 
@@ -71,6 +72,7 @@ make check-pr               # Full PR validation suite
 - `goimports-reviser` (v3.12.6): `go install github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7`
 - `staticcheck` (2025.1): `go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c`
 - `errcheck` (v1.9.0): `go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34`
+- `govulncheck` (v1.1.4): `go install golang.org/x/vuln/cmd/govulncheck@d1f380186385b4f64e00313f31743df8e4b89a77`
 - `clang-format-19`: Use system package manager or download binary
 
 ### Build Flags & Options
@@ -140,7 +142,7 @@ All build outputs go to `./dist/` directory:
 ### PR Workflow (`.github/workflows/pr.yaml`)
 The PR workflow runs these checks:
 1. **Documentation verification** - Man page sync validation
-2. **Code verification** - Formatting, linting, vet, staticcheck, errcheck
+2. **Code verification** - Formatting, linting, vet, staticcheck, errcheck, govulncheck
 3. **Build verification** - Multiple tools and components
 4. **Testing** - Unit tests, integration tests, performance tests
 5. **Multi-kernel testing** - Matrix of kernel versions and architectures
@@ -150,6 +152,7 @@ The PR workflow runs these checks:
 - **Linting**: revive with comprehensive rules
 - **Static Analysis**: staticcheck with custom configuration
 - **Error Checking**: errcheck for unchecked errors
+- **Vulnerability Checking**: govulncheck for known Go vulnerabilities
 - **Architecture Testing**: x86_64 and aarch64 builds
 - **Kernel Compatibility**: Testing across kernel versions 4.18-6.12
 

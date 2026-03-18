@@ -72,6 +72,7 @@ make check-pr ARGS="--fast --skip-docs HEAD~1"  # Pass arguments through make
 - **Go Vet**: Static analysis via `make check-vet`
 - **StaticCheck**: Advanced static analysis via `make check-staticcheck`
 - **Error Check**: Unhandled error detection via `make check-err`
+- **Vulnerability Check**: Known vulnerability detection via `make check-vulncheck` (informational, non-blocking — govulncheck currently has [no support for silencing findings](https://go.dev/issue/61211))
 
 ### 3. Unit Tests
 
@@ -97,6 +98,7 @@ The script will warn if these tools are missing but continue with available chec
 - **revive** (v1.7.0): `go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d`
 - **staticcheck** (2025.1): `go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c`
 - **errcheck** (v1.9.0): `go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34`
+- **govulncheck** (v1.1.4): `go install golang.org/x/vuln/cmd/govulncheck@d1f380186385b4f64e00313f31743df8e4b89a77`
 
 ## Installation of Optional Tools
 
@@ -107,6 +109,7 @@ To install all optional tools at once:
 go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d                   # v1.7.0
 go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c          # 2025.1
 go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34                 # v1.9.0
+go install golang.org/x/vuln/cmd/govulncheck@d1f380186385b4f64e00313f31743df8e4b89a77           # v1.1.4
 
 # Ensure tools are in PATH
 export PATH=$PATH:$(go env GOPATH)/bin

@@ -93,7 +93,7 @@ verify_installation() {
     info "Verifying installation"
 
     # Check critical tools (Docker is optional)
-    require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck
+    require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck govulncheck
 
     # Show versions
     info "Installation verification:"
