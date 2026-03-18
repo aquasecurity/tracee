@@ -490,6 +490,8 @@ cleanup() {
     rm -f "${SENTINEL}" 2> /dev/null || true
     if [[ "${STOP_TRACEE}" == "true" ]] && [[ -n "${TRACEE_PID}" ]]; then
         sudo kill "${TRACEE_PID}" 2> /dev/null || true
+        wait "${TRACEE_PID}" 2> /dev/null || true
+        TRACEE_PID=""
     fi
 }
 trap cleanup EXIT
@@ -687,14 +689,18 @@ if grep -q "exit code: 1\|Error:.*failed" "${LOG_FILE}" 2> /dev/null; then
     grep -E "exit code: 1|Error:.*failed|Container logs:" "${LOG_FILE}" 2> /dev/null | head -20
 fi
 
-# 11. Kill Tracee (if --stop-tracee); also handled by cleanup trap on early exit
+# 11. Kill Tracee (if --stop-tracee); also handled by cleanup trap on early exit.
+# We must wait for the killed process so the shell reaps it cleanly (otherwise
+# the shell exits with 143/SIGTERM from the unkilled child).
 if [[ "${STOP_TRACEE}" == "true" ]]; then
     log "Stopping Tracee (PID: ${TRACEE_PID})..."
     if [[ -n "${TRACEE_PID}" ]]; then
         sudo kill "${TRACEE_PID}" 2> /dev/null || sudo pkill -f "tracee" 2> /dev/null || true
+        wait "${TRACEE_PID}" 2> /dev/null || true
     else
         sudo pkill -f "tracee" 2> /dev/null || true
     fi
+    TRACEE_PID=""
     sleep 2
 fi
 
