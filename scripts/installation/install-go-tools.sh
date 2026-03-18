@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Centralized Go tools installation script for Tracee
-# Installs staticcheck, revive, goimports-reviser, and errcheck
+# Installs staticcheck, revive, goimports-reviser, errcheck, and govulncheck
 
 set -euo pipefail
 
@@ -16,6 +16,7 @@ STATICCHECK_VERSION="5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c" # 2025.1
 REVIVE_VERSION="8ece20b0789c517bd3a6742db0daa4dd5928146d" # v1.7.0
 GOIMPORTS_REVISER_VERSION="fa5587e51ba33c58734984cb41370a5b2582d5b7" # v3.12.6
 ERRCHECK_VERSION="11c27a7ce69d583465d80d808817d22d6653ee34" # v1.9.0
+GOVULNCHECK_VERSION="d1f380186385b4f64e00313f31743df8e4b89a77" # v1.1.4
 
 install_go_tools() {
     info "Installing Go development tools"
@@ -47,6 +48,11 @@ install_go_tools() {
     info "Installing errcheck ${ERRCHECK_VERSION}"
     go install "github.com/kisielk/errcheck@${ERRCHECK_VERSION}"
     cp "$GOPATH/bin/errcheck" /usr/bin/
+
+    # Install govulncheck
+    info "Installing govulncheck ${GOVULNCHECK_VERSION}"
+    go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
+    cp "$GOPATH/bin/govulncheck" /usr/bin/
 
     # Clean up GOPATH
     rm -rf "$GOPATH"

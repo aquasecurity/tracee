@@ -197,7 +197,7 @@ fmt-fix: | \
 	$(CMD_GOFMT) -l -s -w $$(find . -name '*.go' -not -path './3rdparty/*')
 
 #
-# check code (go vet, static checkers, errcheck)
+# check code (go vet, static checkers, errcheck, govulncheck)
 #
 
 .PHONY: code-check
@@ -211,6 +211,8 @@ code-check: | \
 	$(GENERAL_MAKE) -j1 check-staticcheck; \
 	echo "Checking Golang with errcheck..."; \
 	$(GENERAL_MAKE) -j1 check-err
+	@echo "Checking Golang with govulncheck (informational)..."
+	@$(GENERAL_MAKE) -j1 check-vulncheck || true
 
 #
 # clean

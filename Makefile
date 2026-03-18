@@ -47,6 +47,7 @@ CMD_CP ?= cp
 CMD_CUT ?= cut
 CMD_ERRCHECK ?= errcheck
 CMD_GCC ?= gcc
+CMD_GOVULNCHECK ?= govulncheck
 CMD_GIT ?= git
 CMD_GO ?= go
 CMD_GREP ?= grep
@@ -1212,6 +1213,38 @@ check-err:: \
 	$(call cleanup_dummy_bpf,$@)
 	exit $${EXIT_CODE:-0}
 
+.PHONY: check-vulncheck
+check-vulncheck:: \
+	| .eval_goenv \
+	.checkver_$(CMD_GO) \
+	.checklib_$(LIB_BPF) \
+	.check_$(CMD_GOVULNCHECK)
+#
+	@$(MAKE) embedded-dirs
+	$(call setup_dummy_bpf,$@)
+	@echo ""
+	@echo "--- [govulncheck] ./ (root module) ---"
+	$(GO_ENV_EBPF) \
+	$(CMD_GOVULNCHECK) \
+		-tags $(GO_TAGS_EBPF) \
+		./... \
+	|| EXIT_CODE=$$?
+	$(call cleanup_dummy_bpf,$@)
+	@for mod_file in $$(find . -name "go.mod" -type f -not -path "./go.mod" $(foreach path,$(EXCLUDED_MODULES),-not -path "$(path)") | sort); do \
+		mod_dir=$$(dirname "$$mod_file"); \
+		echo ""; \
+		echo "--- [govulncheck] $$mod_dir ---"; \
+		(cd "$$mod_dir" && $(CMD_GOVULNCHECK) ./...) || EXIT_CODE=$$?; \
+	done
+	@echo ""
+	@if [ -z "$${EXIT_CODE}" ]; then \
+		echo "govulncheck: all modules clean"; \
+	else \
+		echo "govulncheck: findings detected in one or more modules"; \
+	fi
+	@echo ""
+	exit $${EXIT_CODE:-0}
+
 #
 # pull request verifier
 #
@@ -1227,7 +1260,7 @@ format-pr:: \
 .PHONY: check-pr
 check-pr::
 #	Enhanced to use comprehensive checkpatch script that includes:
-#	- Code analysis (formatting, linting, static analysis)
+#	- Code analysis (formatting, linting, static analysis, vulnerability scanning)
 #	- Unit tests (Go and script tests)
 #	- PR formatting
 #	Examples:

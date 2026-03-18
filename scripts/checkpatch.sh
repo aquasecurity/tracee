@@ -64,7 +64,7 @@ Environment Variables:
 
 Test Categories:
   1. Documentation Verification - Ensures .1.md and .1 man page files are synchronized
-  2. Code Analysis - Runs formatting, linting, vet, staticcheck, and errcheck
+  2. Code Analysis - Runs formatting, linting, vet, staticcheck, errcheck, and govulncheck
   3. Unit Tests - Runs Go unit tests and script unit tests
   4. PR Formatting - Displays commit messages in PR-ready format
 
@@ -82,7 +82,7 @@ Examples:
 
 Dependencies:
   Required: go, make, git
-  Optional: revive, staticcheck, errcheck (will be skipped if not installed)
+  Optional: revive, staticcheck, errcheck, govulncheck (will be skipped if not installed)
 
 Exit Codes:
   0 - All tests passed
@@ -334,6 +334,27 @@ verify_analyze_code() {
         fi
     fi
 
+    print_info "  → Running govulncheck analysis (informational, non-blocking)..."
+    local vulncheck_rc=0
+    output=$(make check-vulncheck 2>&1) || vulncheck_rc=$?
+
+    if echo "$output" | grep -q "missing required tool"; then
+        local missing_tool=$(echo "$output" | grep "missing required tool" | sed 's/.*missing required tool //')
+        print_warning "Missing required tool: $missing_tool"
+        print_info "Install with: go install golang.org/x/vuln/cmd/govulncheck@d1f380186385b4f64e00313f31743df8e4b89a77" # v1.1.4
+        if ! $IGNORE_MISSING_TOOLS; then
+            echo "$output"
+            return 1
+        fi
+    elif [[ $vulncheck_rc -ne 0 ]]; then
+        echo "$output"
+        print_warning "  ⚠ govulncheck found vulnerable dependencies (non-blocking)"
+        print_info "  govulncheck has no support for silencing findings (see https://go.dev/issue/61211)"
+    else
+        echo "$output"
+        print_success "  ✓ govulncheck passed"
+    fi
+
     print_success "All code analysis checks passed"
 
     return 0
@@ -437,6 +458,7 @@ check_dependencies() {
         "revive:github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d:go install" # v1.7.0
         "staticcheck:honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c:go install" # 2025.1
         "errcheck:github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34:go install" # v1.9.0
+        "govulncheck:golang.org/x/vuln/cmd/govulncheck@d1f380186385b4f64e00313f31743df8e4b89a77:go install" # v1.1.4
         "clang-format-12:Install via official package manager (e.g., 'sudo apt-get install clang-format-12'):Refer to your OS package manager"
         "goimports-reviser:github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7:go install" # v3.12.6
     )
