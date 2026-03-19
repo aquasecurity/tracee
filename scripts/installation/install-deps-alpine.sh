@@ -33,6 +33,7 @@ install_base_packages() {
         elfutils-dev \
         libelf-static \
         zlib-static \
+        zstd \
         zstd-static \
         libc6-compat \
         tar \

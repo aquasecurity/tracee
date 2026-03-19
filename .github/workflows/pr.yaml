@@ -138,6 +138,15 @@ jobs:
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
 
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
+
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -196,6 +205,15 @@ jobs:
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
 
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
+
       - name: Build Tracee Benchmark Tool
         run: |
           make clean
@@ -225,6 +243,15 @@ jobs:
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
 
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
+
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
 
@@ -239,7 +266,7 @@ jobs:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
         - /opt:/opt:rw,rshared
-        # The following volume mounts are a workaround for GitHub Actions runner limitations.
+          # The following volume mounts are a workaround for GitHub Actions runner limitations.
         # Some GitHub-hosted runners expect Node.js to be available at /__e/node20 or /__e/node24, which is not present in the base container.
         # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
         # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
@@ -264,6 +291,15 @@ jobs:
 
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
 
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
@@ -321,6 +357,15 @@ jobs:
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
 
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-
+
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
 
@@ -376,6 +421,15 @@ jobs:
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
 
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-
+
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
 
@@ -405,6 +459,15 @@ jobs:
 
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
 
       - name: Run Performance Tests
         run: |
@@ -460,6 +523,15 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-
 
       - name: "System Info"
         run: ./scripts/system-info.sh --all
