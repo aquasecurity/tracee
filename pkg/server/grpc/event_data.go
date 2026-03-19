@@ -354,6 +354,18 @@ func parseArgument(arg trace.Argument) (*pb.EventValue, error) {
 				Str: v.String(),
 			},
 		}, nil
+	case map[string]interface{}:
+		// Handle raw map[string]interface{} values (e.g., detectedFrom argument)
+		sanitizedMap := sanitizeMapForProtobuf(v)
+		structValue, err := structpb.NewStruct(sanitizedMap)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.EventValue{
+			Value: &pb.EventValue_Struct{
+				Struct: structValue,
+			},
+		}, nil
 	}
 
 	return convertToStruct(arg)
@@ -738,17 +750,55 @@ func sanitizeMapForProtobuf(m map[string]interface{}) map[string]interface{} {
 	sanitizedMap := make(map[string]interface{}, len(m))
 
 	for k, v := range m {
-		switch val := v.(type) {
-		case string:
-			sanitizedMap[k] = sanitizeStringForProtobuf(val)
-		case map[string]interface{}:
-			sanitizedMap[k] = sanitizeMapForProtobuf(val)
-		default:
-			sanitizedMap[k] = val
-		}
+		sanitizedMap[k] = sanitizeValueForProtobuf(v)
 	}
 
 	return sanitizedMap
+}
+
+// sanitizeValueForProtobuf converts a value to a protobuf-compatible format
+func sanitizeValueForProtobuf(v interface{}) interface{} {
+	switch val := v.(type) {
+	case string:
+		return sanitizeStringForProtobuf(val)
+	case map[string]interface{}:
+		return sanitizeMapForProtobuf(val)
+	case []trace.Argument:
+		args := make([]interface{}, 0, len(val))
+		for _, arg := range val {
+			argMap := map[string]interface{}{
+				"name":  sanitizeStringForProtobuf(arg.ArgMeta.Name),
+				"type":  sanitizeStringForProtobuf(arg.ArgMeta.Type),
+				"value": sanitizeValueForProtobuf(arg.Value),
+			}
+			args = append(args, argMap)
+		}
+		return args
+	case trace.Pointer:
+		return uint64(val)
+	case []string:
+		result := make([]interface{}, len(val))
+		for i, s := range val {
+			result[i] = sanitizeStringForProtobuf(s)
+		}
+		return result
+	case []uint64:
+		result := make([]interface{}, len(val))
+		for i, v := range val {
+			result[i] = v
+		}
+		return result
+	case [2]int32:
+		return []interface{}{val[0], val[1]}
+	case map[string]string:
+		m := make(map[string]interface{}, len(val))
+		for k, v := range val {
+			m[k] = sanitizeStringForProtobuf(v)
+		}
+		return m
+	default:
+		return val
+	}
 }
 
 func convertToStruct(arg trace.Argument) (*pb.EventValue, error) {
