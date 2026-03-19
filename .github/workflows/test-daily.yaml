@@ -27,6 +27,14 @@ jobs:
       - name: Install Dependencies
         run: ./scripts/installation/install-deps-alpine.sh
         shell: sh
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Compile Tracee
         run: |
           make test-upstream-libbpfgo

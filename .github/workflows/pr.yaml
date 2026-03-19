@@ -116,6 +116,14 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -162,6 +170,14 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Build Tracee Benchmark Tool
         run: |
           make clean
@@ -185,6 +201,14 @@ jobs:
           fetch-depth: 0
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
 
@@ -220,6 +244,14 @@ jobs:
           fetch-depth: 0
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
   #
@@ -267,6 +299,14 @@ jobs:
       # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
@@ -313,6 +353,14 @@ jobs:
       # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
       - name: Run Integration Tests
@@ -336,6 +384,14 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: Run Performance Tests
         run: |
           make test-performance
@@ -381,6 +437,14 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+      - name: Cache Go modules
+        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-
       - name: "System Info"
         run: ./scripts/system-info.sh --all
       - name: "Environment Variables"
