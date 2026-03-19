@@ -1,6 +1,7 @@
 package events
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -1041,4 +1042,278 @@ func TestConvertTraceeEventToProto_Threat(t *testing.T) {
 	assert.Equal(t, "privilege-escalation", protoEvent.Threat.Mitre.Tactic.Name)
 	assert.Equal(t, "Exploitation for Privilege Escalation", protoEvent.Threat.Mitre.Technique.Name)
 	assert.Equal(t, "T1068", protoEvent.Threat.Mitre.Technique.Id)
+}
+
+// TestConvertTraceeEventToProto_DetectedFrom_TracePointer verifies nested
+// detectedFrom maps convert without error. Nested map[string]interface{} uses
+// sanitizeMapForProtobuf -> sanitizeArgumentsForProtobuf, which stringifies
+// types like trace.Pointer for structpb (not full parseArgument encoding).
+// Source event: security_task_prctl.
+func TestConvertTraceeEventToProto_DetectedFrom_TracePointer(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		EventID:   int(SecurityTaskPrctl),
+		EventName: "security_task_prctl",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+				Value: map[string]interface{}{
+					"id":   int(SecurityTaskPrctl),
+					"name": "security_task_prctl",
+					"args": []trace.Argument{
+						{ArgMeta: trace.ArgMeta{Name: "option", Type: "int32"}, Value: int32(35)},
+						{
+							ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+							Value: map[string]interface{}{
+								"id":   int(SecurityTaskPrctl),
+								"name": "security_task_prctl",
+								"args": []trace.Argument{
+									{ArgMeta: trace.ArgMeta{Name: "old_start_code", Type: "trace.Pointer"}, Value: trace.Pointer(0xC2AD00BF0040)},
+									{ArgMeta: trace.ArgMeta{Name: "old_end_code", Type: "trace.Pointer"}, Value: trace.Pointer(0xC2AD00D66A28)},
+								},
+								"returnValue": 0,
+							},
+						},
+					},
+					"returnValue": 0,
+				},
+			},
+		},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+	require.NotNil(t, protoEvent)
+	require.NotNil(t, protoEvent.DetectedFrom)
+	assert.Equal(t, "security_task_prctl", protoEvent.DetectedFrom.Name)
+
+	var nestedDF *pb.EventValue
+	for _, d := range protoEvent.DetectedFrom.Data {
+		if d.Name == "detectedFrom" {
+			nestedDF = d
+			break
+		}
+	}
+	require.NotNil(t, nestedDF, "nested detectedFrom should be present")
+
+	s := nestedDF.GetStruct()
+	require.NotNil(t, s)
+
+	argsField := s.GetFields()["args"]
+	require.NotNil(t, argsField)
+
+	argsList := argsField.GetListValue().GetValues()
+	require.Len(t, argsList, 2)
+
+	for _, argVal := range argsList {
+		fields := argVal.GetStructValue().GetFields()
+		name := fields["name"].GetStringValue()
+		v := fields["value"].GetStringValue()
+		switch name {
+		case "old_start_code":
+			assert.Equal(t, fmt.Sprintf("%v", trace.Pointer(0xC2AD00BF0040)), v)
+		case "old_end_code":
+			assert.Equal(t, fmt.Sprintf("%v", trace.Pointer(0xC2AD00D66A28)), v)
+		default:
+			t.Errorf("unexpected arg name: %s", name)
+		}
+	}
+}
+
+// TestConvertTraceeEventToProto_DetectedFrom_Uint64Slice verifies nested
+// []uint64 in a detectedFrom map is stringified for structpb (see
+// sanitizeArgumentsForProtobuf). Source event: security_bpf_prog.
+func TestConvertTraceeEventToProto_DetectedFrom_Uint64Slice(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		EventID:   int(SecurityBpfProg),
+		EventName: "security_bpf_prog",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+				Value: map[string]interface{}{
+					"id":   int(SecurityBpfProg),
+					"name": "security_bpf_prog",
+					"args": []trace.Argument{
+						{ArgMeta: trace.ArgMeta{Name: "type", Type: "int32"}, Value: int32(1)},
+						{
+							ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+							Value: map[string]interface{}{
+								"id":   int(SecurityBpfProg),
+								"name": "security_bpf_prog",
+								"args": []trace.Argument{
+									{ArgMeta: trace.ArgMeta{Name: "helpers", Type: "[]uint64"}, Value: []uint64{0, 0, 0, 0}},
+								},
+								"returnValue": 0,
+							},
+						},
+					},
+					"returnValue": 0,
+				},
+			},
+		},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+	require.NotNil(t, protoEvent)
+	require.NotNil(t, protoEvent.DetectedFrom)
+	assert.Equal(t, "security_bpf_prog", protoEvent.DetectedFrom.Name)
+
+	var nestedDF *pb.EventValue
+	for _, d := range protoEvent.DetectedFrom.Data {
+		if d.Name == "detectedFrom" {
+			nestedDF = d
+			break
+		}
+	}
+	require.NotNil(t, nestedDF, "nested detectedFrom should be present")
+
+	s := nestedDF.GetStruct()
+	require.NotNil(t, s)
+
+	argsField := s.GetFields()["args"]
+	require.NotNil(t, argsField)
+
+	argsList := argsField.GetListValue().GetValues()
+	require.Len(t, argsList, 1)
+
+	fields := argsList[0].GetStructValue().GetFields()
+	assert.Equal(t, "helpers", fields["name"].GetStringValue())
+	assert.Equal(t, fmt.Sprintf("%v", []uint64{0, 0, 0, 0}), fields["value"].GetStringValue())
+}
+
+// TestConvertTraceeEventToProto_DetectedFrom_SockAddr verifies SockAddr
+// (map[string]string) inside nested detectedFrom is stringified for structpb.
+// Source event: security_socket_connect.
+func TestConvertTraceeEventToProto_DetectedFrom_SockAddr(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		EventID:   int(SecuritySocketConnect),
+		EventName: "security_socket_connect",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+				Value: map[string]interface{}{
+					"id":   int(SecuritySocketConnect),
+					"name": "security_socket_connect",
+					"args": []trace.Argument{
+						{ArgMeta: trace.ArgMeta{Name: "sockfd", Type: "int32"}, Value: int32(3)},
+						{
+							ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+							Value: map[string]interface{}{
+								"id":   int(SecuritySocketConnect),
+								"name": "security_socket_connect",
+								"args": []trace.Argument{
+									{ArgMeta: trace.ArgMeta{Name: "remote_addr", Type: "SockAddr"}, Value: map[string]string{
+										"sa_family": "AF_INET",
+										"sin_addr":  "142.250.185.206",
+										"sin_port":  "443",
+									}},
+								},
+								"returnValue": 0,
+							},
+						},
+					},
+					"returnValue": 0,
+				},
+			},
+		},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+	require.NotNil(t, protoEvent)
+	require.NotNil(t, protoEvent.DetectedFrom)
+	assert.Equal(t, "security_socket_connect", protoEvent.DetectedFrom.Name)
+
+	var nestedDF *pb.EventValue
+	for _, d := range protoEvent.DetectedFrom.Data {
+		if d.Name == "detectedFrom" {
+			nestedDF = d
+			break
+		}
+	}
+	require.NotNil(t, nestedDF, "nested detectedFrom should be present")
+
+	s := nestedDF.GetStruct()
+	require.NotNil(t, s)
+
+	argsField := s.GetFields()["args"]
+	require.NotNil(t, argsField)
+
+	argsList := argsField.GetListValue().GetValues()
+	require.Len(t, argsList, 1)
+
+	fields := argsList[0].GetStructValue().GetFields()
+	assert.Equal(t, "remote_addr", fields["name"].GetStringValue())
+	addrStr := fields["value"].GetStringValue()
+	assert.Contains(t, addrStr, "AF_INET")
+	assert.Contains(t, addrStr, "142.250.185.206")
+	assert.Contains(t, addrStr, "443")
+}
+
+// TestConvertTraceeEventToProto_DetectedFrom_IntArray verifies [2]int32 in nested
+// detectedFrom is stringified for structpb. Source event: pipe.
+func TestConvertTraceeEventToProto_DetectedFrom_IntArray(t *testing.T) {
+	t.Parallel()
+
+	traceEvent := trace.Event{
+		EventID:   int(Pipe),
+		EventName: "pipe",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+				Value: map[string]interface{}{
+					"id":   int(Pipe),
+					"name": "pipe",
+					"args": []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{Name: "detectedFrom", Type: "unknown"},
+							Value: map[string]interface{}{
+								"id":   int(Pipe),
+								"name": "pipe",
+								"args": []trace.Argument{
+									{ArgMeta: trace.ArgMeta{Name: "pipefd", Type: "[2]int"}, Value: [2]int32{3, 4}},
+								},
+								"returnValue": 0,
+							},
+						},
+					},
+					"returnValue": 0,
+				},
+			},
+		},
+	}
+
+	protoEvent, err := ConvertTraceeEventToProto(traceEvent)
+	require.NoError(t, err)
+	require.NotNil(t, protoEvent)
+	require.NotNil(t, protoEvent.DetectedFrom)
+	assert.Equal(t, "pipe", protoEvent.DetectedFrom.Name)
+
+	var nestedDF *pb.EventValue
+	for _, d := range protoEvent.DetectedFrom.Data {
+		if d.Name == "detectedFrom" {
+			nestedDF = d
+			break
+		}
+	}
+	require.NotNil(t, nestedDF, "nested detectedFrom should be present")
+
+	s := nestedDF.GetStruct()
+	require.NotNil(t, s)
+
+	argsField := s.GetFields()["args"]
+	require.NotNil(t, argsField)
+
+	argsList := argsField.GetListValue().GetValues()
+	require.Len(t, argsList, 1)
+
+	fields := argsList[0].GetStructValue().GetFields()
+	assert.Equal(t, "pipefd", fields["name"].GetStringValue())
+	assert.Equal(t, fmt.Sprintf("%v", [2]int32{3, 4}), fields["value"].GetStringValue())
 }
