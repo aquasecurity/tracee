@@ -151,10 +151,39 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 
 			evtFields := eventDefinition.GetFields()
 			evtName := eventDefinition.GetName()
-			args := make([]trace.Argument, len(evtFields))
+
+			// Get an event pointer from the pool early so we can reuse its Args slice.
+			evt, ok := t.eventsPool.Get().(*events.PipelineEvent)
+			if !ok {
+				t.handleError(errfmt.Errorf("failed to get event from pool"))
+				decoderPool.Put(ebpfMsgDecoder)
+				continue
+			}
+
+			// Ensure the embedded Event pointer is initialized
+			if evt.Event == nil {
+				evt.Event = &trace.Event{}
+			}
+
+			// Reset internal fields for reuse
+			evt.Reset()
+
+			// Reuse the args slice from the pooled event when capacity allows,
+			// avoiding a make([]trace.Argument, N) allocation on every event.
+			args := evt.Event.Args
+			if cap(args) >= len(evtFields) {
+				args = args[:len(evtFields)]
+				// Clear stale entries so DecodeArguments doesn't see old data
+				// as duplicate arguments.
+				clear(args)
+			} else {
+				args = make([]trace.Argument, len(evtFields))
+			}
+
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)
 			if err != nil {
 				t.handleError(err)
+				t.eventsPool.Put(evt)
 				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
@@ -201,22 +230,6 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 				}
 			}
 
-			// get an event pointer from the pool
-			evt, ok := t.eventsPool.Get().(*events.PipelineEvent)
-			if !ok {
-				t.handleError(errfmt.Errorf("failed to get event from pool"))
-				decoderPool.Put(ebpfMsgDecoder)
-				continue
-			}
-
-			// Ensure the embedded Event pointer is initialized
-			if evt.Event == nil {
-				evt.Event = &trace.Event{}
-			}
-
-			// Reset internal fields for reuse
-			evt.Reset()
-
 			// populate all the fields of the event used in this stage, and reset the rest
 
 			// Set pipeline-level metadata (normalized timestamps)
@@ -259,7 +272,7 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			evt.PoliciesVersion = eCtx.PoliciesVersion
 			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
 			evt.MatchedPoliciesUser = 0
-			evt.MatchedPolicies = []string{}
+			evt.MatchedPolicies = evt.MatchedPolicies[:0]
 			evt.ArgsNum = int(argnum)
 
 			// Extract return value from Args if present (stored as the last argument)
@@ -818,6 +831,10 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 
 			// Send the event to the streams.
 			if t.streamsManager.HasSubscribers() {
+				// Detach the slab from pool management — the stream takes ownership.
+				// This prevents the slab from being recycled while the stream still
+				// holds a reference to the proto event.
+				pbEvent = event.DetachProto()
 				// Translate event ID to external format for streams (external API boundary)
 				pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
 				t.streamsManager.Publish(pbEvent, event.MatchedPoliciesBitmap)
