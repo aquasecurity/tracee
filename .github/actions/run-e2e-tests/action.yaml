@@ -58,7 +58,7 @@ runs:
       shell: bash
     - name: Upload E2E Test Artifacts
       if: always() && steps.failed-test.outputs.name != ''
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ inputs.job-name }}-${{ inputs.run-id }}-${{ inputs.run-attempt }}
         path: |
