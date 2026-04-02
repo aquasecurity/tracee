@@ -46,9 +46,10 @@ dist
 # release files
 release_notes.txt
 
-# Cursor rules - personal development configurations
+# Cursor rules - development configuration files
 .cursor/rules/**
-!.cursor/rules/shell-style-guide.mdc
-!.cursor/rules/testing-guide.mdc
 !.cursor/rules/commit-pr-conventions.mdc
 !.cursor/rules/contributing-docs.mdc
+!.cursor/rules/testing-guide.mdc
+!.cursor/rules/text-ascii-safety.mdc
+!.cursor/rules/shell-style-guide.mdc

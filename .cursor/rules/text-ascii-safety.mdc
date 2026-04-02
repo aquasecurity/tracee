@@ -1,0 +1,90 @@
+---
+description: Forbid AI typography Unicode and hidden characters in all content
+alwaysApply: true
+---
+
+# Text ASCII Safety
+
+Use plain ASCII in all authored content: code, config, text, manpages,
+commit messages, PR titles/bodies, issue comments, and review comments.
+This applies to every file type we control, including documentation,
+markdown, comments, and generated text. There are no doc-only exceptions.
+
+- Forbid typographic Unicode often produced by AI:
+  - em dash (U+2014)
+  - en dash (U+2013)
+  - curly double/single quotes (U+201C, U+201D, U+2018, U+2019)
+  - bullet/dot punctuation used as bullets (U+2022, U+25E6, U+00B7)
+  - arrows (U+2192, U+2190, U+2194, U+21D2, U+21D4)
+  - ellipsis (U+2026), non-breaking hyphen (U+2011), no-break space (U+00A0)
+
+- Hidden/invisible characters are forbidden in all files, including docs:
+  - zero-width chars (`U+200B`..`U+200D`, `U+FEFF`)
+  - bidirectional controls (`U+202A`..`U+202E`, `U+2066`..`U+2069`)
+  - any other non-printing Unicode control chars (except newline/tab where valid)
+
+- If a forbidden char is found, replace it with ASCII:
+  - dashes to `-`, curly single quotes to `'`, curly double quotes to `"`, and bullets/arrows to `-` or words.
+
+## Mandatory Review Check
+
+When performing a code review, run one of these checks depending on scope.
+Run from the repository root so paths from git resolve. The patterns below use
+a shell loop instead of GNU `xargs -r` (not available on BSD/macOS `xargs`).
+
+Skip vendored, build, and git metadata trees (not project-authored): `3rdparty/`,
+`dist/`, and `.git/`. Add more `--glob '!**/DIR/**'` entries if you introduce other
+large third-party or generated trees.
+
+**Staged changes only (default for pre-commit review):**
+
+```bash
+git diff --cached --diff-filter=ACMR --name-only \
+    | while IFS= read -r f; do
+        case "$f" in
+            3rdparty/* | dist/* | .git/*) continue ;;
+        esac
+        [ -n "$f" ] && rg -n "[^\x09\x0A\x20-\x7E]" -- "$f"
+    done
+```
+
+**Commit range (user specifies BASE..HEAD):**
+
+```bash
+git diff BASE..HEAD --diff-filter=ACMR --name-only \
+    | while IFS= read -r f; do
+        case "$f" in
+            3rdparty/* | dist/* | .git/*) continue ;;
+        esac
+        [ -n "$f" ] && rg -n "[^\x09\x0A\x20-\x7E]" -- "$f"
+    done
+```
+
+**Full repository scan:**
+
+```bash
+rg -n "[^\x09\x0A\x20-\x7E]" . \
+    --glob '!.git/**' \
+    --glob '!3rdparty/**' \
+    --glob '!dist/**'
+```
+
+The regex allowlist covers only safe, visible ASCII:
+
+| Range | Chars | Purpose |
+|-------|-------|---------|
+| `\x09` | Tab (HT) | Indentation (Makefiles, configs) |
+| `\x0A` | Line Feed (LF) | Unix newline |
+| `\x20-\x7E` | Space through `~` | All printable ASCII: letters, digits, punctuation, symbols |
+
+Everything outside that set is flagged, including:
+
+- `\x00-\x08`: null and control chars
+- `\x0B-\x0C`: vertical tab, form feed
+- `\x0D`: carriage return (unsafe in Unix projects)
+- `\x0E-\x1F`: remaining control chars
+- `\x7F`: DEL
+- `\x80+`: all non-ASCII (Unicode, multibyte, extended)
+
+- Treat any match as a finding unless it is an explicitly approved exception.
+- Report each finding with file path, snippet, risk, and ASCII-safe replacement.
