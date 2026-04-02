@@ -31,41 +31,68 @@ If you have a suggestion, question, or a general comment - please use Discussion
     - **Feature Requests:** Define:
         - A clear scope for the feature.
         - Specific acceptance criteria that will be used to determine if the feature is complete.
-3. **Issue Labels:** We use these labels to categorize and track issues:
+3. **Issue Labels:**
 
-    - `area/...` (e.g., `ebpf`, `events`): Specifies the area of Tracee affected by the issue.
-    - `kind/...` (e.g., `bug`, `chore`, `enhancement`, `documentation`): Indicates the type of issue.
-    - `milestone/...`: Specifies the target release for the issue.
-    - `priority/...`:  Indicates the urgency of the issue.
-    - `good-first-issue`:  Marks issues suitable for first-time contributors.
-    - `backport`: Applies to PRs targeting release branches for integrating changes from `main`. The original `main` PR gets labeled `backported/vX.X.X` after merge.
-    - `cherry-pick`: Similar to `backport`, but for specific commits. The original `main` PR gets labeled `cherry-picked/vX.X.X` after merge.
-    - `candidate/...`: (e.g., `candidate/v0.1.2`)  Identifies PRs in the `main` branch as candidates for backporting or cherry-picking to a release branch (e.g., `v0.1.2`). The specific method will be determined during the porting process.
-    - `backported/...` (e.g., `backported/v0.1.2`): Marks PRs in the `main` branch as the basis for backporting changes to a release branch (e.g., `v0.1.2`) after the porting process.
-    - `cherry-picked/...` (e.g., `cherry-picked/v0.1.2`): Marks PRs in the `main` branch as the basis for cherry-picking commits to a release branch (e.g., `v0.1.2`) after the porting process.
+    - `area/...` (e.g., `ebpf`, `events`): Area of Tracee affected.
+    - `kind/...` (e.g., `bug`, `feature`, `documentation`): Type of issue or pull request.
+    - `priority/...`: Urgency of the issue.
+    - `milestone/...` (e.g., `milestone/v0.x.y`): Target release; add when you want the item considered for a specific version (issues and pull requests).
+    - `good-first-issue`: Suitable for first-time contributors.
+
 4. **Issue Assignment:** Self-assign issues or request assignment. Don't work on an issue assigned to someone else without their consent.
 
-**Backporting and Cherry-Picking Workflow:**
+## Submitting Changes
 
-To backport or cherry-pick a change:
-
-1. Create a new PR targeting the appropriate release branch.
-2. Label the new PR with `backport` or `cherry-pick`, depending on the method used.
-3. Once the new PR is merged, remove the `candidate/vX.X.X` label from the original PR in `main`.
-4. Finally, add the `backported/vX.X.X` or `cherry-picked/vX.X.X` label to the original PR in `main`, as appropriate.
+External contributors must fork the repository and submit changes as pull
+requests from their fork. Branch creation in this repository is restricted.
 
 ## Pull Requests
 
 1. Every Pull Request should have an associated Issue unless it is a trivial fix.
 2. When adding a flag option or other UX related change, make sure the design is explicitly described in the associated issue, and a maintainer approved it.
-3. Commit subject should succinctly describe the change:
+3. Pull requests require all review threads resolved and at least one approving
+   review. When the change touches code-owner areas, at least two approving
+   reviews are required.
+4. Code related information should be in the commit message, review related information should be in the PR description.
+5. For changes that span different areas please try to make each change self contained and independent.
 
-    1. Max 50 chars.
-    2. Written in imperative mood: begin with a verb like "fix", "add", "improve", or "refactor"; Think "once applied, this commit will...".
-    3. If ambiguous, mention the area that this commit affects (see area labels above).
-4. Optional commit body (separated by empty line from subject) may explain why the change was made and not how. Wrap at 72 chars.
-5. Code related information should be in commit message, review related information should be in PR description.
-6. For changes that span different areas please try to make each change self contained and independent.
+## Commits
+
+All commits must be **signed** (GPG, SSH, or S/MIME). See
+[GitHub's signing guide](https://docs.github.com/en/authentication/managing-commit-signature-verification)
+to set up commit signing.
+
+Commit messages must follow the
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+specification:
+
+```
+type(optional scope): description
+
+optional body
+```
+
+Valid types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`,
+`build`, `ci`, `chore`, `revert`.
+
+The commit subject should be max 50 characters, written in imperative mood.
+The optional body (separated by an empty line) may explain **why** the change
+was made. Wrap at 72 characters.
+
+### Breaking Changes
+
+Breaking changes must include `!` after the type/scope and a `BREAKING CHANGE`
+footer in the commit body explaining what changed:
+
+```
+feat(ebpf)!: remove deprecated event field
+
+BREAKING CHANGE: The `oldField` field has been removed from the
+`anti_debugging` event. Use `newField` instead.
+```
+
+The `BREAKING CHANGE` footer is required so that the change is clearly
+documented for downstream users and automated tooling.
 
 ## Development and Testing
 
