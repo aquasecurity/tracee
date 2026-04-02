@@ -1,0 +1,23 @@
+---
+description: Commit and pull request conventions for Tracee contributors
+alwaysApply: true
+---
+
+# Commit and PR Conventions
+
+When preparing commits or PR text in this repository, follow these rules from `docs/contributing/overview.md`:
+
+- Use Conventional Commits: `type(optional scope): description`.
+- Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+- Write subject in imperative mood and keep it at 50 chars max.
+- Optional body explains **why**, not **how**; wrap at 72 chars.
+- Breaking changes must use `!` in subject and include a `BREAKING CHANGE:` footer.
+- Keep code details in commit message; keep review/process details in PR description.
+- For cross-area work, suggest splitting into self-contained commits when possible.
+- Remind contributors that commits must be signed (GPG/SSH/S/MIME).
+
+## Examples
+
+- `fix(ebpf): handle map resize race`
+- `docs(contributing): clarify commit signing requirement`
+- `feat(cli)!: remove deprecated --cache flag`
