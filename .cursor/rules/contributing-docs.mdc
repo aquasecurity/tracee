@@ -1,0 +1,18 @@
+---
+description: Contributing docs style and policy alignment
+globs:
+  - "docs/contributing/**/*.md"
+alwaysApply: false
+---
+
+# Contributing Docs Rule
+
+When editing `docs/contributing/**`:
+
+- Keep policy text aligned with `docs/contributing/overview.md`.
+- Use normative language consistently (`must`, `should`, `may`).
+- Keep guidance actionable and concise; avoid duplicating nearby docs.
+- For commit guidance, match Conventional Commits and signed-commit rules from `overview.md`.
+- If policy changes (not just wording), update all affected contributing docs in the same PR.
+- Include examples for non-obvious rules (for example `BREAKING CHANGE` footer usage).
+- Prefer canonical external references (GitHub signing docs, Conventional Commits spec).

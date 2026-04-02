@@ -50,3 +50,5 @@ release_notes.txt
 .cursor/rules/**
 !.cursor/rules/shell-style-guide.mdc
 !.cursor/rules/testing-guide.mdc
+!.cursor/rules/commit-pr-conventions.mdc
+!.cursor/rules/contributing-docs.mdc
