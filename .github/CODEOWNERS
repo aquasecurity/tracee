@@ -1,0 +1,8 @@
+# Default: tracee-reviewers must approve all changes
+* @aquasecurity/tracee-reviewers
+
+# All GitHub config: workflows, actions, CODEOWNERS, dependabot, issue/PR templates, etc.
+/.github/ @aquasecurity/tracee-reviewers @aquasecurity/tracee-security
+
+# Git hooks
+/.githooks/ @aquasecurity/tracee-reviewers @aquasecurity/tracee-security
