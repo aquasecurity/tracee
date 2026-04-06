@@ -10,22 +10,22 @@ runs:
         sudo apt-get install -y bsdutils build-essential pkgconf
         sudo apt-get install -y zlib1g-dev libelf-dev libzstd-dev
         sudo apt-get install -y software-properties-common
-      shell: bash
+      shell: sh
     - name: Install Golang
       run: sudo ./scripts/installation/install-golang.sh
-      shell: bash
+      shell: sh
     - name: Install Clang
       run: sudo ./scripts/installation/install-clang.sh
-      shell: bash
+      shell: sh
     - name: Install Go tools
       run: sudo ./scripts/installation/install-go-tools.sh
-      shell: bash
+      shell: sh
     - name: Install docker
       run: |
-        sudo apt-get install --yes ca-certificates curl gnupg lsb-release
+        sudo apt-get install --yes ca-certificates gnupg lsb-release
         sudo mkdir -p /etc/apt/keyrings
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+        sudo sh -c 'gpg --dearmor -o /etc/apt/keyrings/docker.gpg < ./scripts/installation/keys/docker-release-signing-key.asc'
         echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
         sudo apt-get --yes update
         sudo apt-get install --yes docker-ce docker-ce-cli containerd.io
-      shell: bash
+      shell: sh

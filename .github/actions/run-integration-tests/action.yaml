@@ -6,5 +6,5 @@ runs:
   steps:
     - name: Run Integration Tests
       run: |
-        env "PATH=$PATH" make test-integration
+        env "PATH=${PATH}" make test-integration
       shell: bash
