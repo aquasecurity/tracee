@@ -2,13 +2,14 @@
 # When a PR is opened or updated: Run Tracee Tests
 #
 name: PR
+
 on:
   workflow_dispatch:
     inputs:
       tracee_ref:
-        description: 'Tracee ref to checkout'
+        description: "Tracee ref to checkout"
         required: true
-        default: 'main'
+        default: "main"
         type: string
 
   pull_request:
@@ -35,11 +36,13 @@ on:
       - "**.sh"
       - "**/pr.yaml"
       - "**/action.yaml"
-permissions:
-  contents: read
+
+permissions: {}
+
 concurrency:
   group: ${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
 env:
   TRACEE_REF: ${{ github.event.inputs.tracee_ref || github.ref }}
   # Go 1.26 randomizes the heap base address, breaking the eBPF stack_pivot
@@ -77,35 +80,52 @@ env:
     HTTP
     HTTPRequest
     HTTPResponse
+
 jobs:
+
   debug-runner-label:
     name: Debug Runner Label
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     steps:
       - name: Debug Runner Label
+        env:
+          REPO_OWNER: ${{ github.repository_owner }}
+          RUNNER_LABEL: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
         run: |
-          echo "Repository owner: ${{ github.repository_owner }}"
-          echo "Runner label: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}"
+          echo "Repository owner: ${REPO_OWNER}"
+          echo "Runner label: ${RUNNER_LABEL}"
+
   #
   # DOC VERIFICATION
   #
+
   verify-docs:
     name: Verify Documentation
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.TRACEE_REF }}
+
       - name: Ensure updates of *.1.md and *.1 pairs
         run: |
           ./scripts/verify_man_md_sync.sh --base-ref origin/main --fetch-depth 1
+
   #
   # CODE VERIFICATION
   #
+
   verify-analyze-code:
     name: Verify and Analyze Code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -114,44 +134,56 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
-            echo "Congrats! There is nothing to fix."
+              echo "Congrats! There is nothing to fix."
           else
-            echo "The following lines should be fixed."
-            gofmt -s -d .
-            exit 1
+              echo "The following lines should be fixed."
+              gofmt -s -d .
+              exit 1
           fi
+
       - name: Lint (Revive)
         run: |
           make check-lint
+
       - name: Check Code Style
         run: |
           make check-fmt
+
       - name: Check Golang Vet
         run: |
           make check-vet
+
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
+
       - name: Check with errcheck
         run: |
           make check-err
+
       - name: Check with govulncheck (informational)
         continue-on-error: true
         run: |
           make check-vulncheck
+
   #
   # TOOLS BUILD VERIFICATION
   #
+
   verify-tools:
     name: Verify Other Tools
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -160,20 +192,26 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+
       - name: Build Tracee Benchmark Tool
         run: |
           make clean
           make tracee-bench
+
   #
   # CODE TESTS
   #
+
   unit-tests:
     name: Unit Tests (x86_64)
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -183,8 +221,10 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
+
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
 
@@ -193,6 +233,8 @@ jobs:
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04-arm') }}
+    permissions:
+      contents: read
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       volumes:
@@ -212,19 +254,24 @@ jobs:
           mkdir -p /opt/bin
           ln -s /usr/bin/node /opt/bin/node
         shell: sh
+
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
+
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
+
   #
   # INTEGRATION TESTS
   #
+
   integration-tests:
     name: Integration Tests (x86_64)
     needs:
@@ -233,6 +280,8 @@ jobs:
       - graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12.62 x86_64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
+    permissions:
+      contents: read
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -247,6 +296,7 @@ jobs:
       - name: Prepare Environment
         run: |
           mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+
       # NOTE: Git installation not needed when running on host - AMI already has git installed.
       # - name: Install Git
       #   run: |
@@ -254,23 +304,29 @@ jobs:
       #     apt-get update
       #     apt-get install -y --no-install-recommends git-core ca-certificates
       #     update-ca-certificates
+
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
+
       # NOTE: Git ownership fix not needed when running on host (only required in containers).
       # - name: Fix Git ownership
-      #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      #   run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
       # NOTE: Setup Tracee not needed - AMI has tooling pre-installed. Re-enable when tooling version
       # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
+
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
+
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
+
   integration-tests-arm64:
     name: Integration Tests (ARM64)
     needs:
@@ -279,6 +335,8 @@ jobs:
       - graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
+    permissions:
+      contents: read
     env:
       HOME: "/tmp/root"
       GOPATH: "/tmp/go"
@@ -293,6 +351,7 @@ jobs:
       - name: Prepare Environment
         run: |
           mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+
       # NOTE: Git installation not needed when running on host - AMI already has git installed.
       # - name: Install Git
       #   run: |
@@ -300,31 +359,40 @@ jobs:
       #     apt-get update
       #     apt-get install -y --no-install-recommends git-core ca-certificates
       #     update-ca-certificates
+
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
+
       # NOTE: Git ownership fix not needed when running on host (only required in containers).
       # - name: Fix Git ownership
-      #   run: git config --global --add safe.directory $GITHUB_WORKSPACE
+      #   run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
       # NOTE: Setup Tracee not needed - AMI has tooling pre-installed. Re-enable when tooling version
       # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
+
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
+
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
+
   #
   # PERFORMANCE TESTS
   #
+
   performance-tests:
     name: Performance Tests
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
       options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
@@ -334,17 +402,23 @@ jobs:
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
+
       - name: Run Performance Tests
         run: |
           make test-performance
+
   #
   # FUNCTIONAL TESTS AGAINST DIFFERENT KERNELS
   #
+
   generate-matrix:
     name: Generate Test Matrix
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     outputs:
       matrix01: ${{ steps.generate.outputs.matrix }}
     steps:
@@ -352,9 +426,11 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ env.TRACEE_REF }}
+
       - name: Generate Matrix
         id: generate
         uses: ./.github/actions/generate-kernel-matrix
+
   kernel-tests:
     name: ${{ matrix.job_name }}
     needs:
@@ -363,6 +439,8 @@ jobs:
       - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
       - EXECUTION_TYPE=LONG
       - INSTANCE_TYPE=XLARGE
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -376,26 +454,35 @@ jobs:
       - name: Prepare Environment
         run: |
           mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+
       - name: "Checkout"
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
+
       - name: "System Info"
         run: ./scripts/system-info.sh --all
+
       - name: "Environment Variables"
+        env:
+          MATRIX_ARCH: ${{ matrix.arch }}
+          ARM64_TESTS_VALUE: ${{ env.ARM64_TESTS }}
         run: |
-          if [[ "${{ matrix.arch }}" == "aarch64" ]]; then
-            echo "TESTS=${{ env.ARM64_TESTS }}" >> $GITHUB_ENV
+          if [ "${MATRIX_ARCH}" = "aarch64" ]; then
+              echo "TESTS=${ARM64_TESTS_VALUE}" >> "${GITHUB_ENV}"
           fi
           LINUX_ID=$(grep -Pom1 '^ID=\K.*' /etc/os-release)
-          echo "LINUX_ID=${LINUX_ID}" >> ${GITHUB_ENV}
+          echo "LINUX_ID=${LINUX_ID}" >> "${GITHUB_ENV}"
           VERSION_CODENAME=$(grep -Pom1 '^VERSION_CODENAME=\K.*' /etc/os-release 2> /dev/null || echo "")
-          echo "VERSION_CODENAME=${VERSION_CODENAME}" >> ${GITHUB_ENV}
+          echo "VERSION_CODENAME=${VERSION_CODENAME}" >> "${GITHUB_ENV}"
+        shell: bash
+
       - name: "Disable Unattended Upgrades (Ubuntu only)"
         if: ${{ env.LINUX_ID == 'ubuntu' }}
         run: ./scripts/disable-unattended-upgrades.sh --timeout 5
         continue-on-error: true
+
       # NOTE: To remove when AMIs are updated accordingly.
       - name: "Fix EOL Ubuntu Repositories (Lunar/Mantic)"
         if: ${{ env.LINUX_ID == 'ubuntu' && (env.VERSION_CODENAME == 'lunar' || env.VERSION_CODENAME == 'mantic') }}
@@ -403,31 +490,35 @@ jobs:
           set -e
           ARCH=$(uname -m)
           if [[ "${ARCH}" == "aarch64" ]] || [[ "${ARCH}" == "arm64" ]]; then
-            # For aarch64/arm64: ports repositories → old-releases ubuntu (not ubuntu-ports)
-            sed -i 's|http://.*ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-            sed -i 's|http://.*\.ec2\.ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-            sed -i 's|http://.*ec2\.ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+              sed -i 's|http://.*ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+              sed -i 's|http://.*\.ec2\.ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+              sed -i 's|http://.*ec2\.ports\.ubuntu\.com/ubuntu-ports|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
           else
-            # For x86_64: archive repositories → old-releases ubuntu
-            sed -i 's|http://.*archive\.ubuntu\.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
-            sed -i 's|http://security\.ubuntu\.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+              sed -i 's|http://.*archive\.ubuntu\.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+              sed -i 's|http://security\.ubuntu\.com/ubuntu|http://old-releases.ubuntu.com/ubuntu|g' /etc/apt/sources.list
           fi
+        shell: bash
         continue-on-error: true
+
       # NOTE: Use this step when AMIs are not updated with the latest tooling.
       # Comment it after new AMIs are released.
       - name: "Install Tooling"
         id: install-tooling
         run: |
           ./scripts/installation/install-clang.sh
+
       # NOTE: Show Tooling Info again to verify on-the-fly changes made during workflow execution.
       - name: "Tooling Info (After Installations and Configurations)"
         if: always() && steps.install-tooling.outcome == 'success'
         run: ./scripts/system-info.sh --tooling
+
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
+
       - name: "Sync System Time"
         run: ./scripts/sync_system_time.sh
         continue-on-error: true
+
       - name: "Run E2E Tests"
         uses: ./.github/actions/run-e2e-tests
         with:

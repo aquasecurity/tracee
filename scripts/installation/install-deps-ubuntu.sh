@@ -35,6 +35,7 @@ install_base_packages() {
         libzstd-dev \
         protobuf-compiler \
         curl \
+        gnupg \
         tar \
         git \
         make \
@@ -68,15 +69,15 @@ install_go_tools() {
 
 install_docker() {
     info "Installing Docker"
-    require_cmds apt-get curl
+    require_cmds apt-get gpg
 
     # Install lsb-release for Ubuntu codename detection
     apt-get update
     apt-get install -y lsb-release
 
-    # Add Docker GPG key and repository
+    # Add Docker GPG key (from local vendored copy) and repository
     rm -f /usr/share/keyrings/docker-archive-keyring.gpg
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg < "${SCRIPT_DIR}/keys/docker-release-signing-key.asc"
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
     wait_for_apt_locks
