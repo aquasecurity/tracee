@@ -1,0 +1,166 @@
+name: Trigger PR Sync
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR Number"
+        required: true
+        type: number
+
+permissions: {}
+
+jobs:
+  pr-sync:
+    name: Trigger PR Sync
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      pull-requests: read # gh pr list
+    container:
+      image: alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
+
+    steps:
+      - name: Install tools
+        run: apk add --no-cache curl github-cli
+        shell: sh
+
+      - name: Determine PR Number
+        id: pr-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          COMMIT_SHA: ${{ github.sha }}
+          GH_REPO: ${{ github.repository }}
+        shell: sh
+        run: |
+          set -eu
+
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
+              num="${INPUT_PR_NUMBER}"
+          else
+              max_attempts=5
+              sleep_time=3
+              attempts=0
+              echo "Searching for merged PR for commit: ${COMMIT_SHA}"
+              while [ "${attempts}" -lt "${max_attempts}" ]; do
+                  num=$(
+                      gh pr list \
+                          --repo "${GH_REPO}" \
+                          --state merged \
+                          --search "${COMMIT_SHA}" \
+                          --json number \
+                          --jq 'first(.[] | .number) // empty'
+                  ) || true
+                  if [ -n "${num}" ] && [ "${num}" != "null" ]; then
+                      break
+                  fi
+                  attempts=$((attempts + 1))
+                  if [ "${attempts}" -lt "${max_attempts}" ]; then
+                      sleep "${sleep_time}"
+                      echo "Attempt ${attempts} failed, retrying..."
+                  fi
+              done
+              if [ -z "${num}" ]; then
+                  echo "ERROR: No merged PR found after ${max_attempts} attempts." >&2
+                  exit 1
+              fi
+          fi
+
+          echo "Found PR number: ${num}"
+          echo "pr_number=${num}" >> "${GITHUB_OUTPUT}"
+
+      - name: Prepare sync request
+        id: prepare-sync
+        env:
+          PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
+          SYNC_URL: ${{ secrets.PRIV_SYNC_WORKFLOW_URL }}
+          SYNC_TOKEN: ${{ secrets.PRIV_PAT }}
+        shell: sh
+        run: |
+          set -eu
+
+          config_file=$(mktemp /tmp/curl-config-XXXXXX)
+          chmod 600 "${config_file}"
+          cat > "${config_file}" << 'CURL_EOF'
+          -X POST
+          --max-time 3
+          --silent
+          --show-error
+          -H "Accept: application/vnd.github+json"
+          -H "X-GitHub-Api-Version: 2022-11-28"
+          CURL_EOF
+          printf -- '--url %s\n' "${SYNC_URL}" >> "${config_file}"
+          printf -- '-H "Authorization: Bearer %s"\n' "${SYNC_TOKEN}" >> "${config_file}"
+          printf -- '-d {"ref": "main", "inputs": {"oss_pr_number": "%s"}}\n' "${PR_NUMBER}" >> "${config_file}"
+
+          echo "config_file=${config_file}" >> "${GITHUB_OUTPUT}"
+
+      - name: Sync PR
+        id: sync
+        env:
+          CONFIG_FILE: ${{ steps.prepare-sync.outputs.config_file }}
+        shell: sh
+        run: |
+          set -eu
+
+          max_attempts=5
+          attempts=0
+          rc=0
+          http_code=""
+
+          while [ "${attempts}" -lt "${max_attempts}" ]; do
+              attempts=$((attempts + 1))
+              rc=0
+              http_code=$(curl --config "${CONFIG_FILE}" \
+                  --output /dev/null \
+                  --write-out "%{http_code}") \
+                  || rc=$?
+
+              if [ "${rc}" -eq 0 ] \
+                  && [ "${http_code}" -ge 200 ] \
+                  && [ "${http_code}" -lt 300 ]; then
+                  break
+              fi
+
+              echo "Attempt ${attempts}/${max_attempts} failed (rc=${rc}, http=${http_code})." >&2
+              if [ "${attempts}" -lt "${max_attempts}" ]; then
+                  sleep 1
+              fi
+          done
+
+          if [ "${attempts}" = "${max_attempts}" ]; then
+              echo "ERROR: Failed after ${max_attempts} attempts (rc=${rc}, http=${http_code})." >&2
+              exit 1
+          fi
+
+      - name: Cleanup credentials
+        if: always()
+        env:
+          CONFIG_FILE: ${{ steps.prepare-sync.outputs.config_file }}
+        shell: sh
+        run: |
+          rm -f "${CONFIG_FILE}" 2> /dev/null || true
+
+      - name: Summary
+        if: always()
+        env:
+          PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
+          SYNC_RESULT: ${{ steps.sync.outcome }}
+        shell: sh
+        run: |
+          {
+              echo "## PR Sync"
+              echo ""
+              if [ "${SYNC_RESULT}" = "success" ]; then
+                  echo "Sync triggered for PR **#${PR_NUMBER}**."
+              elif [ "${SYNC_RESULT}" = "skipped" ]; then
+                  echo "Sync skipped (PR number could not be determined)."
+              else
+                  echo "Failed to trigger sync for PR **#${PR_NUMBER}**."
+              fi
+          } >> "${GITHUB_STEP_SUMMARY}"
