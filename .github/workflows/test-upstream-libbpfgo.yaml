@@ -1,19 +1,27 @@
 #
-# Daily Test: Test latest libbpfgo
+# Daily Test: Upstream libbpfgo compatibility
 #
-name: Libbpfgo Test
+name: Upstream libbpfgo Compatibility
+
 on:
   workflow_dispatch: {}
+
   schedule:
     # Daily At 03:00
     - cron: "0 3 * * *"
-  workflow_call:
-permissions:
-  contents: read
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   compile-tracee:
-    name: Test Latest libbpfgo
+    name: Upstream libbpfgo Compatibility
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
     steps:
@@ -21,12 +29,10 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: true
-      - name: Fix Git ownership
-        run: git config --global --add safe.directory $GITHUB_WORKSPACE
-        shell: sh
-      - name: Install Dependencies
-        run: ./scripts/installation/install-deps-alpine.sh
-        shell: sh
+
+      - name: Setup Tracee
+        uses: ./.github/actions/setup-tracee-alpine
+
       - name: Compile Tracee
-        run: |
-          make test-upstream-libbpfgo
+        run: make test-upstream-libbpfgo
+        shell: sh
