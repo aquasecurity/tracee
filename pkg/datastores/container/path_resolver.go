@@ -82,7 +82,7 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 
 	procFSRoot, err := cPathRes.getProcessFSRoot(uint(pid))
 	if err != nil {
-		return "", errfmt.Errorf("could not access process %d FS: %v", pid, err)
+		return "", errfmt.WrapError(fmt.Errorf("could not access process %d FS: %w", pid, err))
 	}
 
 	// register this process in the mount namespace
@@ -104,8 +104,10 @@ func (cPathRes *ContainerPathResolver) getProcessFSRoot(pid uint) (string, error
 	// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
 	entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
 	if err != nil {
-		// This process is either not alive or we don't have permissions to access.
-		return "", errfmt.Errorf("failed accessing process FS root %s: %v", procRootPath, err)
+		if errors.Is(err, fs.ErrNotExist) || errors.Is(err, fs.ErrPermission) {
+			return "", fmt.Errorf("%w: %w", ErrContainerFSUnreachable, err)
+		}
+		return "", errfmt.WrapError(fmt.Errorf("failed accessing process FS root %s: %w", procRootPath, err))
 	}
 	if len(entries) == 0 {
 		return "", errfmt.Errorf("process FS root (%s) is empty", procRootPath)
@@ -307,6 +309,6 @@ func (cPathRes *ContainerPathResolver) isFileAccessible(path string) bool {
 }
 
 var (
-	ErrContainerFSUnreachable = errors.New("container file system is unreachable in mount namespace because there are not living children")
+	ErrContainerFSUnreachable = errors.New("container file system is unreachable in mount namespace")
 	ErrNonAbsolutePath        = errors.New("file path is not absolute in its container mount point")
 )
