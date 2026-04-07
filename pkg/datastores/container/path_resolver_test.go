@@ -2,6 +2,7 @@ package container
 
 import (
 	"fmt"
+	"io/fs"
 	"testing"
 	"testing/fstest"
 
@@ -336,4 +337,45 @@ func TestPathResolver_isFileAccessible(t *testing.T) {
 
 	// Test with a directory (should be accessible but not readable as a file)
 	assert.True(t, pres.isFileAccessible("/proc"))
+}
+
+// errorFS is a fake fs.FS that returns a fixed error for all ReadDir calls.
+type errorFS struct {
+	err error
+}
+
+func (e errorFS) Open(name string) (fs.File, error) {
+	return nil, &fs.PathError{Op: "open", Path: name, Err: e.err}
+}
+
+func (e errorFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	return nil, &fs.PathError{Op: "readdir", Path: name, Err: e.err}
+}
+
+func TestPathResolver_getProcessFSRoot_PermissionDenied(t *testing.T) {
+	t.Parallel()
+
+	bucket := bucketcache.BucketCache{}
+	bucket.Init(20)
+	pres := InitContainerPathResolver(&bucket)
+	pres.fs = errorFS{err: fs.ErrPermission}
+
+	_, err := pres.getProcessFSRoot(1234)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrContainerFSUnreachable)
+	assert.ErrorIs(t, err, fs.ErrPermission)
+}
+
+func TestPathResolver_getProcessFSRoot_NotExist(t *testing.T) {
+	t.Parallel()
+
+	bucket := bucketcache.BucketCache{}
+	bucket.Init(20)
+	pres := InitContainerPathResolver(&bucket)
+	pres.fs = errorFS{err: fs.ErrNotExist}
+
+	_, err := pres.getProcessFSRoot(1234)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrContainerFSUnreachable)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
