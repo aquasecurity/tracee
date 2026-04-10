@@ -3,6 +3,9 @@ description: Comprehensive guide for running tests in the Tracee project
 globs:
   - "**/Makefile"
   - "**/*_test.go"
+  - "!**/3rdparty/**"
+  - "!**/dist/**"
+  - "!**/.git/**"
 alwaysApply: false
 ---
 
