@@ -112,6 +112,7 @@ jobs:
           attempts=0
           rc=0
           http_code=""
+          succeeded=false
 
           while [ "${attempts}" -lt "${max_attempts}" ]; do
               attempts=$((attempts + 1))
@@ -124,6 +125,7 @@ jobs:
               if [ "${rc}" -eq 0 ] \
                   && [ "${http_code}" -ge 200 ] \
                   && [ "${http_code}" -lt 300 ]; then
+                  succeeded=true
                   break
               fi
 
@@ -133,7 +135,7 @@ jobs:
               fi
           done
 
-          if [ "${attempts}" = "${max_attempts}" ]; then
+          if [ "${succeeded}" != true ]; then
               echo "ERROR: Failed after ${max_attempts} attempts (rc=${rc}, http=${http_code})." >&2
               exit 1
           fi
