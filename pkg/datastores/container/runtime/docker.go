@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	docker "github.com/docker/docker/client"
+	docker "github.com/moby/moby/client"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 )
@@ -15,7 +15,8 @@ type dockerEnricher struct {
 
 func DockerEnricher(socket string) (ContainerEnricher, error) {
 	unixSocket := "unix://" + strings.TrimPrefix(socket, "unix://")
-	cli, err := docker.NewClientWithOpts(docker.WithHost(unixSocket), docker.WithAPIVersionNegotiation())
+	// New enables API version negotiation by default.
+	cli, err := docker.New(docker.WithHost(unixSocket))
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
@@ -28,23 +29,23 @@ func DockerEnricher(socket string) (ContainerEnricher, error) {
 
 func (e *dockerEnricher) Get(ctx context.Context, containerId string) (EnrichResult, error) {
 	res := EnrichResult{}
-	resp, err := e.client.ContainerInspect(ctx, containerId)
+	resp, err := e.client.ContainerInspect(ctx, containerId, docker.ContainerInspectOptions{})
 	if err != nil {
 		return res, errfmt.WrapError(err)
 	}
-	container := (*resp.ContainerJSONBase)
+	container := resp.Container
 
 	// Docker prefixes a '/' token to local containers.
 	// This can cause some confusion so we remove it if relevant.
 	res.ContName = strings.TrimPrefix(container.Name, "/")
 
 	// get initial image name from docker's container config
-	if resp.Config != nil {
-		res.Image = resp.Config.Image
+	if container.Config != nil {
+		res.Image = container.Config.Image
 
 		// if in k8s extract pod data from the labels
-		if resp.Config.Labels != nil {
-			labels := resp.Config.Labels
+		if container.Config.Labels != nil {
+			labels := container.Config.Labels
 			res.PodName = labels[PodNameLabel]
 			res.Namespace = labels[PodNamespaceLabel]
 			res.UID = labels[PodUIDLabel]
