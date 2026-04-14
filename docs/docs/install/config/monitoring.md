@@ -11,7 +11,7 @@ Tracee exposes Prometheus metrics for performance monitoring of event production
     production, consumption and detection. It does not target the detections
     themselves.
 
-Prometheus scraping is **enabled by default in Kubernetes deployments** at `:3366/metrics`. For CLI usage, metrics must be explicitly enabled using the `--server metrics` flag.
+Prometheus scraping is **enabled by default in Kubernetes deployments** at `0.0.0.0:3366/metrics`. For CLI usage, metrics must be explicitly enabled using the `--server metrics` flag (defaults to loopback-only binding at `127.0.0.1:3366`).
 
 ### Configuration
 
@@ -68,7 +68,7 @@ Both Prometheus metrics and health checks share the same HTTP server. Common con
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `http-address` | `:3366` | HTTP server listen address |
+| `http-address` | `127.0.0.1:3366` | HTTP server listen address (loopback only; use `0.0.0.0:3366` for network access) |
 | `metrics` | `true` | Enable Prometheus metrics endpoint |
 | `healthz` | `false` | Enable health check endpoint |
 
@@ -84,3 +84,50 @@ server:
 This configuration makes available:
 - Prometheus metrics: `http://localhost:3366/metrics`
 - Health check: `http://localhost:3366/healthz`
+
+## Migrating from Wildcard Bind Default
+
+!!! Warning
+    In previous versions, the HTTP server defaulted to binding on all interfaces
+    (`:3366`). The default is now **loopback only** (`127.0.0.1:3366`). If you
+    scrape metrics or run health checks from a remote host, you must set an
+    explicit bind address after upgrading.
+
+### Remote Prometheus Scraping
+
+If a central Prometheus server scrapes Tracee from another machine, add an
+explicit `http-address`:
+
+**CLI:**
+```console
+tracee --server http-address=0.0.0.0:3366 --server metrics
+```
+
+**Config file:**
+```yaml
+server:
+  http-address: "0.0.0.0:3366"
+  metrics: true
+  healthz: true
+```
+
+To bind to a specific network interface instead of all interfaces:
+
+```console
+tracee --server http-address=10.0.0.5:3366 --server metrics
+```
+
+### Kubernetes (Helm)
+
+No action is required. The Helm chart explicitly sets `0.0.0.0:3366` and ships
+a NetworkPolicy restricting ingress to Prometheus pods.
+
+### pprof Access
+
+The `/debug/pprof/` endpoints are restricted to loopback clients regardless of
+the bind address. For remote debugging, use an SSH tunnel:
+
+```console
+ssh -L 3366:127.0.0.1:3366 tracee-host
+curl http://localhost:3366/debug/pprof/heap
+```
