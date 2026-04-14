@@ -21,10 +21,15 @@ const (
 
 // ParseFile reads and parses a YAML detector file
 func ParseFile(filePath string) (*YAMLDetectorSpec, error) {
-	// Check file size before reading to prevent memory exhaustion
-	fileInfo, err := os.Stat(filePath)
+	// Use Lstat to avoid following symlinks and to reject non-regular files
+	// (FIFOs, device files, sockets). os.ReadFile on a FIFO blocks indefinitely.
+	fileInfo, err := os.Lstat(filePath)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
+	}
+
+	if !fileInfo.Mode().IsRegular() {
+		return nil, fmt.Errorf("not a regular file: %s", filePath)
 	}
 
 	if fileInfo.Size() > MaxYAMLFileSize {
