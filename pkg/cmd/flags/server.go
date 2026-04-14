@@ -207,14 +207,27 @@ func parseAndValidateGRPCAddr(address string) (protocol string, addr string, err
 	switch protocol {
 	case "tcp":
 		if len(values) == 2 {
-			addr = values[1]
-			err = validatePort(addr)
-			if err != nil {
+			part := values[1]
+			// Accept "host:port" (e.g. "127.0.0.1:4466") or "[host]:port" for IPv6 (e.g. "[::1]:4466")
+			if host, port, err2 := net.SplitHostPort(part); err2 == nil {
+				if err = validatePort(port); err != nil {
+					return "", "", err
+				}
+				if host == "" {
+					host = "127.0.0.1"
+				}
+				return protocol, net.JoinHostPort(host, port), nil
+			}
+			// Bare port -- default to loopback
+			if err = validatePort(part); err != nil {
+				if strings.Contains(part, ":") {
+					return "", "", errfmt.Errorf("invalid tcp address '%s': IPv6 addresses must be in brackets (e.g. tcp:[::1]:4466)", part)
+				}
 				return "", "", err
 			}
-			return protocol, addr, nil
+			return protocol, "127.0.0.1:" + part, nil
 		}
-		return protocol, defaultGRPCPort, nil
+		return protocol, "127.0.0.1:" + defaultGRPCPort, nil
 	case "unix":
 		if len(values) == 2 {
 			addr = values[1]
