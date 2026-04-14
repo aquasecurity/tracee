@@ -14,7 +14,7 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-var outputDirectory *os.File
+var outputDirectory *os.Root
 
 const (
 	pcapDir       string = "pcap/"
@@ -38,7 +38,7 @@ const AF_INET6 = 10
 // Functions
 //
 
-func initializeGlobalVars(output *os.File) {
+func initializeGlobalVars(output *os.Root) {
 	outputDirectory = output // where to save pcap files
 }
 
@@ -130,7 +130,7 @@ func getFileStringFormat(e *trace.Event, c string, t PcapType) string {
 }
 
 // mkdirForPcapType creates the dir that will hold the pcap file(s)
-func mkdirForPcapType(o *os.File, c string, t PcapType) error {
+func mkdirForPcapType(o *os.Root, c string, t PcapType) error {
 	var dirToCreate string
 
 	switch t {
@@ -176,7 +176,7 @@ func getPcapFileAndWriter(event *trace.Event, t PcapType) (
 		0644,
 	)
 	if err != nil {
-		return nil, nil, errfmt.WrapError(fmt.Errorf("failed to open file %s at %s: %w", pcapFilePath, outputDirectory.Name(), err))
+		return nil, nil, errfmt.WrapError(fmt.Errorf("failed to open file %s in output dir: %w", pcapFilePath, err))
 	}
 
 	logger.Debugw("pcap file (re)opened", "filename", pcapFilePath)

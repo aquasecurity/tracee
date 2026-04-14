@@ -75,7 +75,7 @@ type Tracee struct {
 	startTime uint64
 	running   atomic.Bool
 	done      chan struct{} // signal to safely stop end-stage processing
-	OutDir    *os.File      // use common.XXX functions to create or write to this file
+	OutDir    *os.Root      // traversal-resistant root for artifact output
 	stats     *metrics.Stats
 	sigEngine *engine.Engine
 	// Events
@@ -670,7 +670,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.OutDir, err = fileutil.OpenExistingDir(t.config.Artifacts.OutputPath)
+	t.OutDir, err = fileutil.OpenRootDir(t.config.Artifacts.OutputPath)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error opening out directory: %v", err)
@@ -1940,8 +1940,8 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	return nil
 }
 
-func updateArtifactsMapFile(fileDir *os.File, filePath string, artifactsFiles map[string]string, cfg config.FileArtifactsConfig) error {
-	f, err := fileutil.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func updateArtifactsMapFile(root *os.Root, filePath string, artifactsFiles map[string]string, cfg config.FileArtifactsConfig) error {
+	f, err := fileutil.OpenAt(root, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errfmt.Errorf("error logging captured files")
 	}
