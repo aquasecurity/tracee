@@ -36,8 +36,52 @@ on:
 permissions: {}
 
 jobs:
+  files-changed:
+    name: Detect changed files
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-2404-4core') }}
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    outputs:
+      codeql: ${{ steps.check.outputs.codeql }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Check for CodeQL-relevant changes
+        id: check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          patterns=(
+              '\.go$'
+              '\.c$'
+              '\.h$'
+              '^go\.mod$'
+              '^go\.sum$'
+              '^Makefile$'
+              'codeql\.yaml$'
+          )
+
+          regex="$(printf '%s|' "${patterns[@]}")"
+          regex="${regex%|}"
+
+          if git diff --name-only "${BASE_SHA}...${HEAD_SHA}" \
+              | grep -qE "${regex}"; then
+              echo "codeql=true" >> "${GITHUB_OUTPUT}"
+          else
+              echo "codeql=false" >> "${GITHUB_OUTPUT}"
+          fi
+
   analyze:
     name: Analyze (${{ matrix.language }})
+    needs: files-changed
+    if: >-
+      github.event_name != 'pull_request'
+      || needs.files-changed.outputs.codeql == 'true'
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-2404-4core') }}
 
     permissions:
@@ -106,3 +150,19 @@ jobs:
         uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
         with:
           category: "/language:${{ matrix.language }}"
+
+  codeql-required-check:
+    name: CodeQL Required Check
+    needs: [files-changed, analyze]
+    if: always()
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-2404-4core') }}
+    steps:
+      - name: Evaluate results
+        env:
+          ANALYZE_RESULT: ${{ needs.analyze.result }}
+        run: |
+          if [ "${ANALYZE_RESULT}" = "failure" ] || [ "${ANALYZE_RESULT}" = "cancelled" ]; then
+              echo "CodeQL analysis failed or was cancelled" >&2
+              exit 1
+          fi
+          echo "CodeQL passed or was skipped (no relevant file changes)"
