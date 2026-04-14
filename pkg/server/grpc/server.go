@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strings"
 	"time"
 
 	"google.golang.org/grpc"
@@ -25,10 +24,6 @@ type Server struct {
 }
 
 func New(protocol, listenAddr string) *Server {
-	if protocol == "tcp" {
-		listenAddr = ":" + listenAddr
-	}
-
 	return &Server{listener: nil, protocol: protocol, listenAddr: listenAddr}
 }
 
@@ -38,6 +33,16 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 	if err != nil {
 		logger.Errorw("Failed to start GRPC server", "protocol", s.protocol, "address", s.listenAddr, "error", err)
 		return
+	}
+
+	if s.protocol == "tcp" {
+		host, _, _ := net.SplitHostPort(s.listenAddr)
+		if !isLoopbackHost(host) {
+			logger.Warnw("gRPC server binding to non-loopback address without TLS or authentication",
+				"address", s.listenAddr,
+				"hint", "ensure network-level controls (firewall, NetworkPolicy) restrict access",
+			)
+		}
 	}
 
 	// Set restrictive permissions on Unix socket
@@ -92,16 +97,32 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 
 // Address returns the address of the server
 func (s *Server) Address() string {
-	// For TCP, listenAddr already has a colon prefix (e.g., ":4466")
-	// For Unix, listenAddr is just the path (e.g., "/var/run/tracee.sock")
-	// We want to return format "protocol:address" so remove leading colon for TCP
-	addr := s.listenAddr
-	if s.protocol == "tcp" && strings.HasPrefix(addr, ":") {
-		addr = addr[1:] // Remove leading colon
-	}
-	return fmt.Sprintf("%s:%s", s.protocol, addr)
+	return fmt.Sprintf("%s:%s", s.protocol, s.listenAddr)
 }
 
 func (s *Server) cleanup() {
 	s.server.GracefulStop()
+}
+
+// isLoopbackHost returns true when host is a loopback IP or a hostname
+// that resolves exclusively to loopback addresses. IP literals are
+// checked directly without DNS. For hostnames, resolution is attempted
+// first; if it fails (e.g. minimal container without /etc/hosts),
+// "localhost" is assumed loopback since net.Listen would also fail to
+// bind in that case.
+func isLoopbackHost(host string) bool {
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	addrs, err := net.LookupHost(host)
+	if err != nil {
+		return host == "localhost"
+	}
+	for _, a := range addrs {
+		if ip := net.ParseIP(a); ip == nil || !ip.IsLoopback() {
+			return false
+		}
+	}
+
+	return len(addrs) > 0
 }
