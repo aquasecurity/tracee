@@ -138,7 +138,7 @@ func TestPrepareServer(t *testing.T) {
 				"metrics",
 			},
 			expected: &expectedServer{
-				HTTPAddress: ":3366",
+				HTTPAddress: "127.0.0.1:3366",
 				Metrics:     true,
 			},
 		},
@@ -160,7 +160,7 @@ func TestPrepareServer(t *testing.T) {
 				"pprof",
 			},
 			expected: &expectedServer{
-				HTTPAddress: ":3366",
+				HTTPAddress: "127.0.0.1:3366",
 				Pprof:       true,
 			},
 		},
@@ -182,7 +182,7 @@ func TestPrepareServer(t *testing.T) {
 				"healthz",
 			},
 			expected: &expectedServer{
-				HTTPAddress: ":3366",
+				HTTPAddress: "127.0.0.1:3366",
 				Healthz:     true,
 			},
 		},
@@ -204,7 +204,7 @@ func TestPrepareServer(t *testing.T) {
 				"pyroscope",
 			},
 			expected: &expectedServer{
-				HTTPAddress: ":3366",
+				HTTPAddress: "127.0.0.1:3366",
 				Pyroscope:   true,
 			},
 		},

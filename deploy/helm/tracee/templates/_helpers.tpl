@@ -61,6 +61,16 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
+{{/*
+Extract the port number from an address string like ":3366", "0.0.0.0:3366",
+or "127.0.0.1:3366". Splits on ":" and returns the last element.
+*/}}
+{{- define "tracee.httpPort" -}}
+{{- $addr := .Values.config.server.httpAddress | default "0.0.0.0:3366" -}}
+{{- $parts := splitList ":" $addr -}}
+{{- index $parts (sub (len $parts) 1) -}}
+{{- end }}
+
 {{- define "tracee-operator.fullname" -}}
 {{- default .Values.operator.name }}
 {{- end }}

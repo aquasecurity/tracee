@@ -74,3 +74,4 @@ func TestServer_EndpointFlags(t *testing.T) {
 		assert.True(t, s.IsPProfEnabled())
 	})
 }
+

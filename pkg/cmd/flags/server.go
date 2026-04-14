@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
 )
@@ -17,7 +18,7 @@ const (
 
 	httpAddressFlag    = "http-address"
 	grpcAddressFlag    = "grpc-address"
-	defaultHTTPAddress = ":3366"
+	defaultHTTPAddress = "127.0.0.1:3366"
 	defaultGRPCPort    = "4466"
 	defaultGRPCPath    = "/var/run/tracee.sock"
 
@@ -148,6 +149,11 @@ func (s *ServerConfig) enableHttpEndpoints() error {
 	// if a flag is set, but the server is not configured, set a default HTTP server
 	if s.http == nil {
 		s.http = http.New(defaultHTTPAddress)
+		logger.Warnw(
+			"HTTP server bound to loopback only, endpoints are not accessible from remote hosts",
+			"address", defaultHTTPAddress,
+			"hint", "use --server http-address=0.0.0.0:3366 to allow remote access",
+		)
 	}
 
 	if s.Metrics {
