@@ -30,7 +30,7 @@ type Pcaps struct {
 	pcapCaches map[PcapType]*PcapCache
 }
 
-func New(simple config.PcapsConfig, output *os.File) (*Pcaps, error) {
+func New(simple config.PcapsConfig, output *os.Root) (*Pcaps, error) {
 	var err error
 
 	cfg := configToPcapType(simple)
