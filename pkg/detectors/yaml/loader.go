@@ -94,6 +94,12 @@ func LoadFromDirectory(dir string) LoadResult {
 			continue
 		}
 
+		// Skip non-regular files (symlinks, FIFOs, device files, sockets).
+		// os.ReadFile on a FIFO blocks indefinitely, causing a local DoS.
+		if !entry.Type().IsRegular() {
+			continue
+		}
+
 		// Skip non-YAML files
 		name := entry.Name()
 		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
@@ -187,6 +193,14 @@ func LoadFromDirectory(dir string) LoadResult {
 // peekFileType reads just the type field from a YAML file
 // Returns empty string if type field is missing
 func peekFileType(path string) (string, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("not a regular file: %s", path)
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
