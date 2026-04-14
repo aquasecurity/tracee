@@ -2,7 +2,7 @@
 title: TRACEE-SERVER
 section: 1
 header: Tracee Server Flag Manual
-date: 2025/01
+date: 2026/04
 ...
 
 ## NAME
@@ -27,13 +27,13 @@ Server address options:
 
 Server endpoint options (require HTTP server):
 
-- **metrics**: Enable Prometheus metrics endpoint at /metrics. If no HTTP server is configured, defaults to localhost:3366.
+- **metrics**: Enable Prometheus metrics endpoint at /metrics. If no HTTP server is configured, defaults to 127.0.0.1:3366.
 
-- **healthz**: Enable health check endpoint at /healthz. If no HTTP server is configured, defaults to localhost:3366.
+- **healthz**: Enable health check endpoint at /healthz. If no HTTP server is configured, defaults to 127.0.0.1:3366.
 
-- **pprof**: Enable Go pprof debugging endpoints under /debug/pprof/. If no HTTP server is configured, defaults to localhost:3366.
+- **pprof**: Enable Go pprof debugging endpoints under /debug/pprof/. If no HTTP server is configured, defaults to 127.0.0.1:3366.
 
-- **pyroscope**: Enable Pyroscope profiling agent integration. If no HTTP server is configured, defaults to localhost:3366.
+- **pyroscope**: Enable Pyroscope profiling agent integration. If no HTTP server is configured, defaults to 127.0.0.1:3366.
 
 Other options:
 
@@ -118,10 +118,41 @@ Migration examples:
 ## DEFAULT BEHAVIOR
 
 - If no **\-\-server** flags are specified, no servers are started.
-- If endpoint flags (metrics, healthz, pprof, pyroscope) are specified without http-address, an HTTP server is automatically created on localhost:3366.
+- If endpoint flags (metrics, healthz, pprof, pyroscope) are specified without http-address, an HTTP server is automatically created on 127.0.0.1:3366 (loopback only).
 - If **grpc-address=tcp** is specified without a port, defaults to port 4466.
 - If **grpc-address=unix** is specified without a path, defaults to /var/run/tracee.sock.
 - Existing Unix socket files are automatically cleaned up before starting the gRPC server.
+
+## SECURITY
+
+The HTTP server defaults to binding on **127.0.0.1:3366** (loopback only). Earlier versions bound to **0.0.0.0:3366** (all interfaces), which exposed diagnostic endpoints to the network without authentication.
+
+If you previously relied on the implicit wildcard bind for remote Prometheus scraping, health checks, or pprof access, you must now set an explicit bind address:
+
+- **All interfaces (restore old behavior):**
+
+  ```console
+  --server http-address=0.0.0.0:3366 --server metrics
+  ```
+
+- **Specific network interface (preferred when possible):**
+
+  ```console
+  --server http-address=10.0.0.5:3366 --server metrics
+  ```
+
+- **Config file equivalent:**
+
+  ```yaml
+  server:
+    http-address: "0.0.0.0:3366"
+    metrics: true
+    healthz: true
+  ```
+
+**pprof restriction:** The /debug/pprof/ endpoints are always restricted to loopback clients regardless of the bind address. pprof heap dumps can expose sensitive process memory of a privileged eBPF daemon. If you need remote pprof access, use an SSH tunnel or port forward.
+
+**Kubernetes deployments:** The Helm chart sets `0.0.0.0:3366` explicitly and ships a NetworkPolicy that restricts ingress to Prometheus pods. No action is required for default Helm deployments.
 
 ## SEE ALSO
 
