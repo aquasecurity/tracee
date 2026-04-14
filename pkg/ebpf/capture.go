@@ -194,7 +194,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 			// Rename the file to add hash when last chunk was received
 			if meta.BinType == bufferdecoder.SendKernelModule && uint32(meta.Size)+uint32(meta.Off) == kernelModuleMeta.Size {
 				fileHash, _ := t.computeOutFileHash(fullname)
-				err := fileutil.RenameAt(t.OutDir, fullname, t.OutDir, fullname+"."+fileHash)
+				err := fileutil.RenameAt(t.OutDir, fullname, fullname+"."+fileHash)
 				if err != nil {
 					t.handleError(err)
 					continue
@@ -203,7 +203,7 @@ func (t *Tracee) handleFileCaptures(ctx context.Context) {
 				fileHash, _ := t.computeOutFileHash(fullname)
 				// Delete the random int used to differentiate files
 				dotIndex := strings.LastIndex(fullname, ".")
-				err := fileutil.RenameAt(t.OutDir, fullname, t.OutDir, fullname[:dotIndex]+"."+fileHash)
+				err := fileutil.RenameAt(t.OutDir, fullname, fullname[:dotIndex]+"."+fileHash)
 				if err != nil {
 					t.handleError(err)
 					continue

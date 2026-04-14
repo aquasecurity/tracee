@@ -6,9 +6,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
 	"runtime/debug"
-	"strings"
 
 	"golang.org/x/sys/unix"
 
@@ -16,96 +14,80 @@ import (
 	"github.com/aquasecurity/tracee/common/logger"
 )
 
-// OpenExistingDir open a directory with given path, and return the os.File of it.
-func OpenExistingDir(p string) (*os.File, error) {
-	outDirFD, err := unix.Open(p, unix.O_DIRECTORY|unix.O_PATH, 0)
+// OpenRootDir opens a directory as an os.Root, providing traversal-resistant
+// file operations. All file access through the returned Root is confined to
+// the directory tree: symlinks that escape the root and ".." traversals are
+// rejected. O_NOFOLLOW is applied to the initial open so that if p itself is
+// a symlink, the call fails with ELOOP.
+func OpenRootDir(p string) (*os.Root, error) {
+	fd, err := unix.Open(p, unix.O_DIRECTORY|unix.O_PATH|unix.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return os.NewFile(uintptr(outDirFD), p), nil
+	_ = unix.Close(fd)
+
+	return os.OpenRoot(p)
 }
 
-// OpenAt is a wrapper function to the `openat` syscall using golang types.
-func OpenAt(dir *os.File, relativePath string, flags int, perm fs.FileMode) (*os.File, error) {
-	pidFileFD, err := unix.Openat(int(dir.Fd()), relativePath, flags, uint32(perm))
+// OpenAt opens a file relative to root with the given flags and permissions.
+// The operation is traversal-resistant: symlinks that escape root and ".."
+// path components that would leave the tree are rejected by os.Root.
+func OpenAt(root *os.Root, relativePath string, flags int, perm fs.FileMode) (*os.File, error) {
+	f, err := root.OpenFile(relativePath, flags, perm)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return os.NewFile(uintptr(pidFileFD), path.Join(dir.Name(), relativePath)), nil
+	return f, nil
 }
 
-// RemoveAt is a wrapper function to the `unlinkat` syscall using golang types.
-func RemoveAt(dir *os.File, relativePath string, flags int) error {
-	if err := unix.Unlinkat(int(dir.Fd()), relativePath, flags); err != nil {
+// CreateAt creates or truncates a file relative to root.
+func CreateAt(root *os.Root, relativePath string) (*os.File, error) {
+	f, err := root.Create(relativePath)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+	return f, nil
+}
+
+// RemoveAt removes a file or (empty) directory relative to root.
+// The flags parameter is accepted for API compatibility but is unused;
+// os.Root.Remove handles both files and empty directories.
+func RemoveAt(root *os.Root, relativePath string, _ int) error {
+	return root.Remove(relativePath)
+}
+
+// MkdirAtExist creates a directory relative to root, ignoring "already exists"
+// errors.
+func MkdirAtExist(root *os.Root, relativePath string, perm fs.FileMode) error {
+	err := root.Mkdir(relativePath, perm)
+	if err != nil && !errors.Is(err, fs.ErrExist) {
 		return errfmt.WrapError(err)
 	}
-
 	return nil
 }
 
-// MkdirAt is a wrapper function to the `mkdirat` syscall using golang types.
-func MkdirAt(dir *os.File, relativePath string, perm fs.FileMode) error {
-	return unix.Mkdirat(int(dir.Fd()), relativePath, uint32(perm))
-}
-
-// MkdirAtExist is a wrapper function to the `mkdirat` syscall using golang types, ignoring EEXIST error.
-func MkdirAtExist(dir *os.File, relativePath string, perm fs.FileMode) error {
-	err := unix.Mkdirat(int(dir.Fd()), relativePath, uint32(perm))
+// MkdirAllAtExist recursively creates a directory and all necessary parents
+// relative to root, ignoring "already exists" errors.
+func MkdirAllAtExist(root *os.Root, relativePath string, perm fs.FileMode) error {
+	err := root.MkdirAll(relativePath, perm)
 	if err != nil {
-		// Seems that os.ErrExist doesn't catch the error (at least on Manjaro distro)
-		if err != os.ErrExist && err.Error() != "file exists" {
-			return errfmt.WrapError(err)
-		}
+		return errfmt.WrapError(err)
 	}
 	return nil
 }
 
-// MkdirAllAtExist recursively creates a directory and all necessary parents using mkdirat, ignoring EEXIST errors.
-func MkdirAllAtExist(dir *os.File, relativePath string, perm fs.FileMode) error {
-	cleanPath := path.Clean(relativePath)
-	if cleanPath == "." || cleanPath == "/" {
-		return nil
-	}
-
-	parts := strings.Split(cleanPath, "/")
-	var curr string
-	for _, part := range parts {
-		if part == "" || part == "." {
-			continue
-		}
-
-		if curr == "" {
-			curr = part
-		} else {
-			curr = path.Join(curr, part)
-		}
-
-		err := MkdirAtExist(dir, curr, perm)
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-	}
-
-	return nil
+// RenameAt renames a file within a root directory.
+func RenameAt(root *os.Root, oldpath string, newpath string) error {
+	return root.Rename(oldpath, newpath)
 }
 
-// CreateAt implements the same logic as os.Create using directory FD and relative path.
-func CreateAt(dir *os.File, relativePath string) (*os.File, error) {
-	return OpenAt(dir, relativePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
-}
-
-// Dup is a wrapper function to the `dup` syscall using golang types.
+// Dup is a wrapper function to the dup syscall using golang types.
 func Dup(file *os.File) (*os.File, error) {
 	newFD, err := unix.Dup(int(file.Fd()))
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 	return os.NewFile(uintptr(newFD), file.Name()), nil
-}
-
-// RenameAt is a wrapper function to the `renameat` syscall using golang types.
-func RenameAt(olddir *os.File, oldpath string, newdir *os.File, newpath string) error {
-	return unix.Renameat(int(olddir.Fd()), oldpath, int(newdir.Fd()), newpath)
 }
 
 // CopyRegularFileByPath copies a file from src to dst
@@ -143,9 +125,9 @@ func CopyRegularFileByPath(src, dst string) error {
 }
 
 // CopyRegularFileByRelativePath copies a file from src to dst, where
-// destination is relative to a given directory. This function needs needed
+// destination is relative to a given root directory. This function needs
 // capabilities to be set before it is called.
-func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName string) error {
+func CopyRegularFileByRelativePath(srcName string, dstRoot *os.Root, dstName string) error {
 	sourceFileStat, err := os.Stat(srcName)
 	if err != nil {
 		return errfmt.WrapError(err)
@@ -162,7 +144,7 @@ func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName stri
 			logger.Errorw("Closing file", "error", err)
 		}
 	}()
-	destination, err := CreateAt(dstDir, dstName)
+	destination, err := CreateAt(dstRoot, dstName)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
