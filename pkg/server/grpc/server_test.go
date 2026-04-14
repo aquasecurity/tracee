@@ -70,10 +70,10 @@ func TestServer_Address(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "tcp with port",
+			name:     "tcp with host:port",
 			protocol: "tcp",
-			addr:     "4466",
-			expected: "tcp:4466",
+			addr:     "127.0.0.1:4466",
+			expected: "tcp:127.0.0.1:4466",
 		},
 		{
 			name:     "unix socket",

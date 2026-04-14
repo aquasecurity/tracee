@@ -207,14 +207,24 @@ func parseAndValidateGRPCAddr(address string) (protocol string, addr string, err
 	switch protocol {
 	case "tcp":
 		if len(values) == 2 {
-			addr = values[1]
-			err = validatePort(addr)
-			if err != nil {
+			part := values[1]
+			// Accept "host:port" (e.g. "127.0.0.1:4466" or "0.0.0.0:4466")
+			if host, port, err2 := net.SplitHostPort(part); err2 == nil {
+				if err = validatePort(port); err != nil {
+					return "", "", err
+				}
+				if host == "" {
+					host = "127.0.0.1"
+				}
+				return protocol, host + ":" + port, nil
+			}
+			// Bare port -- default to loopback
+			if err = validatePort(part); err != nil {
 				return "", "", err
 			}
-			return protocol, addr, nil
+			return protocol, "127.0.0.1:" + part, nil
 		}
-		return protocol, defaultGRPCPort, nil
+		return protocol, "127.0.0.1:" + defaultGRPCPort, nil
 	case "unix":
 		if len(values) == 2 {
 			addr = values[1]

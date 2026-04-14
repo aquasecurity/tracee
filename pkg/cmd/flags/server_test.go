@@ -59,21 +59,39 @@ func TestPrepareServer(t *testing.T) {
 			},
 		},
 		{
-			testName: "grpc server with tcp address",
+			testName: "grpc server with tcp address (bare port defaults to loopback)",
 			serverFlags: []string{
 				"grpc-address=tcp:4466",
 			},
 			expected: &expectedServer{
-				GRPCAddress: "tcp:4466",
+				GRPCAddress: "tcp:127.0.0.1:4466",
 			},
 		},
 		{
-			testName: "grpc server with tcp  only",
+			testName: "grpc server with tcp only (defaults to loopback)",
 			serverFlags: []string{
 				"grpc-address=tcp",
 			},
 			expected: &expectedServer{
-				GRPCAddress: "tcp:4466",
+				GRPCAddress: "tcp:127.0.0.1:4466",
+			},
+		},
+		{
+			testName: "grpc server with tcp host:port",
+			serverFlags: []string{
+				"grpc-address=tcp:0.0.0.0:4466",
+			},
+			expected: &expectedServer{
+				GRPCAddress: "tcp:0.0.0.0:4466",
+			},
+		},
+		{
+			testName: "grpc server with tcp explicit loopback",
+			serverFlags: []string{
+				"grpc-address=tcp:127.0.0.1:9999",
+			},
+			expected: &expectedServer{
+				GRPCAddress: "tcp:127.0.0.1:9999",
 			},
 		},
 		// --server http-address and grpc-address
@@ -118,7 +136,7 @@ func TestPrepareServer(t *testing.T) {
 			},
 			expected: &expectedServer{
 				HTTPAddress: ":8080",
-				GRPCAddress: "tcp:4466",
+				GRPCAddress: "tcp:127.0.0.1:4466",
 			},
 		},
 		{
@@ -128,7 +146,7 @@ func TestPrepareServer(t *testing.T) {
 				"grpc-address=tcp:8080",
 			},
 			expected: &expectedServer{
-				GRPCAddress: "tcp:8080",
+				GRPCAddress: "tcp:127.0.0.1:8080",
 			},
 		},
 		// --server metrics
@@ -250,7 +268,7 @@ func TestPrepareServer(t *testing.T) {
 			},
 			expected: &expectedServer{
 				HTTPAddress: ":8080",
-				GRPCAddress: "tcp:4466",
+				GRPCAddress: "tcp:127.0.0.1:4466",
 				Metrics:     true,
 				Healthz:     true,
 				Pprof:       true,
