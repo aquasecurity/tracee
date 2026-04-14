@@ -1,0 +1,12 @@
+name: Swap to Upstream libbpfgo
+description: |
+  Replace the pinned libbpfgo dependency with upstream main branch.
+  Must run after checkout and Go installation.
+runs:
+  using: composite
+  steps:
+    - name: Swap libbpfgo to upstream main
+      run: |
+        go get github.com/aquasecurity/libbpfgo@main
+        go mod tidy
+      shell: sh

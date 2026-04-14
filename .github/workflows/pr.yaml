@@ -4,6 +4,19 @@
 name: PR
 
 on:
+  workflow_call:
+    inputs:
+      tracee_ref:
+        description: "Tracee ref to checkout"
+        required: false
+        default: "main"
+        type: string
+      upstream_libbpfgo:
+        description: "Use upstream libbpfgo (main branch) instead of pinned version"
+        required: false
+        default: false
+        type: boolean
+
   workflow_dispatch:
     inputs:
       tracee_ref:
@@ -11,6 +24,11 @@ on:
         required: true
         default: "main"
         type: string
+      upstream_libbpfgo:
+        description: "Use upstream libbpfgo (main branch) instead of pinned version"
+        required: false
+        default: false
+        type: boolean
 
   pull_request:
     branches:
@@ -44,7 +62,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TRACEE_REF: ${{ github.event.inputs.tracee_ref || github.ref }}
+  TRACEE_REF: ${{ inputs.tracee_ref || github.event.inputs.tracee_ref || github.ref }}
   # Go 1.26 randomizes the heap base address, breaking the eBPF stack_pivot
   # detector's Go heap recognition (see plans/tracee/stack-pivot-go126-issue.md).
   GOEXPERIMENT: norandomizedheapbase64
@@ -104,6 +122,7 @@ jobs:
 
   verify-docs:
     name: Verify Documentation
+    if: inputs.upstream_libbpfgo != true
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     permissions:
       contents: read
@@ -123,6 +142,7 @@ jobs:
 
   verify-analyze-code:
     name: Verify and Analyze Code
+    if: inputs.upstream_libbpfgo != true
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     permissions:
       contents: read
@@ -188,6 +208,7 @@ jobs:
 
   verify-tools:
     name: Verify Other Tools
+    if: inputs.upstream_libbpfgo != true
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
@@ -225,6 +246,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests (x86_64)
+    if: ${{ !cancelled() && !failure() }}
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
@@ -243,7 +265,12 @@ jobs:
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
 
+      - name: Swap to upstream libbpfgo
+        if: inputs.upstream_libbpfgo == true
+        uses: ./.github/actions/swap-upstream-libbpfgo
+
       - name: Cache Go modules
+        if: inputs.upstream_libbpfgo != true
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
@@ -257,6 +284,7 @@ jobs:
 
   unit-tests-arm64:
     name: Unit Tests (ARM64)
+    if: ${{ !cancelled() && !failure() }}
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04-arm') }}
@@ -292,7 +320,12 @@ jobs:
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
 
+      - name: Swap to upstream libbpfgo
+        if: inputs.upstream_libbpfgo == true
+        uses: ./.github/actions/swap-upstream-libbpfgo
+
       - name: Cache Go modules
+        if: inputs.upstream_libbpfgo != true
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
@@ -310,10 +343,11 @@ jobs:
 
   integration-tests:
     name: Integration Tests (x86_64)
+    if: ${{ !cancelled() && !failure() }}
     needs:
       - verify-analyze-code
     runs-on:
-      - graas_ami-03dbff05cae3a30d0_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12.62 x86_64 GRAAS AMI
+      - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }}123 # Noble 6.12.62 x86_64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
     permissions:
@@ -357,7 +391,12 @@ jobs:
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
 
+      - name: Swap to upstream libbpfgo
+        if: inputs.upstream_libbpfgo == true
+        uses: ./.github/actions/swap-upstream-libbpfgo
+
       - name: Cache Go modules
+        if: inputs.upstream_libbpfgo != true
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
@@ -374,10 +413,11 @@ jobs:
 
   integration-tests-arm64:
     name: Integration Tests (ARM64)
+    if: ${{ !cancelled() && !failure() }}
     needs:
       - verify-analyze-code
     runs-on:
-      - graas_ami-07774797557132122_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
+      - graas_ami-07774797557132122_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}_${{ github.run_number }} # Noble 6.12 aarch64 GRAAS AMI
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MEDIUM
     permissions:
@@ -421,7 +461,12 @@ jobs:
       # - name: Setup Tracee
       #   uses: ./.github/actions/setup-tracee-ubuntu
 
+      - name: Swap to upstream libbpfgo
+        if: inputs.upstream_libbpfgo == true
+        uses: ./.github/actions/swap-upstream-libbpfgo
+
       - name: Cache Go modules
+        if: inputs.upstream_libbpfgo != true
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
@@ -442,6 +487,7 @@ jobs:
 
   performance-tests:
     name: Performance Tests
+    if: ${{ !cancelled() && !failure() }}
     needs:
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
@@ -460,7 +506,12 @@ jobs:
       - name: Setup Tracee
         uses: ./.github/actions/setup-tracee-alpine
 
+      - name: Swap to upstream libbpfgo
+        if: inputs.upstream_libbpfgo == true
+        uses: ./.github/actions/swap-upstream-libbpfgo
+
       - name: Cache Go modules
+        if: inputs.upstream_libbpfgo != true
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |
@@ -499,7 +550,7 @@ jobs:
     needs:
       - generate-matrix
     runs-on:
-      - graas_ami-${{ matrix.ami }}_${{ github.event.number }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
+      - graas_ami-${{ matrix.ami }}_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}_${{ matrix.sufix }}
       - EXECUTION_TYPE=LONG
       - INSTANCE_TYPE=XLARGE
     permissions:
@@ -524,7 +575,12 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
 
+      - name: Swap to upstream libbpfgo
+        if: inputs.upstream_libbpfgo == true
+        uses: ./.github/actions/swap-upstream-libbpfgo
+
       - name: Cache Go modules
+        if: inputs.upstream_libbpfgo != true
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
         with:
           path: |

@@ -1,5 +1,5 @@
 #
-# Daily Test: Upstream libbpfgo compatibility
+# Daily Test: Run full PR test suite against upstream libbpfgo (main branch)
 #
 name: Upstream libbpfgo Compatibility
 
@@ -7,41 +7,15 @@ on:
   workflow_dispatch: {}
 
   schedule:
-    # Daily At 03:00
+    # Daily at 03:00 UTC
     - cron: "0 3 * * *"
 
 permissions: {}
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  compile-tracee:
-    name: Upstream libbpfgo Compatibility
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+  pr-tests:
+    uses: ./.github/workflows/pr.yaml
+    with:
+      upstream_libbpfgo: true
     permissions:
       contents: read
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          submodules: true
-
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
-
-      - name: Cache Go modules
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
-
-      - name: Compile Tracee
-        run: make test-upstream-libbpfgo
-        shell: sh
