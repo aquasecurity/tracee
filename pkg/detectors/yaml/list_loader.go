@@ -17,10 +17,15 @@ var (
 
 // loadListFile reads and parses a single list definition file
 func loadListFile(filePath string) (*ListDefinition, error) {
-	// Check file size
-	fileInfo, err := os.Stat(filePath)
+	// Use Lstat to avoid following symlinks and to reject non-regular files
+	// (FIFOs, device files, sockets). os.ReadFile on a FIFO blocks indefinitely.
+	fileInfo, err := os.Lstat(filePath)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
+	}
+
+	if !fileInfo.Mode().IsRegular() {
+		return nil, errfmt.Errorf("not a regular file: %s", filePath)
 	}
 
 	if fileInfo.Size() > MaxYAMLFileSize {
