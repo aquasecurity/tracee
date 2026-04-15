@@ -59,7 +59,7 @@ func loadYAMLContent(yamlSearchDirs []string) yamldetectors.LoadResult {
 	result := yamldetectors.LoadFromDirectories(yamlDirs)
 	if len(result.Errors) > 0 {
 		for _, err := range result.Errors {
-			logger.Warnw("Failed to load YAML content", "error", err)
+			logger.Errorw("Failed to load YAML content", "error", err)
 		}
 	}
 

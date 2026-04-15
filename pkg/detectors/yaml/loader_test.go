@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -82,6 +83,42 @@ func TestLoadFromDirectories(t *testing.T) {
 		assert.Empty(t, result.Lists)
 		assert.Empty(t, result.Errors)
 	})
+}
+
+func TestLoadFromDirectory_DuplicateListAborts(t *testing.T) {
+	dir := t.TempDir()
+
+	// First list file (lexically earlier)
+	list1 := `type: string_list
+name: MY_LIST
+values:
+  - alpha
+  - bravo
+`
+	// Second list file with the same name (lexically later)
+	list2 := `type: string_list
+name: MY_LIST
+values:
+  - charlie
+  - delta
+`
+	require.NoError(t, os.WriteFile(dir+"/aaa_list.yaml", []byte(list1), 0o644))
+	require.NoError(t, os.WriteFile(dir+"/zzz_list.yaml", []byte(list2), 0o644))
+
+	result := LoadFromDirectory(dir)
+
+	assert.Empty(t, result.Detectors, "no detectors should be loaded when list is ambiguous")
+	require.NotEmpty(t, result.Errors, "duplicate list must produce an error")
+
+	found := false
+	for _, e := range result.Errors {
+		if le, ok := e.(*LoaderError); ok {
+			if assert.Contains(t, le.Err.Error(), "duplicate list name") {
+				found = true
+			}
+		}
+	}
+	assert.True(t, found, "expected a LoaderError about duplicate list name")
 }
 
 func TestGetDefaultSearchPaths(t *testing.T) {
