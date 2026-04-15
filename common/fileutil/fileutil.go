@@ -203,6 +203,36 @@ func IsDirEmpty(pathname string) (bool, error) {
 	return false, errfmt.WrapError(err)
 }
 
+// SafeOpenFile opens a file with O_NOFOLLOW, refusing to follow a symlink at
+// the final path component. Use this for absolute or user-supplied paths that
+// are not under an os.Root context.
+func SafeOpenFile(path string, flag int, perm os.FileMode) (*os.File, error) {
+	f, err := os.OpenFile(path, flag|unix.O_NOFOLLOW, perm)
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	return f, nil
+}
+
+// SafeRemoveAll verifies with Lstat that path is not a symlink before calling
+// os.RemoveAll. This prevents a top-level symlink from redirecting the
+// recursive delete into an attacker-chosen tree.
+func SafeRemoveAll(path string) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return errfmt.WrapError(err)
+	}
+	if info.Mode()&os.ModeSymlink != 0 {
+		return errfmt.Errorf("refusing to remove symlink target: %s", path)
+	}
+
+	return os.RemoveAll(path)
+}
+
 // Protected memory access functionality
 
 var ErrMemoryAccess = errors.New("invalid memory access")

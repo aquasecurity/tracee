@@ -10,6 +10,7 @@ import (
 	embed "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
@@ -39,10 +40,9 @@ func BpfObject(cfg *config.Config, kConfig *environment.KernelConfig, osInfo *en
 	// BTF unavailable: check embedded BTF files
 
 	if !environment.OSBTFEnabled() && btfFilePath == "" {
-		// Use temp directory for BTF file unpacking
-		tempDir := filepath.Join(os.TempDir(), "tracee-btf")
-		if err := os.MkdirAll(tempDir, 0755); err != nil {
-			return errfmt.Errorf("could not create temp dir for BTF: %v", err)
+		tempDir, mkErr := os.MkdirTemp("", "tracee-btf-*")
+		if mkErr != nil {
+			return errfmt.Errorf("could not create temp dir for BTF: %v", mkErr)
 		}
 		unpackBTFFile := filepath.Join(tempDir, "tracee.btf")
 		err = unpackBTFHub(unpackBTFFile, osInfo)
@@ -113,7 +113,7 @@ func unpackBTFHub(outFilePath string, osInfo *environment.OSInfo) error {
 		}
 	}()
 
-	outFile, err := os.Create(outFilePath)
+	outFile, err := fileutil.SafeOpenFile(outFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return errfmt.Errorf("could not create btf file: %s", err.Error())
 	}
