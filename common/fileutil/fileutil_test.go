@@ -694,6 +694,106 @@ func TestIsDirEmpty(t *testing.T) {
 	})
 }
 
+// --- SafeOpenFile and SafeRemoveAll tests ---
+
+func TestSafeOpenFile(t *testing.T) {
+	tempDir := t.TempDir()
+
+	t.Run("open regular file", func(t *testing.T) {
+		p := filepath.Join(tempDir, "regular.txt")
+		if err := os.WriteFile(p, []byte("data"), 0644); err != nil {
+			t.Fatalf("Failed to create file: %v", err)
+		}
+
+		f, err := SafeOpenFile(p, os.O_RDONLY, 0)
+		if err != nil {
+			t.Fatalf("SafeOpenFile should open regular file: %v", err)
+		}
+		f.Close()
+	})
+
+	t.Run("create new file", func(t *testing.T) {
+		p := filepath.Join(tempDir, "new.txt")
+
+		f, err := SafeOpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		if err != nil {
+			t.Fatalf("SafeOpenFile should create file: %v", err)
+		}
+		f.Close()
+
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("File should exist: %v", err)
+		}
+	})
+
+	t.Run("reject symlink", func(t *testing.T) {
+		real := filepath.Join(tempDir, "real_safe.txt")
+		if err := os.WriteFile(real, []byte("secret"), 0644); err != nil {
+			t.Fatalf("Failed to create file: %v", err)
+		}
+		link := filepath.Join(tempDir, "link_safe.txt")
+		if err := os.Symlink(real, link); err != nil {
+			t.Fatalf("Failed to create symlink: %v", err)
+		}
+
+		_, err := SafeOpenFile(link, os.O_RDONLY, 0)
+		if err == nil {
+			t.Fatal("SafeOpenFile should reject symlink")
+		}
+	})
+}
+
+func TestSafeRemoveAll(t *testing.T) {
+	t.Run("remove real directory", func(t *testing.T) {
+		tempDir := t.TempDir()
+		target := filepath.Join(tempDir, "removeme")
+		if err := os.MkdirAll(filepath.Join(target, "sub"), 0755); err != nil {
+			t.Fatalf("Failed to create dirs: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(target, "sub", "f.txt"), []byte("x"), 0644); err != nil {
+			t.Fatalf("Failed to create file: %v", err)
+		}
+
+		if err := SafeRemoveAll(target); err != nil {
+			t.Fatalf("SafeRemoveAll should remove real dir: %v", err)
+		}
+
+		if _, err := os.Stat(target); !os.IsNotExist(err) {
+			t.Error("Directory should have been removed")
+		}
+	})
+
+	t.Run("reject symlink", func(t *testing.T) {
+		tempDir := t.TempDir()
+		realDir := filepath.Join(tempDir, "real_dir")
+		if err := os.Mkdir(realDir, 0755); err != nil {
+			t.Fatalf("Failed to create dir: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(realDir, "precious.txt"), []byte("keep"), 0644); err != nil {
+			t.Fatalf("Failed to create file: %v", err)
+		}
+
+		symDir := filepath.Join(tempDir, "sym_dir")
+		if err := os.Symlink(realDir, symDir); err != nil {
+			t.Fatalf("Failed to create symlink: %v", err)
+		}
+
+		if err := SafeRemoveAll(symDir); err == nil {
+			t.Fatal("SafeRemoveAll should reject symlink")
+		}
+
+		if _, err := os.Stat(filepath.Join(realDir, "precious.txt")); err != nil {
+			t.Fatal("Real directory contents should not have been deleted")
+		}
+	})
+
+	t.Run("non-existent path is no-op", func(t *testing.T) {
+		if err := SafeRemoveAll("/path/that/does/not/exist"); err != nil {
+			t.Errorf("SafeRemoveAll should silently succeed for non-existent path: %v", err)
+		}
+	})
+}
+
 // --- Symlink and path traversal security tests ---
 
 func TestOpenRootDir_RejectsSymlink(t *testing.T) {

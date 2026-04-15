@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
+	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
@@ -57,28 +58,28 @@ func Test_TraceeCapture(t *testing.T) {
 		{
 			name:           "capture write/read",
 			coolDown:       0 * time.Second,
-			directory:      "/tmp/tracee/1",
+			directory:      flags.DefaultArtifactsDir + "/1",
 			captureFilters: []string{outputWriteFilter, outputReadFilter},
 			test:           readWriteCaptureTest,
 		},
 		{
 			name:           "capture write/readv",
 			coolDown:       2 * time.Second,
-			directory:      "/tmp/tracee/2",
+			directory:      flags.DefaultArtifactsDir + "/2",
 			captureFilters: []string{outputWriteFilter, outputReadFilter},
 			test:           readWritevCaptureTest,
 		},
 		{
 			name:           "capture pipe write/read",
 			coolDown:       2 * time.Second,
-			directory:      "/tmp/tracee/3",
+			directory:      flags.DefaultArtifactsDir + "/3",
 			captureFilters: []string{pipeWriteFilter, pipeReadFilter},
 			test:           readWritePipe,
 		},
 		{
 			name:           "capture packet context",
 			coolDown:       2 * time.Second,
-			directory:      "/tmp/tracee/4",
+			directory:      flags.DefaultArtifactsDir + "/4",
 			captureFilters: []string{"network", "network.pcap.split=single,command,container,process"},
 			test:           packetContext,
 		},

@@ -15,6 +15,7 @@ import (
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/environment"
 	uproc "github.com/aquasecurity/tracee/common/proc"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/cmd/initialize"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
@@ -165,7 +166,7 @@ func PrepareArtifacts() *config.ArtifactsConfig {
 		FileWrite: config.FileArtifactsConfig{
 			PathFilter: []string{},
 		},
-		OutputPath: filepath.Join("/tmp/tracee", "out"),
+		OutputPath: filepath.Join(flags.DefaultArtifactsDir, "out"),
 	}
 }
 

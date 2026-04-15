@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 	"time"
 
+	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
@@ -46,13 +46,29 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 		}
 	}
 
-	// Set restrictive permissions on Unix socket
+	// Set restrictive permissions on Unix socket using fd-based Fchmod
+	// to avoid TOCTOU between Listen and Chmod.
 	if s.protocol == "unix" {
-		err = os.Chmod(s.listenAddr, 0600)
-		if err != nil {
-			logger.Errorw("Failed to set permissions on Unix socket. This may leave the socket with insecure permissions and allow unauthorized access.", "path", s.listenAddr, "error", err)
-			_ = lis.Close()
-			return
+		if uc, ok := lis.(*net.UnixListener); ok {
+			raw, rawErr := uc.SyscallConn()
+			if rawErr != nil {
+				logger.Errorw("Failed to get syscall conn for Unix socket", "path", s.listenAddr, "error", rawErr)
+				_ = lis.Close()
+				return
+			}
+			var chmodErr error
+			if ctrlErr := raw.Control(func(fd uintptr) {
+				chmodErr = unix.Fchmod(int(fd), 0600)
+			}); ctrlErr != nil {
+				logger.Errorw("Failed to access Unix socket fd", "path", s.listenAddr, "error", ctrlErr)
+				_ = lis.Close()
+				return
+			}
+			if chmodErr != nil {
+				logger.Errorw("Failed to set permissions on Unix socket. This may leave the socket with insecure permissions and allow unauthorized access.", "path", s.listenAddr, "error", chmodErr)
+				_ = lis.Close()
+				return
+			}
 		}
 	}
 
