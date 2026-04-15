@@ -19,6 +19,13 @@ import (
 // in non-network events to prevent excessive memory allocation
 const maxNonNetworkByteArraySize = 32 * 1024 // 32KB
 
+// maxArgNum caps the ARGS_ARR_T element count to match the eBPF-side
+// MAX_ARR_LEN (8192). The kernel allows up to MAX_ARG_STRINGS
+// (0x7FFFFFFF, include/uapi/linux/binfmts.h) strings per execve, but
+// the eBPF helper only sends at most 8191 bytes of payload; without
+// this cap the decoder would allocate unbounded placeholder slices.
+const maxArgNum = 8192
+
 // readArgFromBuff read the next argument from the buffer.
 // Return the index of the argument and the parsed argument.
 func readArgFromBuff(
@@ -115,6 +122,9 @@ func readArgFromBuff(
 		err = ebpfMsgDecoder.DecodeUint32(&argNum)
 		if err != nil {
 			return uint(argIdx), arg, errfmt.Errorf("error reading args number: %v", err)
+		}
+		if argNum > maxArgNum {
+			argNum = maxArgNum
 		}
 		resBytes, err := ebpfMsgDecoder.ReadBytesLen(int(arrLen))
 		if err != nil {
