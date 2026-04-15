@@ -3,12 +3,12 @@ package flags
 import (
 	"fmt"
 	"math"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
@@ -38,8 +38,8 @@ const (
 	pcapOptions = "options"
 	pcapSnaplen = "snaplen"
 
-	// Default values
-	defaultArtifactsDir = "/tmp/tracee"
+	// DefaultArtifactsDir is the base directory for artifact storage.
+	DefaultArtifactsDir = "/var/lib/tracee"
 	defaultPcapLength   = 96
 
 	artifactsInvalidOptionFormat = "invalid artifacts option: %s, run 'tracee man artifacts' for more info"
@@ -108,7 +108,7 @@ func (a *ArtifactsConfig) GetArtifactsConfig() config.ArtifactsConfig {
 	artifacts := config.ArtifactsConfig{}
 
 	// Set output path
-	outDir := defaultArtifactsDir
+	outDir := DefaultArtifactsDir
 	if a.Dir.Path != "" {
 		outDir = a.Dir.Path
 	}
@@ -152,7 +152,7 @@ func (a *ArtifactsConfig) GetArtifactsConfig() config.ArtifactsConfig {
 
 	// Clear dir if needed
 	if a.Dir.Clear {
-		if err := os.RemoveAll(artifacts.OutputPath); err != nil {
+		if err := fileutil.SafeRemoveAll(artifacts.OutputPath); err != nil {
 			logger.Warnw("Removing all", "error", err)
 		}
 	}

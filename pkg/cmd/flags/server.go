@@ -231,9 +231,12 @@ func parseAndValidateGRPCAddr(address string) (protocol string, addr string, err
 	case "unix":
 		if len(values) == 2 {
 			addr = values[1]
-			if _, err = os.Stat(addr); err == nil {
-				err = os.Remove(addr)
-				if err != nil {
+			fi, statErr := os.Lstat(addr)
+			if statErr == nil {
+				if fi.Mode()&os.ModeSymlink != 0 {
+					return "", "", errfmt.Errorf("socket path is a symlink: %s", addr)
+				}
+				if err = os.Remove(addr); err != nil {
 					return "", "", errfmt.Errorf("failed to cleanup gRPC listening address (%s): %v", addr, err)
 				}
 			}

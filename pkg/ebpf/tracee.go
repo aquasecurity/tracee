@@ -665,7 +665,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize artifacts directory
 
-	if err := os.MkdirAll(t.config.Artifacts.OutputPath, 0755); err != nil {
+	if err := os.MkdirAll(t.config.Artifacts.OutputPath, 0750); err != nil {
 		t.Close()
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
