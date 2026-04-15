@@ -78,8 +78,8 @@ func findGoSigs(dir string) ([]detect.Signature, []detect.DataSource, error) {
 				logger.Errorw("Stat plugin file", "path", path, "error", lErr)
 				return lErr
 			}
-			if info.Mode()&os.ModeSymlink != 0 {
-				logger.Warnw("Skipping symlinked plugin", "path", path)
+			if !info.Mode().IsRegular() {
+				logger.Warnw("Skipping non-regular plugin file", "path", path)
 				return nil
 			}
 

@@ -61,10 +61,8 @@ func CreateAt(root *os.Root, relativePath string) (*os.File, error) {
 }
 
 // RemoveAt removes a file or (empty) directory relative to root.
-// The flags parameter is accepted for API compatibility but is unused;
-// os.Root.Remove handles both files and empty directories.
-func RemoveAt(root *os.Root, relativePath string, _ int) error {
-	return root.Remove(relativePath)
+func RemoveAt(root *os.Root, relativePath string) error {
+	return errfmt.WrapError(root.Remove(relativePath))
 }
 
 // MkdirAtExist creates a directory relative to root, ignoring "already exists"

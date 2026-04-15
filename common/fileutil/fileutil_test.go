@@ -190,7 +190,7 @@ func TestRemoveAt(t *testing.T) {
 			t.Fatalf("Failed to create test file: %v", err)
 		}
 
-		if err := RemoveAt(root, testFile, 0); err != nil {
+		if err := RemoveAt(root, testFile); err != nil {
 			t.Errorf("Failed to remove file: %v", err)
 		}
 
@@ -206,7 +206,7 @@ func TestRemoveAt(t *testing.T) {
 			t.Fatalf("Failed to create test dir: %v", err)
 		}
 
-		if err := RemoveAt(root, testDirName, 0); err != nil {
+		if err := RemoveAt(root, testDirName); err != nil {
 			t.Errorf("Failed to remove directory: %v", err)
 		}
 
@@ -216,7 +216,7 @@ func TestRemoveAt(t *testing.T) {
 	})
 
 	t.Run("remove non-existing file", func(t *testing.T) {
-		if err := RemoveAt(root, "does_not_exist.txt", 0); err == nil {
+		if err := RemoveAt(root, "does_not_exist.txt"); err == nil {
 			t.Error("Expected error when removing non-existing file")
 		}
 	})
