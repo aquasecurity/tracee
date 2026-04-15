@@ -2,7 +2,7 @@
 title: TRACEE-ARTIFACTS
 section: 1
 header: Tracee Artifacts Flag Manual
-date: 2024/06
+date: 2026/04
 ...
 
 ## NAME
@@ -31,7 +31,7 @@ Possible artifacts options:
 - **network.pcap.split=\<split_mode\>**: Capture separate pcap files organized by split mode: single, process, container, command (comma-separated).
 - **network.pcap.options=\<option\>**: Network capturing options: none (default) or filtered.
 - **network.pcap.snaplen=\<size\>**: Sets captured payload from each packet: default, headers, max, or SIZE (e.g., 256b, 512b, 1kb, 2kb, 4kb).
-- **dir.path=\<path\>**: Path where tracee will save produced artifacts. The artifact will be saved into an 'out' subdirectory (default: /tmp/tracee).
+- **dir.path=\<path\>**: Path where tracee will save produced artifacts. The artifact will be saved into an 'out' subdirectory (default: /var/lib/tracee).
 - **dir.clear**: Clear the captured artifacts output dir before starting (default: false).
 
 ### File Capture Filters

@@ -90,7 +90,7 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	}
 
 	if artifacts == nil {
-		artifacts = PrepareArtifacts()
+		artifacts = PrepareArtifacts(t)
 	}
 
 	cfg.Artifacts = artifacts
@@ -157,15 +157,14 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 	return trc, nil
 }
 
-// prepareArtifacts prepares an artifacts config for tracee
-func PrepareArtifacts() *config.ArtifactsConfig {
-	// taken from tracee-rule github project, might have to adjust...
-	// prepareArtifacts is called with nil input
+// PrepareArtifacts prepares an artifacts config for tracee using a
+// test-scoped temp directory so tests never write to system paths.
+func PrepareArtifacts(t *testing.T) *config.ArtifactsConfig {
 	return &config.ArtifactsConfig{
 		FileWrite: config.FileArtifactsConfig{
 			PathFilter: []string{},
 		},
-		OutputPath: filepath.Join("/tmp/tracee", "out"),
+		OutputPath: filepath.Join(t.TempDir(), "out"),
 	}
 }
 

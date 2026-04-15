@@ -73,6 +73,16 @@ func findGoSigs(dir string) ([]detect.Signature, []detect.DataSource, error) {
 				return nil
 			}
 
+			info, lErr := os.Lstat(path)
+			if lErr != nil {
+				logger.Errorw("Stat plugin file", "path", path, "error", lErr)
+				return lErr
+			}
+			if !info.Mode().IsRegular() {
+				logger.Warnw("Skipping non-regular plugin file", "path", path)
+				return nil
+			}
+
 			p, err := plugin.Open(path)
 			if err != nil {
 				logger.Errorw("Opening plugin " + path + ": " + err.Error())
