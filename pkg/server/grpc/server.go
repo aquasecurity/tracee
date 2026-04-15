@@ -37,8 +37,7 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 
 	if s.protocol == "tcp" {
 		host, _, _ := net.SplitHostPort(s.listenAddr)
-		ip := net.ParseIP(host)
-		if ip == nil || !ip.IsLoopback() {
+		if !isLoopbackHost(host) {
 			logger.Warnw("gRPC server binding to non-loopback address without TLS or authentication",
 				"address", s.listenAddr,
 				"hint", "ensure network-level controls (firewall, NetworkPolicy) restrict access",
@@ -119,4 +118,27 @@ func (s *Server) Address() string {
 
 func (s *Server) cleanup() {
 	s.server.GracefulStop()
+}
+
+// isLoopbackHost returns true when host is a loopback IP or a hostname
+// that resolves exclusively to loopback addresses. IP literals are
+// checked directly without DNS. For hostnames, resolution is attempted
+// first; if it fails (e.g. minimal container without /etc/hosts),
+// "localhost" is assumed loopback since net.Listen would also fail to
+// bind in that case.
+func isLoopbackHost(host string) bool {
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	addrs, err := net.LookupHost(host)
+	if err != nil {
+		return host == "localhost"
+	}
+	for _, a := range addrs {
+		if ip := net.ParseIP(a); ip == nil || !ip.IsLoopback() {
+			return false
+		}
+	}
+
+	return len(addrs) > 0
 }

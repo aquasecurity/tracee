@@ -29,6 +29,8 @@ Supported protocols are:
 A bare port (e.g., tcp:4466) binds to \f[B]127.0.0.1\f[R] (loopback
 only).
 To bind to a specific interface, use host:port (e.g., tcp:0.0.0.0:4466).
+IPv6 addresses must be enclosed in square brackets (e.g.,
+tcp:[::1]:4466).
 If no port is specified, defaults to 127.0.0.1:4466.
 .IP \[bu] 2
 \f[B]unix:<socket_path>\f[R]: Unix domain socket (e.g.,
@@ -74,6 +76,14 @@ To enable gRPC server on a specific TCP port (loopback only):
 .IP
 .EX
 \-\-server grpc\-address=tcp:4466
+.EE
+.RE
+.IP \[bu] 2
+To enable gRPC server on IPv6 loopback:
+.RS 2
+.IP
+.EX
+\-\-server grpc\-address=tcp:[::1]:4466
 .EE
 .RE
 .IP \[bu] 2

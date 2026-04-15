@@ -665,7 +665,7 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize artifacts directory
 
-	if err := os.MkdirAll(t.config.Artifacts.OutputPath, 0755); err != nil {
+	if err := os.MkdirAll(t.config.Artifacts.OutputPath, 0750); err != nil {
 		t.Close()
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
@@ -1676,8 +1676,8 @@ func (t *Tracee) initBPFProbes() error {
 
 	newModuleArgs := bpf.NewModuleArgs{
 		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
-		BTFObjPath:      t.config.BTFObjPath,
-		BPFObjBuff:      t.config.BPFObjBytes,
+		BTFObjPath:      t.config.BPF.BTFObjPath,
+		BPFObjBuff:      t.config.BPF.ObjBytes,
 	}
 
 	// Open the eBPF object file (create a new module)
@@ -1689,7 +1689,7 @@ func (t *Tracee) initBPFProbes() error {
 
 	// Initialize probes
 
-	t.defaultProbes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), false, t.config.BPFObjPath)
+	t.defaultProbes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), false, t.config.BPF.ObjPath)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1710,9 +1710,8 @@ func (t *Tracee) initBPF() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Need to force nil to allow the garbage
-	// collector to free the BPF object
-	t.config.BPFObjBytes = nil
+	// Release temp BTF dir and BPF object bytes so the GC can reclaim memory.
+	t.config.BPF.Cleanup()
 
 	// Populate eBPF maps with initial data
 

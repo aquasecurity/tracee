@@ -60,6 +60,64 @@ func grpcClient(protocol, addr string) pb.TraceeServiceClient {
 	return pb.NewTraceeServiceClient(conn)
 }
 
+func TestIsLoopbackHost(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		host     string
+		expected bool
+	}{
+		{
+			name:     "IPv4 loopback",
+			host:     "127.0.0.1",
+			expected: true,
+		},
+		{
+			name:     "IPv6 loopback",
+			host:     "::1",
+			expected: true,
+		},
+		{
+			name:     "localhost hostname",
+			host:     "localhost",
+			expected: true,
+		},
+		{
+			name:     "wildcard IPv4",
+			host:     "0.0.0.0",
+			expected: false,
+		},
+		{
+			name:     "wildcard IPv6",
+			host:     "::",
+			expected: false,
+		},
+		{
+			name:     "private IPv4",
+			host:     "10.0.0.1",
+			expected: false,
+		},
+		{
+			name:     "empty string",
+			host:     "",
+			expected: false,
+		},
+		{
+			name:     "unresolvable hostname",
+			host:     "no-such-host.invalid",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isLoopbackHost(tt.host)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestServer_Address(t *testing.T) {
 	t.Parallel()
 

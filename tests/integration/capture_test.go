@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/goleak"
 
-	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/pcaps"
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
@@ -43,6 +42,8 @@ func Test_TraceeCapture(t *testing.T) {
 	homeDir, err := os.UserHomeDir()
 	require.NoError(t, err)
 
+	artifactDir := t.TempDir()
+
 	outputWriteFilter := fmt.Sprintf("file-write.filters=path=%s/output*", homeDir)
 	outputReadFilter := fmt.Sprintf("file-read.filters=path=%s/output*", homeDir)
 	pipeWriteFilter := fmt.Sprintf("file-write.filters=path=%s/pipe*", homeDir)
@@ -58,28 +59,28 @@ func Test_TraceeCapture(t *testing.T) {
 		{
 			name:           "capture write/read",
 			coolDown:       0 * time.Second,
-			directory:      flags.DefaultArtifactsDir + "/1",
+			directory:      artifactDir + "/1",
 			captureFilters: []string{outputWriteFilter, outputReadFilter},
 			test:           readWriteCaptureTest,
 		},
 		{
 			name:           "capture write/readv",
 			coolDown:       2 * time.Second,
-			directory:      flags.DefaultArtifactsDir + "/2",
+			directory:      artifactDir + "/2",
 			captureFilters: []string{outputWriteFilter, outputReadFilter},
 			test:           readWritevCaptureTest,
 		},
 		{
 			name:           "capture pipe write/read",
 			coolDown:       2 * time.Second,
-			directory:      flags.DefaultArtifactsDir + "/3",
+			directory:      artifactDir + "/3",
 			captureFilters: []string{pipeWriteFilter, pipeReadFilter},
 			test:           readWritePipe,
 		},
 		{
 			name:           "capture packet context",
 			coolDown:       2 * time.Second,
-			directory:      flags.DefaultArtifactsDir + "/4",
+			directory:      artifactDir + "/4",
 			captureFilters: []string{"network", "network.pcap.split=single,command,container,process"},
 			test:           packetContext,
 		},

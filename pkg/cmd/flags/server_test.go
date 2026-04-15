@@ -319,6 +319,26 @@ func TestPrepareServer(t *testing.T) {
 			expectedError: errors.New(invalidPortNumberRangeErrorMsg("99999999")),
 		},
 		{
+			testName:    "valid grpc IPv6 loopback",
+			serverFlags: []string{"grpc-address=tcp:[::1]:4466"},
+			expected: &expectedServer{
+				GRPCAddress: "tcp:[::1]:4466",
+			},
+		},
+		{
+			testName:    "valid grpc IPv6 wildcard",
+			serverFlags: []string{"grpc-address=tcp:[::]:4466"},
+			expected: &expectedServer{
+				GRPCAddress: "tcp:[::]:4466",
+			},
+		},
+		{
+			testName:      "bare IPv6 without brackets",
+			serverFlags:   []string{"grpc-address=tcp:::1:4466"},
+			expected:      nil,
+			expectedError: errors.New("IPv6 addresses must be in brackets"),
+		},
+		{
 			testName:      "invalid metrics flag",
 			serverFlags:   []string{"metrics=invalid"},
 			expected:      nil,

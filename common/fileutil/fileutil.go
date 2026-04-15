@@ -3,6 +3,7 @@ package fileutil
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -18,15 +19,25 @@ import (
 // file operations. All file access through the returned Root is confined to
 // the directory tree: symlinks that escape the root and ".." traversals are
 // rejected. O_NOFOLLOW is applied to the initial open so that if p itself is
-// a symlink, the call fails with ELOOP.
+// a symlink, the call fails with ELOOP. The Root is constructed from the
+// already-open fd via /proc/self/fd to avoid a TOCTOU window between the
+// symlink check and the Root creation. Requires /proc mounted (standard
+// on Linux, where Tracee exclusively runs).
 func OpenRootDir(p string) (*os.Root, error) {
 	fd, err := unix.Open(p, unix.O_DIRECTORY|unix.O_PATH|unix.O_NOFOLLOW, 0)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	_ = unix.Close(fd)
 
-	return os.OpenRoot(p)
+	root, err := os.OpenRoot(fmt.Sprintf("/proc/self/fd/%d", fd))
+	if closeErr := unix.Close(fd); closeErr != nil {
+		logger.Errorw("Closing fd in OpenRootDir", "path", p, "error", closeErr)
+	}
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	return root, nil
 }
 
 // OpenAt opens a file relative to root with the given flags and permissions.

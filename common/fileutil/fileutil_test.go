@@ -100,9 +100,12 @@ func TestOpenRootDir(t *testing.T) {
 		}
 		defer root.Close()
 
-		if root.Name() != tempDir {
-			t.Errorf("Expected root name %s, got %s", tempDir, root.Name())
+		// Verify the root is functional by creating a file through it.
+		f, err := root.Create("probe")
+		if err != nil {
+			t.Fatalf("Root should be usable: %v", err)
 		}
+		f.Close()
 	})
 
 	t.Run("open non-existing directory", func(t *testing.T) {

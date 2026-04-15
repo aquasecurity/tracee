@@ -7,9 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"golang.org/x/sys/unix"
-
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 )
 
 type Output struct {

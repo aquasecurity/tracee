@@ -22,7 +22,7 @@ Server address options:
 - **http-address=<host:port\>**: Start an HTTP server listening on the specified address. Used for metrics, healthz, pprof, and pyroscope endpoints.
 
 - **grpc-address=<protocol:address\>**: Start a gRPC server listening on the specified protocol and address. Supported protocols are:
-  - **tcp:<port\>** or **tcp:<host\>:<port\>**: TCP connection. A bare port (e.g., tcp:4466) binds to **127.0.0.1** (loopback only). To bind to a specific interface, use host:port (e.g., tcp:0.0.0.0:4466). If no port is specified, defaults to 127.0.0.1:4466.
+  - **tcp:<port\>** or **tcp:<host\>:<port\>**: TCP connection. A bare port (e.g., tcp:4466) binds to **127.0.0.1** (loopback only). To bind to a specific interface, use host:port (e.g., tcp:0.0.0.0:4466). IPv6 addresses must be enclosed in square brackets (e.g., tcp:[::1]:4466). If no port is specified, defaults to 127.0.0.1:4466.
   - **unix:<socket_path\>**: Unix domain socket (e.g., unix:/tmp/tracee.sock). If no path is specified, defaults to /var/run/tracee.sock.
 
 Server endpoint options (require HTTP server):
@@ -53,6 +53,12 @@ Multiple **\-\-server** flags can be specified to enable different combinations 
 
   ```console
   --server grpc-address=tcp:4466
+  ```
+
+- To enable gRPC server on IPv6 loopback:
+
+  ```console
+  --server grpc-address=tcp:[::1]:4466
   ```
 
 - To enable gRPC server on all interfaces (use with caution):
