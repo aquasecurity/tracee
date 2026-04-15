@@ -42,9 +42,10 @@ type LoadResult struct {
 	Errors    []error
 }
 
-// LoadFromDirectory scans a directory for YAML detector and list files and loads them
-// Returns successfully loaded detectors, lists, and a slice of errors for failed files
-// Errors are non-fatal - the function continues processing other files
+// LoadFromDirectory scans a directory for YAML detector and list files and loads them.
+// Returns successfully loaded detectors, lists, and a slice of errors for failed files.
+// Most errors are non-fatal and processing continues, but duplicate list names abort
+// the entire directory load to prevent ambiguous definitions.
 func LoadFromDirectory(dir string) LoadResult {
 	result := LoadResult{
 		Detectors: make([]detection.EventDetector, 0),
@@ -159,13 +160,18 @@ func LoadFromDirectory(dir string) LoadResult {
 			continue
 		}
 
-		// Check for duplicates within directory
+		// Duplicate list names are fatal: file ordering (lexical via
+		// os.ReadDir) determines which definition wins, letting an
+		// attacker who can drop a file into the directory silently
+		// override a legitimate list. Abort the entire directory load
+		// so the operator must resolve the ambiguity.
 		if _, exists := listsMap[listDef.Name]; exists {
 			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
-				Err:      fmt.Errorf("duplicate list name '%s'", listDef.Name),
+				Err:      fmt.Errorf("duplicate list name '%s': ambiguous definition, aborting directory load", listDef.Name),
 			})
-			continue
+
+			return result
 		}
 
 		listsMap[listDef.Name] = listDef.Values
