@@ -15,6 +15,7 @@ package elf
 import (
 	"debug/elf"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"runtime"
@@ -22,6 +23,7 @@ import (
 
 	"golang.org/x/arch/arm64/arm64asm"
 	"golang.org/x/arch/x86/x86asm"
+	"golang.org/x/sys/unix"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/fileutil"
@@ -118,7 +120,13 @@ func IsElfFile(filePath string) bool {
 	if err != nil {
 		return false
 	}
+	// Suppress the default readahead window (commonly 128 KiB, see /sys/block/*/queue/read_ahead_kb)
+	// since we only read the 4-byte ELF magic; this avoids pulling unneeded pages into the
+	// page cache for what is often a short-lived liveness check.
+	_ = unix.Fadvise(int(file.Fd()), 0, 0, unix.FADV_RANDOM)
 	defer func() {
+		// Best-effort: drop any page-cache pages populated by this check.
+		_ = unix.Fadvise(int(file.Fd()), 0, 0, unix.FADV_DONTNEED)
 		if err := file.Close(); err != nil {
 			logger.Debugw("Closing ELF file", "path", filePath, "error", err)
 		}
@@ -181,6 +189,10 @@ exit_munmap:
 		logger.Errorw("Error unmapping file", "path", filePath, "error", errMunmap)
 	}
 exit_close:
+	// Best-effort: drop any page-cache pages populated while attempting
+	// analysis. Reached from Stat/Mmap/elf.NewFile failures, so pages may or
+	// may not exist; fadvise is a no-op when there is nothing to drop.
+	_ = unix.Fadvise(int(file.Fd()), 0, 0, unix.FADV_DONTNEED)
 	if errClose := file.Close(); errClose != nil {
 		logger.Errorw("Error closing file", "path", filePath, "error", errClose)
 	}
@@ -188,12 +200,25 @@ exit_close:
 }
 
 func (ea *ElfAnalyzer) Close() error {
+	var closeErrs []error
+
 	if err := syscall.Munmap(ea.mmapData); err != nil {
-		return errfmt.WrapError(err)
+		closeErrs = append(closeErrs, fmt.Errorf("munmap %q: %w", ea.filePath, err))
 	}
 
-	// No need to call b.elf.Close() because b.elf was created using elf.NewFile() and not elf.Open()
+	// Drop cached pages: analyzed ELF files are typically not read again,
+	// so keeping them in the page cache wastes system memory. Must run after
+	// Munmap so the pages are no longer mapped into this process's VMAs,
+	// otherwise FADV_DONTNEED cannot drop them.
+	_ = unix.Fadvise(int(ea.file.Fd()), 0, 0, unix.FADV_DONTNEED)
+
+	// ea.elf was built with elf.NewFile (not elf.Open), so it does not own
+	// the underlying file handle; closing ea.file is sufficient.
 	if err := ea.file.Close(); err != nil {
+		closeErrs = append(closeErrs, fmt.Errorf("close %q: %w", ea.filePath, err))
+	}
+
+	if err := errors.Join(closeErrs...); err != nil {
 		return errfmt.WrapError(err)
 	}
 
