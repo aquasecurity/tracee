@@ -2,7 +2,7 @@ module github.com/aquasecurity/tracee/detectors
 
 go 1.26.0
 
-toolchain go1.26.1
+toolchain go1.26.2
 
 require (
 	github.com/aquasecurity/tracee/api v0.0.0
