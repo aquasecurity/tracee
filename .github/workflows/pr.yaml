@@ -197,8 +197,7 @@ jobs:
         run: |
           make check-err
 
-      - name: Check with govulncheck (informational)
-        continue-on-error: true
+      - name: Check with govulncheck
         run: |
           make check-vulncheck
 

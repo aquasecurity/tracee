@@ -72,7 +72,7 @@ make check-pr ARGS="--fast --skip-docs HEAD~1"  # Pass arguments through make
 - **Go Vet**: Static analysis via `make check-vet`
 - **StaticCheck**: Advanced static analysis via `make check-staticcheck`
 - **Error Check**: Unhandled error detection via `make check-err`
-- **Vulnerability Check**: Known vulnerability detection via `make check-vulncheck` (informational, non-blocking — govulncheck currently has [no support for silencing findings](https://go.dev/issue/61211))
+- **Vulnerability Check**: Known vulnerability detection via `make check-vulncheck`
 
 ### 3. Unit Tests
 

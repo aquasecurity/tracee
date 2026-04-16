@@ -211,8 +211,8 @@ code-check: | \
 	$(GENERAL_MAKE) -j1 check-staticcheck; \
 	echo "Checking Golang with errcheck..."; \
 	$(GENERAL_MAKE) -j1 check-err
-	@echo "Checking Golang with govulncheck (informational)..."
-	@$(GENERAL_MAKE) -j1 check-vulncheck || true
+	@echo "Checking Golang with govulncheck..."
+	@$(GENERAL_MAKE) -j1 check-vulncheck
 
 #
 # clean
