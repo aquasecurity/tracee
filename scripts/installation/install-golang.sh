@@ -16,7 +16,7 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 #   scripts/installation/checksums/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
 #   scripts/installation/checksums/go${GOLANG_VERSION}.linux-arm64.tar.gz.sha256
 # Get checksums from: https://go.dev/dl/ (click "Show checksum" for each file)
-GOLANG_VERSION="1.26.1"
+GOLANG_VERSION="1.26.2"
 
 install_golang() {
     info "Installing Go ${GOLANG_VERSION}"
