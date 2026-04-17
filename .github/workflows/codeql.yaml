@@ -40,6 +40,13 @@ jobs:
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-2404-4core') }}
 
+    env:
+      # "false" is already the default since April 2026, but having the
+      # toggle explicit makes it easy to flip for debugging. The repo
+      # property "github-codeql-file-coverage-on-prs" can still override
+      # this to true (it is evaluated after the env var).
+      CODEQL_ACTION_FILE_COVERAGE_ON_PRS: "false"
+
     permissions:
       security-events: write
       packages: read
