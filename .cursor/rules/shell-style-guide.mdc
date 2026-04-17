@@ -1428,7 +1428,7 @@ var+="suffix"                  # Bash only (use var="${var}suffix" in sh)
 # BAD: No {n..m} brace expansion
 for i in {1..10}; do           # Bash only (use while loop in sh)
 
-# BAD: No ==  in [ ] for max portability
+# BAD: No == in [ ] for max portability
 [ "${a}" == "${b}" ]           # Use = instead for POSIX
 
 # BAD: No [[ ]] regex matching
