@@ -24,7 +24,11 @@ markdown, comments, and generated text. There are no doc-only exceptions.
   - any other non-printing Unicode control chars (except newline/tab where valid)
 
 - If a forbidden char is found, replace it with ASCII:
-  - dashes to `-`, curly single quotes to `'`, curly double quotes to `"`, and bullets/arrows to `-` or words.
+  - dashes to `-`
+  - curly single quotes to `'`
+  - curly double quotes to `"`
+  - bullets to `-`
+  - arrows to `->` or the equivalent word (e.g., "returns", "maps to") depending on context
 
 ## Mandatory Review Check
 
