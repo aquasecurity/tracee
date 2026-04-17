@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/server/grpc"
 	"github.com/aquasecurity/tracee/pkg/server/http"
 )
@@ -17,7 +18,7 @@ const (
 
 	httpAddressFlag    = "http-address"
 	grpcAddressFlag    = "grpc-address"
-	defaultHTTPAddress = ":3366"
+	defaultHTTPAddress = "127.0.0.1:3366"
 	defaultGRPCPort    = "4466"
 	defaultGRPCPath    = "/var/run/tracee.sock"
 
@@ -148,6 +149,11 @@ func (s *ServerConfig) enableHttpEndpoints() error {
 	// if a flag is set, but the server is not configured, set a default HTTP server
 	if s.http == nil {
 		s.http = http.New(defaultHTTPAddress)
+		logger.Warnw(
+			"HTTP server bound to loopback only, endpoints are not accessible from remote hosts",
+			"address", defaultHTTPAddress,
+			"hint", "use --server http-address=0.0.0.0:3366 to allow remote access",
+		)
 	}
 
 	if s.Metrics {
@@ -201,20 +207,36 @@ func parseAndValidateGRPCAddr(address string) (protocol string, addr string, err
 	switch protocol {
 	case "tcp":
 		if len(values) == 2 {
-			addr = values[1]
-			err = validatePort(addr)
-			if err != nil {
+			part := values[1]
+			// Accept "host:port" (e.g. "127.0.0.1:4466") or "[host]:port" for IPv6 (e.g. "[::1]:4466")
+			if host, port, err2 := net.SplitHostPort(part); err2 == nil {
+				if err = validatePort(port); err != nil {
+					return "", "", err
+				}
+				if host == "" {
+					host = "127.0.0.1"
+				}
+				return protocol, net.JoinHostPort(host, port), nil
+			}
+			// Bare port -- default to loopback
+			if err = validatePort(part); err != nil {
+				if strings.Contains(part, ":") {
+					return "", "", errfmt.Errorf("invalid tcp address '%s': IPv6 addresses must be in brackets (e.g. tcp:[::1]:4466)", part)
+				}
 				return "", "", err
 			}
-			return protocol, addr, nil
+			return protocol, "127.0.0.1:" + part, nil
 		}
-		return protocol, defaultGRPCPort, nil
+		return protocol, "127.0.0.1:" + defaultGRPCPort, nil
 	case "unix":
 		if len(values) == 2 {
 			addr = values[1]
-			if _, err = os.Stat(addr); err == nil {
-				err = os.Remove(addr)
-				if err != nil {
+			fi, statErr := os.Lstat(addr)
+			if statErr == nil {
+				if fi.Mode()&os.ModeSymlink != 0 {
+					return "", "", errfmt.Errorf("socket path is a symlink: %s", addr)
+				}
+				if err = os.Remove(addr); err != nil {
 					return "", "", errfmt.Errorf("failed to cleanup gRPC listening address (%s): %v", addr, err)
 				}
 			}

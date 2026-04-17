@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/sys/unix"
 )
 
 type Output struct {
@@ -27,11 +28,11 @@ func PrepareOutput(cmd *cobra.Command, outputSlice string) (Output, error) {
 	}
 
 	dir := filepath.Dir(outputSlice)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return Output{}, fmt.Errorf("failed to create directories for output file: %w", err)
 	}
 
-	file, err := os.OpenFile(outputSlice, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	file, err := os.OpenFile(outputSlice, os.O_WRONLY|os.O_CREATE|os.O_TRUNC|unix.O_NOFOLLOW, 0644)
 	if err != nil {
 		return Output{}, fmt.Errorf("failed to open output file: %w", err)
 	}

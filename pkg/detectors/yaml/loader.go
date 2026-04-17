@@ -94,6 +94,12 @@ func LoadFromDirectory(dir string) LoadResult {
 			continue
 		}
 
+		// Skip non-regular files (symlinks, FIFOs, device files, sockets).
+		// os.ReadFile on a FIFO blocks indefinitely, causing a local DoS.
+		if !entry.Type().IsRegular() {
+			continue
+		}
+
 		// Skip non-YAML files
 		name := entry.Name()
 		if !strings.HasSuffix(name, ".yaml") && !strings.HasSuffix(name, ".yml") {
@@ -153,13 +159,18 @@ func LoadFromDirectory(dir string) LoadResult {
 			continue
 		}
 
-		// Check for duplicates within directory
+		// Duplicate list names are fatal: file ordering (lexical via
+		// os.ReadDir) determines which definition wins, letting an
+		// attacker who can drop a file into the directory silently
+		// override a legitimate list. Abort the entire directory load
+		// so the operator must resolve the ambiguity.
 		if _, exists := listsMap[listDef.Name]; exists {
 			result.Errors = append(result.Errors, &LoaderError{
 				FilePath: path,
-				Err:      fmt.Errorf("duplicate list name '%s'", listDef.Name),
+				Err:      fmt.Errorf("duplicate list name '%s': ambiguous definition, aborting directory load", listDef.Name),
 			})
-			continue
+
+			return result
 		}
 
 		listsMap[listDef.Name] = listDef.Values
@@ -187,6 +198,14 @@ func LoadFromDirectory(dir string) LoadResult {
 // peekFileType reads just the type field from a YAML file
 // Returns empty string if type field is missing
 func peekFileType(path string) (string, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return "", err
+	}
+	if !info.Mode().IsRegular() {
+		return "", fmt.Errorf("not a regular file: %s", path)
+	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err

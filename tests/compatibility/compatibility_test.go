@@ -63,7 +63,9 @@ func TestCompatibility(t *testing.T) {
 			BypassCaps: true,
 		},
 		EnrichmentEnabled: false,
-		BPFObjPath:        testBinaryPath, // Use test binary for uprobe attachment
+		BPF: config.BPFConfig{
+			ObjPath: testBinaryPath, // Use test binary for uprobe attachment
+		},
 	}
 
 	initialPolicies := make([]interface{}, 0, len(policies))

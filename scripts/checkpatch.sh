@@ -60,7 +60,7 @@ Options:
   --fast                  Skip slow checks (static analysis + unit tests), run formatting and linting only
 
 Environment Variables:
-  BASE_REF                Git reference to compare against (default: origin/main)
+  BASE_REF                Git reference to compare against (auto-detected from remotes)
 
 Test Categories:
   1. Documentation Verification - Ensures .1.md and .1 man page files are synchronized
@@ -77,7 +77,7 @@ Examples:
   $0 --skip-docs                 # Skip documentation verification
   $0 --skip-code-analysis        # Skip code analysis if tools missing
   $0 --ignore-missing-tools      # Continue despite missing tools
-  BASE_REF=v1.0.0 $0             # Compare against v1.0.0 instead of origin/main
+  BASE_REF=v1.0.0 $0             # Compare against v1.0.0 instead of auto-detected base
   $0 --help                      # Show this help
 
 Dependencies:
@@ -141,10 +141,22 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# Detect the remote/main ref to compare against. Tries private/main,
+# upstream/main, origin/main, then the first remote that has a main branch.
+detect_base_ref() {
+    for r in private upstream origin $(git remote 2>/dev/null); do
+        if git rev-parse --verify "${r}/main" >/dev/null 2>&1; then
+            echo "${r}/main"
+            return
+        fi
+    done
+    echo "origin/main"
+}
+
 # Get the git reference to check (default to HEAD)
 GIT_REF=${GIT_REF:-HEAD}
-# Get the base reference (from environment variable or default)
-BASE_REF="${BASE_REF:-origin/main}"
+# Get the base reference (from environment variable or auto-detect)
+BASE_REF="${BASE_REF:-$(detect_base_ref)}"
 
 print_info "Tracee Checkpatch Script"
 print_info "Checking: ${GIT_REF}"
@@ -531,7 +543,7 @@ main() {
 
 # If pr-format command mode, just run that and exit
 if [ "$COMMAND_MODE" = "pr-format" ]; then
-    BASE_REF="${BASE_REF:-origin/main}"
+    BASE_REF="${BASE_REF:-$(detect_base_ref)}"
     pr_format
     exit $?
 fi

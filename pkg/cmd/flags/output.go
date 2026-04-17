@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/fileutil"
 	"github.com/aquasecurity/tracee/pkg/config"
 )
 
@@ -558,10 +559,10 @@ func CreateOutputFile(path string) (*os.File, error) {
 	}
 
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return nil, errfmt.Errorf("failed to create directory: %v", err)
 	}
-	file, err := os.Create(path)
+	file, err := fileutil.SafeOpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return nil, errfmt.Errorf("failed to create output path: %v", err)
 	}

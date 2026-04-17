@@ -1257,13 +1257,11 @@ check-vulncheck:: \
 # pull request verifier
 #
 
-LOGFROM ?= main
-
 .PHONY: format-pr
 format-pr:: \
 	| .check_$(CMD_GIT)
 #
-	@$(CURDIR)/scripts/checkpatch.sh pr-format
+	@$(if $(BASE_REF),BASE_REF=$(BASE_REF)) $(CURDIR)/scripts/checkpatch.sh pr-format
 
 .PHONY: check-pr
 check-pr::
@@ -1278,21 +1276,21 @@ check-pr::
 #	  make check-pr-skip-tests                     # Skip unit tests
 #	  make check-pr BASE_REF=v1.0.0                # Compare against v1.0.0
 #	  make check-pr ARGS="--fast HEAD~1"           # Custom options + git ref
-#	  BASE_REF=origin/release make check-pr        # Set base ref via env
+#	  BASE_REF=upstream/release make check-pr      # Set base ref via env
 	@$(if $(BASE_REF),BASE_REF=$(BASE_REF)) ./scripts/checkpatch.sh $(if $(ARGS),$(ARGS),HEAD)
 
 # Convenience targets for common use cases
 .PHONY: check-pr-fast
 check-pr-fast::
-	@./scripts/checkpatch.sh --fast HEAD
+	@$(if $(BASE_REF),BASE_REF=$(BASE_REF)) ./scripts/checkpatch.sh --fast HEAD
 
 .PHONY: check-pr-skip-docs
 check-pr-skip-docs::
-	@./scripts/checkpatch.sh --skip-docs HEAD
+	@$(if $(BASE_REF),BASE_REF=$(BASE_REF)) ./scripts/checkpatch.sh --skip-docs HEAD
 
 .PHONY: check-pr-skip-tests
 check-pr-skip-tests::
-	@./scripts/checkpatch.sh --skip-unit-tests HEAD
+	@$(if $(BASE_REF),BASE_REF=$(BASE_REF)) ./scripts/checkpatch.sh --skip-unit-tests HEAD
 
 #
 # tracee.proto

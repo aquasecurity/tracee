@@ -84,7 +84,11 @@ config:
   kernelControlPlane: ""
   pipeline: ""
   server:
-    httpAddress: ":3366"
+    # Bind to all interfaces so kubelet probes and Prometheus scraping work.
+    # The CLI default is 127.0.0.1:3366 (loopback only); Kubernetes
+    # deployments need 0.0.0.0 and should rely on NetworkPolicy for access
+    # control.
+    httpAddress: "0.0.0.0:3366"
     grpcAddress: ""
     metrics: true
     healthz: true
@@ -154,6 +158,18 @@ config:
       enabled: ""
       maxProcesses: ""
       maxThreads: ""
+
+# networkPolicy restricts which pods can reach Tracee's HTTP port. Enable this
+# to limit access to the metrics/healthz/pprof endpoints in-cluster.
+networkPolicy:
+  enabled: true
+  # ingressFrom selects the pods allowed to reach port 3366. By default only
+  # pods labelled app.kubernetes.io/name=prometheus are permitted.  Override
+  # with any valid NetworkPolicyPeer list.
+  ingressFrom:
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: prometheus
 
 defaultPolicy: true
 
