@@ -38,9 +38,11 @@ func PrepareOutput(cmd *cobra.Command, outputSlice string) (Output, error) {
 
 	cmd.SetOut(file)
 	cmd.SetErr(file)
-	// Close the file after execution
 	cmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
-		file.Close()
+		// Close the file after execution
+		if err := file.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to close output file %q: %v\n", outputSlice, err)
+		}
 	}
 	return Output{
 		Path:   outputSlice,
