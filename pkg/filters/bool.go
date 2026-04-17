@@ -59,8 +59,6 @@ func (f *BoolFilter) Parse(operatorAndValues string) error {
 		return InvalidExpression(operatorAndValues)
 	}
 
-	f.Enable()
-
 	// case of =bools...
 	if operatorAndValues[0] == '=' {
 		valuesString := operatorAndValues[1:]
@@ -74,6 +72,7 @@ func (f *BoolFilter) Parse(operatorAndValues string) error {
 				return err
 			}
 		}
+		f.Enable()
 		return nil
 	}
 
@@ -90,16 +89,19 @@ func (f *BoolFilter) Parse(operatorAndValues string) error {
 				return err
 			}
 		}
+		f.Enable()
 		return nil
 	}
 
 	// case of not-field
 	if strings.HasPrefix(operatorAndValues, "not-") {
+		f.Enable()
 		f.falseEnabled = true
 		return nil
 	}
 
 	// final case just field
+	f.Enable()
 	f.trueEnabled = true
 
 	return nil

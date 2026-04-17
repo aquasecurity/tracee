@@ -149,6 +149,7 @@ func TestBoolFilterParseErrors(t *testing.T) {
 			err := filter.Parse(tc.expression)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tc.errMsg)
+			assert.False(t, filter.Enabled(), "filter must not be enabled after failed Parse")
 		})
 	}
 }
