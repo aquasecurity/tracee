@@ -78,10 +78,7 @@ func (f *BoolFilter) Parse(operatorAndValues string) error {
 	}
 
 	// case of !=bools...
-	if operatorAndValues[0] == '!' && operatorAndValues[1] == '=' {
-		if len(operatorAndValues) < 2+len("true") {
-			return InvalidExpression(operatorAndValues)
-		}
+	if len(operatorAndValues) >= 2 && operatorAndValues[0] == '!' && operatorAndValues[1] == '=' {
 		valuesString := operatorAndValues[2:]
 		vals := strings.Split(valuesString, ",")
 		for _, val := range vals {

@@ -60,6 +60,24 @@ func TestBoolFilterParse(t *testing.T) {
 			filterResult: []bool{true, true},
 		},
 		{
+			name:         "single char bare field",
+			expressions:  []string{"x"},
+			expected:     true,
+			filterResult: []bool{true, false},
+		},
+		{
+			name:         "exclamation without equals is bare field",
+			expressions:  []string{"!x"},
+			expected:     true,
+			filterResult: []bool{true, false},
+		},
+		{
+			name:         "equal true and false",
+			expressions:  []string{"=true,false"},
+			expected:     true,
+			filterResult: []bool{true, true},
+		},
+		{
 			name:         "no values",
 			expressions:  []string{},
 			expected:     false,
@@ -87,6 +105,50 @@ func TestBoolFilterParse(t *testing.T) {
 				filterRes = append(filterRes, filter.Filter(val))
 			}
 			assert.Equal(t, tc.filterResult, filterRes)
+		})
+	}
+}
+
+func TestBoolFilterParseErrors(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name       string
+		expression string
+		errMsg     string
+	}{
+		{
+			name:       "empty string",
+			expression: "",
+			errMsg:     "invalid filter expression",
+		},
+		{
+			name:       "not-equal missing value",
+			expression: "!=",
+			errMsg:     "invalid filter value",
+		},
+		{
+			name:       "not-equal invalid value",
+			expression: "!=xyz",
+			errMsg:     "invalid filter value",
+		},
+		{
+			name:       "equal invalid value",
+			expression: "=xyz",
+			errMsg:     "invalid filter value",
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := NewBoolFilter()
+			err := filter.Parse(tc.expression)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.errMsg)
 		})
 	}
 }
