@@ -92,7 +92,7 @@ type File struct {
 	Path string `json:"path"`
 }
 
-// EventOrigin is where a trace.Event occured, it can either be from the host machine or from a container
+// EventOrigin is where a trace.Event occurred, it can either be from the host machine or from a container
 type EventOrigin string
 
 const (
