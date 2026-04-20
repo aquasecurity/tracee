@@ -17,7 +17,11 @@ permissions: {}
 jobs:
   pr-sync:
     name: Trigger PR Sync
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-2404-2core') }}
+    runs-on:
+      # Ubuntu 24.04 generic (6.11.0-29) [x86_64]
+      - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
+      - INSTANCE_TYPE=MICRO
     permissions:
       pull-requests: read # gh pr list
     container:
@@ -25,7 +29,7 @@ jobs:
 
     steps:
       - name: Install tools
-        run: apk add --no-cache curl github-cli
+        run: apk add --no-cache bash curl github-cli
         shell: sh
 
       - name: Determine PR Number
@@ -80,33 +84,71 @@ jobs:
           PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
           SYNC_URL: ${{ secrets.PRIV_SYNC_WORKFLOW_URL }}
           SYNC_TOKEN: ${{ secrets.PRIV_PAT }}
-        shell: sh
+        shell: bash
         run: |
-          set -eu
+          set -euo pipefail
 
-          config_file=$(mktemp /tmp/curl-config-XXXXXX)
-          chmod 600 "${config_file}"
-          cat > "${config_file}" << 'CURL_EOF'
-          -X POST
-          --max-time 3
-          --silent
-          --show-error
-          -H "Accept: application/vnd.github+json"
-          -H "X-GitHub-Api-Version: 2022-11-28"
-          CURL_EOF
-          printf -- '--url %s\n' "${SYNC_URL}" >> "${config_file}"
-          printf -- '-H "Authorization: Bearer %s"\n' "${SYNC_TOKEN}" >> "${config_file}"
-          printf -- '-d {"ref": "main", "inputs": {"oss_pr_number": "%s"}}\n' "${PR_NUMBER}" >> "${config_file}"
+          # JSON body must not be passed as "-d {...}" inside curl --config: a leading "{" starts a
+          # curl config scope. Put the body in a file and reference it with --data-binary "@path".
+          #
+          # Payload is non-secret (ref + PR number): write normally, owner-read only.
+          # Config holds URL and Bearer token: open write fd, chmod 000 on path, write via fd,
+          # close; stays 000 until Sync PR chmod 400 immediately before curl.
+          sync_dir=$(mktemp -d /tmp/workflow-sync-XXXXXX)
+          chmod 700 "${sync_dir}"
+          payload_file="${sync_dir}/payload.json"
+          curl_cfg="${sync_dir}/curl.cfg"
 
-          echo "config_file=${config_file}" >> "${GITHUB_OUTPUT}"
+          printf '%s' "{\"ref\":\"main\",\"inputs\":{\"oss_pr_number\":\"${PR_NUMBER}\"}}" > "${payload_file}"
+          chmod 400 "${payload_file}"
+
+          exec {curl_cfg_fd}> "${curl_cfg}"
+          chmod 000 "${curl_cfg}"
+          cat << 'CFG_PART' >&"${curl_cfg_fd}"
+          request = "POST"
+          max-time = 30
+          silent
+          show-error
+          header = "Accept: application/vnd.github+json"
+          header = "Content-Type: application/json"
+          header = "X-GitHub-Api-Version: 2022-11-28"
+          CFG_PART
+          {
+              printf 'header = "Authorization: Bearer %s"\n' "${SYNC_TOKEN}"
+              printf 'url = "%s"\n' "${SYNC_URL}"
+              printf '%s "@%s"\n' '--data-binary' "${payload_file}"
+          } >&"${curl_cfg_fd}"
+          exec {curl_cfg_fd}>&-
+
+          {
+              echo "sync_dir=${sync_dir}"
+              echo "curl_config=${curl_cfg}"
+          } >> "${GITHUB_OUTPUT}"
 
       - name: Sync PR
         id: sync
         env:
-          CONFIG_FILE: ${{ steps.prepare-sync.outputs.config_file }}
+          SYNC_DIR: ${{ steps.prepare-sync.outputs.sync_dir }}
+          CURL_CONFIG_FILE: ${{ steps.prepare-sync.outputs.curl_config }}
         shell: sh
         run: |
           set -eu
+
+          response_body_file="${SYNC_DIR}/response.body"
+
+          reveal_curl_cfg() {
+              chmod 400 "${CURL_CONFIG_FILE}"
+          }
+
+          lock_curl_cfg() {
+              chmod 000 "${CURL_CONFIG_FILE}"
+          }
+
+          cleanup_sync_dir() {
+              [ -n "${SYNC_DIR}" ] && rm -rf "${SYNC_DIR}"
+          }
+
+          trap cleanup_sync_dir EXIT
 
           max_attempts=5
           attempts=0
@@ -117,10 +159,12 @@ jobs:
           while [ "${attempts}" -lt "${max_attempts}" ]; do
               attempts=$((attempts + 1))
               rc=0
-              http_code=$(curl --config "${CONFIG_FILE}" \
-                  --output /dev/null \
+              reveal_curl_cfg
+              http_code=$(curl --config "${CURL_CONFIG_FILE}" \
+                  --output "${response_body_file}" \
                   --write-out "%{http_code}") \
                   || rc=$?
+              lock_curl_cfg
 
               if [ "${rc}" -eq 0 ] \
                   && [ "${http_code}" -ge 200 ] \
@@ -130,23 +174,37 @@ jobs:
               fi
 
               echo "Attempt ${attempts}/${max_attempts} failed (rc=${rc}, http=${http_code})." >&2
+              if [ -s "${response_body_file}" ]; then
+                  echo "Response body:" >&2
+                  cat "${response_body_file}" >&2
+              fi
               if [ "${attempts}" -lt "${max_attempts}" ]; then
                   sleep 1
               fi
           done
+          rm -f "${CURL_CONFIG_FILE}"
 
           if [ "${succeeded}" != true ]; then
               echo "ERROR: Failed after ${max_attempts} attempts (rc=${rc}, http=${http_code})." >&2
+              echo "Last response body (for IT / GitHub support):" >&2
+              cat "${response_body_file}" >&2
+              {
+                  echo ""
+                  echo "### Workflow dispatch failure"
+                  echo ""
+                  echo "Last HTTP status: \`${http_code}\`"
+                  echo ""
+                  echo "<details><summary>Last response body from GitHub API</summary>"
+                  echo ""
+                  echo '```'
+                  cat "${response_body_file}"
+                  echo ""
+                  echo '```'
+                  echo ""
+                  echo "</details>"
+              } >> "${GITHUB_STEP_SUMMARY}"
               exit 1
           fi
-
-      - name: Cleanup credentials
-        if: always()
-        env:
-          CONFIG_FILE: ${{ steps.prepare-sync.outputs.config_file }}
-        shell: sh
-        run: |
-          rm -f "${CONFIG_FILE}" 2> /dev/null || true
 
       - name: Summary
         if: always()
