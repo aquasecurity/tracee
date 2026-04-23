@@ -19,7 +19,7 @@ dashboard which tracks the tracee instance performance and outputs.
 There are two options for accessing Tracee metrics:
 
 * Running the Tracee Docker Container Image -- Shown in this tutorial
-* Running the Tracee Helm Chart -- Detailed as part of the [Promtail-Tracee](./promtail.md) tutorial
+* Running the Tracee Helm Chart -- Detailed as part of the [Grafana Alloy & Loki Tutorial](./grafana-alloy-loki.md)
 
 ![Dashboard Image](../images/tracee-grafana-dashboard.png)
 
