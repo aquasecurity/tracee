@@ -96,15 +96,20 @@ func Is32BitMachine(machine elf.Machine) bool {
 	}
 }
 
+func hasElfMagic(magic [4]byte) bool {
+	return magic[0] == 0x7F &&
+		magic[1] == 'E' &&
+		magic[2] == 'L' &&
+		magic[3] == 'F'
+}
+
 // HasElfMagic checks if the given bytes start with the ELF magic number (0x7F 'ELF').
 // This is a fast check that only validates the first 4 bytes.
 func HasElfMagic(bytesArray []byte) bool {
-	if len(bytesArray) >= 4 {
-		if bytesArray[0] == 127 && bytesArray[1] == 69 && bytesArray[2] == 76 && bytesArray[3] == 70 {
-			return true
-		}
+	if len(bytesArray) < 4 {
+		return false
 	}
-	return false
+	return hasElfMagic([4]byte(bytesArray[:4]))
 }
 
 // IsElf checks if the given bytes represent a valid ELF file.
@@ -114,11 +119,13 @@ func IsElf(bytesArray []byte) bool {
 	return HasElfMagic(bytesArray)
 }
 
-// IsElfFile checks if the file at the given path is an ELF file (fast magic-only check).
-func IsElfFile(filePath string) bool {
+// IsElfFile performs a cheap 4-byte magic check on the file at path.
+// It returns (true, nil) for ELF files, (false, nil) for non-ELF files that
+// were readable, and (false, err) when the file could not be opened or read.
+func IsElfFile(filePath string) (bool, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return false
+		return false, err
 	}
 	// Suppress the default readahead window (commonly 128 KiB, see /sys/block/*/queue/read_ahead_kb)
 	// since we only read the 4-byte ELF magic; this avoids pulling unneeded pages into the
@@ -132,13 +139,16 @@ func IsElfFile(filePath string) bool {
 		}
 	}()
 
-	magic := make([]byte, 4)
-	n, err := file.Read(magic)
-	if err != nil || n < 4 {
-		return false
+	var magic [4]byte
+	_, err = io.ReadFull(file, magic[:])
+	if err == io.EOF || err == io.ErrUnexpectedEOF {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
 	}
 
-	return HasElfMagic(magic)
+	return hasElfMagic(magic), nil
 }
 
 func NewElfAnalyzer(filePath string, wantedSymbols []WantedSymbol) (*ElfAnalyzer, error) {

@@ -2,7 +2,9 @@ package elf
 
 import (
 	"debug/elf"
+	"errors"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -252,10 +254,12 @@ func TestIsElfFile(t *testing.T) {
 		if elfPath == "" {
 			t.Skip("No ELF binary found for testing")
 		}
-		assert.True(t, IsElfFile(elfPath))
+		isElf, err := IsElfFile(elfPath)
+		require.NoError(t, err)
+		assert.True(t, isElf)
 	})
 
-	t.Run("non-ELF file", func(t *testing.T) {
+	t.Run("non-ELF file returns false nil", func(t *testing.T) {
 		tempFile, err := os.CreateTemp("", "test_non_elf_*")
 		require.NoError(t, err)
 		defer os.Remove(tempFile.Name())
@@ -264,20 +268,58 @@ func TestIsElfFile(t *testing.T) {
 		require.NoError(t, err)
 		tempFile.Close()
 
-		assert.False(t, IsElfFile(tempFile.Name()))
+		isElf, err := IsElfFile(tempFile.Name())
+		require.NoError(t, err)
+		assert.False(t, isElf)
 	})
 
-	t.Run("non-existent file", func(t *testing.T) {
-		assert.False(t, IsElfFile("/non/existent/file"))
+	t.Run("non-existent file returns error", func(t *testing.T) {
+		isElf, err := IsElfFile(filepath.Join(t.TempDir(), "does-not-exist"))
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, os.ErrNotExist))
+		assert.False(t, isElf)
 	})
 
-	t.Run("empty file", func(t *testing.T) {
+	t.Run("permission denied returns error", func(t *testing.T) {
+		if os.Getuid() == 0 {
+			t.Skip("Running as root; permission test not meaningful")
+		}
+		tempFile, err := os.CreateTemp("", "test_noperm_*")
+		require.NoError(t, err)
+		defer os.Remove(tempFile.Name())
+		tempFile.Close()
+
+		require.NoError(t, os.Chmod(tempFile.Name(), 0o000))
+
+		isElf, err := IsElfFile(tempFile.Name())
+		require.Error(t, err)
+		assert.True(t, errors.Is(err, os.ErrPermission))
+		assert.False(t, isElf)
+	})
+
+	t.Run("short file returns false nil", func(t *testing.T) {
+		tempFile, err := os.CreateTemp("", "test_short_*")
+		require.NoError(t, err)
+		defer os.Remove(tempFile.Name())
+
+		_, err = tempFile.Write([]byte{0x7F, 'E'})
+		require.NoError(t, err)
+		tempFile.Close()
+
+		isElf, err := IsElfFile(tempFile.Name())
+		require.NoError(t, err)
+		assert.False(t, isElf)
+	})
+
+	t.Run("empty file returns false nil", func(t *testing.T) {
 		tempFile, err := os.CreateTemp("", "test_empty_*")
 		require.NoError(t, err)
 		defer os.Remove(tempFile.Name())
 		tempFile.Close()
 
-		assert.False(t, IsElfFile(tempFile.Name()))
+		isElf, err := IsElfFile(tempFile.Name())
+		require.NoError(t, err)
+		assert.False(t, isElf)
 	})
 }
 
