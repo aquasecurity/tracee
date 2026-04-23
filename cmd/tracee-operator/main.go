@@ -72,6 +72,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Register the DetectorReconciler with the controller manager. This will cause the
+	// DetectorReconciler to watch for changes to Detector objects and deal with them.
+
+	detectorReconciler := &controller.DetectorReconciler{
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		TraceeNamespace: config.TraceeNamespace,
+		TraceeName:      config.TraceeName,
+	}
+	if err := detectorReconciler.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "DetectorReconciler")
+		os.Exit(1)
+	}
+
 	// Register the ConfigMapReconciler with the controller manager. This will cause the
 	// ConfigMapReconciler to watch for changes to the Tracee ConfigMap and deal with them.
 
@@ -84,6 +98,19 @@ func main() {
 	}
 	if err := configMapReconciler.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ConfigMapReconciler")
+		os.Exit(1)
+	}
+
+	// Register a second ConfigMapReconciler for tracee-lists ConfigMap
+	listsConfigMapReconciler := &controller.ConfigMapReconciler{
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		TraceeNamespace: config.TraceeNamespace,
+		TraceeName:      config.TraceeName,
+		ConfigMapName:   "tracee-lists",
+	}
+	if err := listsConfigMapReconciler.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ListsConfigMapReconciler")
 		os.Exit(1)
 	}
 
