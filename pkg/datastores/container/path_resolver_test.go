@@ -2,6 +2,7 @@ package container
 
 import (
 	"fmt"
+	"io/fs"
 	"testing"
 	"testing/fstest"
 
@@ -336,4 +337,96 @@ func TestPathResolver_isFileAccessible(t *testing.T) {
 
 	// Test with a directory (should be accessible but not readable as a file)
 	assert.True(t, pres.isFileAccessible("/proc"))
+}
+
+type processFSRootErrorFS struct {
+	errByPath map[string]error
+}
+
+type fakeDirEntry struct{}
+
+func (fakeDirEntry) Name() string               { return "entry" }
+func (fakeDirEntry) IsDir() bool                { return true }
+func (fakeDirEntry) Type() fs.FileMode          { return fs.ModeDir }
+func (fakeDirEntry) Info() (fs.FileInfo, error) { return nil, nil }
+
+func (m processFSRootErrorFS) Open(name string) (fs.File, error) {
+	return nil, &fs.PathError{Op: "open", Path: name, Err: fs.ErrNotExist}
+}
+
+func (m processFSRootErrorFS) ReadDir(name string) ([]fs.DirEntry, error) {
+	if err, ok := m.errByPath[name]; ok {
+		return nil, &fs.PathError{Op: "readdir", Path: name, Err: err}
+	}
+
+	return []fs.DirEntry{fakeDirEntry{}}, nil
+}
+
+func TestPathResolver_GetHostAbsPath_ExpectedProcFSRootErrors(t *testing.T) {
+	origGetAnyProcessInNS := getAnyProcessInNS
+	t.Cleanup(func() {
+		getAnyProcessInNS = origGetAnyProcessInNS
+	})
+
+	testCases := []struct {
+		name string
+		err  error
+	}{
+		{
+			name: "permission denied",
+			err:  fs.ErrPermission,
+		},
+		{
+			name: "not found",
+			err:  fs.ErrNotExist,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			getAnyProcessInNS = func(string, uint32) (int32, error) {
+				return 1234, nil
+			}
+
+			bucket := bucketcache.BucketCache{}
+			bucket.Init(20)
+
+			pres := InitContainerPathResolver(&bucket)
+			pres.fs = processFSRootErrorFS{
+				errByPath: map[string]error{
+					"proc/1234/root": tc.err,
+				},
+			}
+
+			_, err := pres.GetHostAbsPath("/tmp/tmp.so", 1234)
+			require.ErrorIs(t, err, ErrContainerFSUnreachable)
+		})
+	}
+}
+
+func TestPathResolver_GetHostAbsPath_UnexpectedProcFSRootError(t *testing.T) {
+	origGetAnyProcessInNS := getAnyProcessInNS
+	getAnyProcessInNS = func(string, uint32) (int32, error) {
+		return 1234, nil
+	}
+	t.Cleanup(func() {
+		getAnyProcessInNS = origGetAnyProcessInNS
+	})
+
+	bucket := bucketcache.BucketCache{}
+	bucket.Init(20)
+
+	pres := InitContainerPathResolver(&bucket)
+	pres.fs = processFSRootErrorFS{
+		errByPath: map[string]error{
+			"proc/1234/root": fs.ErrInvalid,
+		},
+	}
+
+	_, err := pres.GetHostAbsPath("/tmp/tmp.so", 1234)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, fs.ErrInvalid)
+	assert.NotErrorIs(t, err, ErrContainerFSUnreachable)
 }

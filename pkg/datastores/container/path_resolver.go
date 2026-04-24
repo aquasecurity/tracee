@@ -16,6 +16,8 @@ import (
 	"github.com/aquasecurity/tracee/common/proc"
 )
 
+var getAnyProcessInNS = proc.GetAnyProcessInNS
+
 // ContainerPathResolver generates an accessible absolute path from the root
 // mount namespace to a relative path in a container. **NOTE**: to resolve host
 // mount namespace, tracee reads from /proc/1/ns, requiring CAP_SYS_PTRACE
@@ -74,7 +76,7 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 
 	// No PIDs registered in this namespace, or couldn't access FS root of any of the PIDs found.
 	// Try finding one in procfs.
-	pid, err := proc.GetAnyProcessInNS("mnt", mountNS)
+	pid, err := getAnyProcessInNS("mnt", mountNS)
 	if err != nil {
 		// Couldn't find a process in this namespace using procfs
 		return "", ErrContainerFSUnreachable
@@ -82,6 +84,10 @@ func (cPathRes *ContainerPathResolver) GetHostAbsPath(mountNSAbsolutePath string
 
 	procFSRoot, err := cPathRes.getProcessFSRoot(uint(pid))
 	if err != nil {
+		if isProcessFSRootUnreachable(err) {
+			return "", ErrContainerFSUnreachable
+		}
+
 		return "", errfmt.Errorf("could not access process %d FS: %v", pid, err)
 	}
 
@@ -105,13 +111,17 @@ func (cPathRes *ContainerPathResolver) getProcessFSRoot(pid uint) (string, error
 	entries, err := fs.ReadDir(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
 	if err != nil {
 		// This process is either not alive or we don't have permissions to access.
-		return "", errfmt.Errorf("failed accessing process FS root %s: %v", procRootPath, err)
+		return "", errfmt.WrapError(fmt.Errorf("failed accessing process FS root %s: %w", procRootPath, err))
 	}
 	if len(entries) == 0 {
 		return "", errfmt.Errorf("process FS root (%s) is empty", procRootPath)
 	}
 
 	return procRootPath, nil
+}
+
+func isProcessFSRootUnreachable(err error) bool {
+	return errors.Is(err, fs.ErrNotExist) || errors.Is(err, fs.ErrPermission)
 }
 
 // ResolveLink resolves a single symlink to its final destination within the specified mount namespace.
@@ -307,6 +317,6 @@ func (cPathRes *ContainerPathResolver) isFileAccessible(path string) bool {
 }
 
 var (
-	ErrContainerFSUnreachable = errors.New("container file system is unreachable in mount namespace because there are not living children")
+	ErrContainerFSUnreachable = errors.New("container file system is unreachable in mount namespace")
 	ErrNonAbsolutePath        = errors.New("file path is not absolute in its container mount point")
 )
