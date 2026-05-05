@@ -2,11 +2,13 @@ package config
 
 import (
 	"io"
+	"os"
 
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/digest"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/datastores/container/runtime"
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
@@ -46,9 +48,7 @@ type Config struct {
 	ProcessStore      process.ProcTreeConfig
 	Buffers           BuffersConfig
 	MaxPidsCache      int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BTFObjPath        string
-	BPFObjBytes       []byte
-	BPFObjPath        string // path to the BPF object binary for uprobe attachment (defaults to /proc/self/exe)
+	BPF               BPFConfig
 	KernelConfig      *environment.KernelConfig
 	OSInfo            *environment.OSInfo
 	Sockets           runtime.Sockets
@@ -98,11 +98,39 @@ func (c Config) Validate() error {
 	}
 
 	// BPF
-	if c.BPFObjBytes == nil {
+	if c.BPF.ObjBytes == nil {
 		return nilBPFObjectError
 	}
 
 	return nil
+}
+
+//
+// BPF
+//
+
+// BPFConfig groups BPF/BTF object paths and bytes used during eBPF
+// module initialization. The Cleanup method should be called after the
+// module has been created to release temp files and free memory.
+type BPFConfig struct {
+	BTFObjPath string // BTF file path (may live in an os.MkdirTemp dir)
+	BTFTempDir string // non-empty only when we created the temp dir
+	ObjBytes   []byte // raw BPF object bytes
+	ObjPath    string // BPF binary for uprobe attachment (defaults to /proc/self/exe)
+}
+
+// Cleanup releases resources after the BPF module has been created.
+// It removes the temp BTF directory (only if we created it) and nils
+// out ObjBytes to allow GC. User-supplied BTF paths are never removed.
+func (b *BPFConfig) Cleanup() {
+	if b.BTFTempDir != "" {
+		if err := os.RemoveAll(b.BTFTempDir); err != nil {
+			logger.Errorw("Removing temp BTF dir", "path", b.BTFTempDir, "error", err)
+		}
+		b.BTFTempDir = ""
+	}
+	b.BTFObjPath = ""
+	b.ObjBytes = nil
 }
 
 //

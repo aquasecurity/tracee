@@ -60,9 +60,7 @@ func (r Runner) Run(ctx context.Context) error {
 		},
 	)
 
-	// Need to force nil to allow the garbage
-	// collector to free the BPF object
-	r.TraceeConfig.BPFObjBytes = nil
+	// BPF object bytes will be released by BPFConfig.Cleanup after module load.
 
 	// Initialize tracee
 
