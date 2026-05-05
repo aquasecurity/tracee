@@ -16,9 +16,9 @@ func validConfig() Config {
 				Artifacts: 512,  // power of 2
 			},
 		},
-		Artifacts:   &ArtifactsConfig{},
-		Output:      &OutputConfig{},
-		BPFObjBytes: []byte{1, 2, 3},
+		Artifacts: &ArtifactsConfig{},
+		Output:    &OutputConfig{},
+		BPF:       BPFConfig{ObjBytes: []byte{1, 2, 3}},
 	}
 }
 
@@ -156,7 +156,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "nil BPF object bytes",
 			config: func() Config {
 				cfg := validConfig()
-				cfg.BPFObjBytes = nil
+				cfg.BPF.ObjBytes = nil
 				return cfg
 			}(),
 			expectError:   true,
@@ -166,7 +166,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "empty BPF object bytes",
 			config: func() Config {
 				cfg := validConfig()
-				cfg.BPFObjBytes = []byte{}
+				cfg.BPF.ObjBytes = []byte{}
 				return cfg
 			}(),
 			expectError: false, // empty slice is not nil, so it's valid

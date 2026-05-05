@@ -29,7 +29,7 @@ func BpfObject(cfg *config.Config, kConfig *environment.KernelConfig, osInfo *en
 
 	if btfFilePath != "" {
 		logger.Debugw("BTF", "BTF environment variable set", "path", btfFilePath)
-		cfg.BTFObjPath = btfFilePath
+		cfg.BPF.BTFObjPath = btfFilePath
 	}
 
 	bpfBytes, err := unpackCOREBinary()
@@ -48,14 +48,17 @@ func BpfObject(cfg *config.Config, kConfig *environment.KernelConfig, osInfo *en
 		err = unpackBTFHub(unpackBTFFile, osInfo)
 		if err == nil {
 			logger.Debugw("BTF: btfhub embedded BTF file", "file", unpackBTFFile)
-			cfg.BTFObjPath = unpackBTFFile
+			cfg.BPF.BTFObjPath = unpackBTFFile
 		} else {
 			logger.Debugw("BTF: error unpacking embedded BTFHUB file", "error", err)
+			if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+				logger.Errorw("Removing temp BTF dir", "path", tempDir, "error", removeErr)
+			}
 		}
 	}
 
 	cfg.KernelConfig = kConfig
-	cfg.BPFObjBytes = bpfBytes
+	cfg.BPF.ObjBytes = bpfBytes
 
 	return nil
 }
