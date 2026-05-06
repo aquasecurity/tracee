@@ -19,6 +19,9 @@ A complete example config file with all available options can be found [here](ht
 !!! note
     The YAML examples below can be translated to JSON as well. For Kubernetes-specific configuration, see the [Kubernetes Configuration](./kubernetes.md) guide.
 
+!!! warning
+    The following options are **not** supported in the configuration file and must be provided exclusively via the CLI: `--config`, `--policy`, `--scope`, `--events`. Policies can also be supplied through Kubernetes CRDs when running in a cluster (see [Policy Configuration](../../policies/index.md)).
+
 ## Common configurations
 
 

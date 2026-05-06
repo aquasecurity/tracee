@@ -580,6 +580,55 @@ artifacts:
 	}
 }
 
+// TestGetFlagsFromViper_DottedRootKeysNotSupported verifies that flat dotted
+// root-level keys (e.g., "server.metrics: true") are NOT loaded by
+// GetFlagsFromViper. viper.Get("server") returns nil for these, so the loader
+// returns an error. Only structured nested or CLI-style list formats work.
+func TestGetFlagsFromViper_DottedRootKeysNotSupported(t *testing.T) {
+	tests := []struct {
+		name        string
+		yamlContent string
+		key         string
+	}{
+		{
+			name: "server via dotted root keys",
+			yamlContent: `
+server.http-address: localhost:8080
+server.metrics: true
+`,
+			key: "server",
+		},
+		{
+			name: "buffers via dotted root keys",
+			yamlContent: `
+buffers.kernel.events: 2048
+buffers.pipeline: 4000
+`,
+			key: "buffers",
+		},
+		{
+			name: "capabilities via dotted root keys",
+			yamlContent: `
+capabilities.bypass: true
+`,
+			key: "capabilities",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			viper.Reset()
+			viper.SetConfigType("yaml")
+			if err := viper.ReadConfig(strings.NewReader(tt.yamlContent)); err != nil {
+				t.Fatalf("Error setting up viper: %v", err)
+			}
+
+			_, err := GetFlagsFromViper(tt.key)
+			assert.Error(t, err, "dotted root keys should not be loaded")
+		})
+	}
+}
+
 // slicesEqualIgnoreOrder compares two string slices, ignoring order
 func slicesEqualIgnoreOrder(a, b []string) bool {
 	if len(a) != len(b) {
