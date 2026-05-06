@@ -2,7 +2,7 @@
 title: TRACEE-LIST-DETECTORS
 section: 1
 header: Tracee List Detectors Command Manual
-date: 2025/01
+date: 2026/05
 ...
 
 ## NAME
@@ -60,6 +60,9 @@ The command displays two sections:
 **Values**
 : Number of values in the list
 
+**Source**
+: Directory the shared list was loaded from (YAML scope for that list).
+
 ## JSON OUTPUT
 
 When using `--json`, the output structure is:
@@ -76,8 +79,8 @@ When using `--json`, the output structure is:
     }
   ],
   "lists": [
-    {"name": "SHELL_BINARIES", "value_count": 6},
-    {"name": "SENSITIVE_PATHS", "value_count": 12}
+    {"name": "SHELL_BINARIES", "value_count": 6, "source_dir": "/etc/tracee/detectors"},
+    {"name": "SENSITIVE_PATHS", "value_count": 12, "source_dir": "/etc/tracee/detectors"}
   ]
 }
 ```
