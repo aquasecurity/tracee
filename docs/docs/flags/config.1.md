@@ -2,7 +2,7 @@
 title: TRACEE-CONFIG
 section: 1
 header: Tracee Config Flag Manual
-date: 2025/01
+date: 2026/05
 ...
 
 ## NAME
@@ -17,7 +17,7 @@ tracee **\-\-config** <file\>
 
 The **\-\-config** flag allows you to specify global configuration options for Tracee by providing a configuration file.
 
-The configuration file supports both structured (nested) and flat (CLI-style) formats, and can include settings for all Tracee subsystems including output formats, event filters, enrichment options, buffers, logging, and more.
+The configuration file supports structured (nested) YAML under each top-level key, or a list of CLI-style flag strings under that same key. Dotted keys at the root of the file (for example `server.http-address`) are not loaded; each subsystem must appear as its own top-level key (`server`, `output`, `logging`, and so on).
 
 ## FILE FORMAT
 
@@ -67,26 +67,47 @@ server:
   healthz: true
 ```
 
-### CLI-Style (Flat) Format
+### CLI-Style (List) Format
 
-The same configuration using CLI-style flat format:
+The same configuration using CLI-style lists under each top-level key. Each entry is one flag string, like on the command line.
 
 ```yaml
-output.destinations.stdout_destination.type: file
-output.destinations.stdout_destination.format: json
-output.destinations.stdout_destination.path: stdout
-logging.level: info
-enrichment.container.enabled: true
-buffers.kernel.events: 2048
-buffers.kernel.artifacts: 1024
-buffers.pipeline: 10000
-server.http-address: ":3366"
-server.metrics: true
-server.healthz: true
+output:
+  - destinations.stdout_destination.type=file
+  - destinations.stdout_destination.format=json
+  - destinations.stdout_destination.path=stdout
+
+logging:
+  - level=info
+
+enrichment:
+  - container
+
+buffers:
+  - kernel.events=2048
+  - kernel.artifacts=1024
+  - pipeline=10000
+
+server:
+  - "http-address=:3366"
+  - metrics
+  - healthz
 ```
 
 For a complete example configuration file with all available options, see:
 https://github.com/aquasecurity/tracee/blob/main/examples/config/global_config.yaml
+
+## NOTES
+
+The following options are **not** supported in the configuration file and must be
+provided exclusively via the CLI:
+
+- **\-\-config**: Path to the config file itself.
+- **\-\-policy**: Policy file or directory paths.
+- **\-\-scope**: Scope filters.
+- **\-\-events**: Event filters.
+
+Policies can also be supplied through Kubernetes CRDs when running in a cluster.
 
 ## SEE ALSO
 
