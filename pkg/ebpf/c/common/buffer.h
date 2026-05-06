@@ -454,6 +454,8 @@ statfunc int save_args_str_arr_to_buf(
     int len = end - start;
     if (len > (MAX_ARR_LEN - 1))
         len = MAX_ARR_LEN - 1;
+    if (elem_num > MAX_ARR_LEN)
+        elem_num = MAX_ARR_LEN;
 
     // Save argument index
     if (buf->offset > ARGS_BUF_SIZE - 1)

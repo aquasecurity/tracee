@@ -75,7 +75,7 @@ type Tracee struct {
 	startTime uint64
 	running   atomic.Bool
 	done      chan struct{} // signal to safely stop end-stage processing
-	OutDir    *os.File      // use common.XXX functions to create or write to this file
+	OutDir    *os.Root      // traversal-resistant root for artifact output
 	stats     *metrics.Stats
 	sigEngine *engine.Engine
 	// Events
@@ -665,12 +665,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	// Initialize artifacts directory
 
-	if err := os.MkdirAll(t.config.Artifacts.OutputPath, 0755); err != nil {
+	if err := os.MkdirAll(t.config.Artifacts.OutputPath, 0750); err != nil {
 		t.Close()
 		return errfmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.OutDir, err = fileutil.OpenExistingDir(t.config.Artifacts.OutputPath)
+	t.OutDir, err = fileutil.OpenRootDir(t.config.Artifacts.OutputPath)
 	if err != nil {
 		t.Close()
 		return errfmt.Errorf("error opening out directory: %v", err)
@@ -1676,8 +1676,8 @@ func (t *Tracee) initBPFProbes() error {
 
 	newModuleArgs := bpf.NewModuleArgs{
 		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
-		BTFObjPath:      t.config.BTFObjPath,
-		BPFObjBuff:      t.config.BPFObjBytes,
+		BTFObjPath:      t.config.BPF.BTFObjPath,
+		BPFObjBuff:      t.config.BPF.ObjBytes,
 	}
 
 	// Open the eBPF object file (create a new module)
@@ -1689,7 +1689,7 @@ func (t *Tracee) initBPFProbes() error {
 
 	// Initialize probes
 
-	t.defaultProbes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), false, t.config.BPFObjPath)
+	t.defaultProbes, err = probes.NewDefaultProbeGroup(t.bpfModule, t.netEnabled(), false, t.config.BPF.ObjPath)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1710,9 +1710,8 @@ func (t *Tracee) initBPF() error {
 		return errfmt.WrapError(err)
 	}
 
-	// Need to force nil to allow the garbage
-	// collector to free the BPF object
-	t.config.BPFObjBytes = nil
+	// Release temp BTF dir and BPF object bytes so the GC can reclaim memory.
+	t.config.BPF.Cleanup()
 
 	// Populate eBPF maps with initial data
 
@@ -1940,8 +1939,8 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	return nil
 }
 
-func updateArtifactsMapFile(fileDir *os.File, filePath string, artifactsFiles map[string]string, cfg config.FileArtifactsConfig) error {
-	f, err := fileutil.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+func updateArtifactsMapFile(root *os.Root, filePath string, artifactsFiles map[string]string, cfg config.FileArtifactsConfig) error {
+	f, err := fileutil.OpenAt(root, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errfmt.Errorf("error logging captured files")
 	}

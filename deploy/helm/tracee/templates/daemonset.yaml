@@ -45,7 +45,7 @@ spec:
           {{- if or .Values.config.server.httpAddress .Values.config.server.metrics .Values.config.server.healthz }}
           ports:
             - name: metrics
-              containerPort: {{ trimPrefix ":" (.Values.config.server.httpAddress | default ":3366") }}
+              containerPort: {{ include "tracee.httpPort" . }}
               protocol: TCP
           {{- end }}
           securityContext:
@@ -54,7 +54,7 @@ spec:
           readinessProbe:
             httpGet:
               path: /healthz
-              port: {{ trimPrefix ":" (.Values.config.server.httpAddress | default ":3366") }}
+              port: {{ include "tracee.httpPort" . }}
           {{- end }}
           volumeMounts:
             - name: tmp-tracee

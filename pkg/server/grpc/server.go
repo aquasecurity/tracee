@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
-	"strings"
 	"time"
 
+	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
@@ -25,10 +24,6 @@ type Server struct {
 }
 
 func New(protocol, listenAddr string) *Server {
-	if protocol == "tcp" {
-		listenAddr = ":" + listenAddr
-	}
-
 	return &Server{listener: nil, protocol: protocol, listenAddr: listenAddr}
 }
 
@@ -40,13 +35,39 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 		return
 	}
 
-	// Set restrictive permissions on Unix socket
+	if s.protocol == "tcp" {
+		host, _, _ := net.SplitHostPort(s.listenAddr)
+		if !isLoopbackHost(host) {
+			logger.Warnw("gRPC server binding to non-loopback address without TLS or authentication",
+				"address", s.listenAddr,
+				"hint", "ensure network-level controls (firewall, NetworkPolicy) restrict access",
+			)
+		}
+	}
+
+	// Set restrictive permissions on Unix socket using fd-based Fchmod
+	// to avoid TOCTOU between Listen and Chmod.
 	if s.protocol == "unix" {
-		err = os.Chmod(s.listenAddr, 0600)
-		if err != nil {
-			logger.Errorw("Failed to set permissions on Unix socket. This may leave the socket with insecure permissions and allow unauthorized access.", "path", s.listenAddr, "error", err)
-			_ = lis.Close()
-			return
+		if uc, ok := lis.(*net.UnixListener); ok {
+			raw, rawErr := uc.SyscallConn()
+			if rawErr != nil {
+				logger.Errorw("Failed to get syscall conn for Unix socket", "path", s.listenAddr, "error", rawErr)
+				_ = lis.Close()
+				return
+			}
+			var chmodErr error
+			if ctrlErr := raw.Control(func(fd uintptr) {
+				chmodErr = unix.Fchmod(int(fd), 0600)
+			}); ctrlErr != nil {
+				logger.Errorw("Failed to access Unix socket fd", "path", s.listenAddr, "error", ctrlErr)
+				_ = lis.Close()
+				return
+			}
+			if chmodErr != nil {
+				logger.Errorw("Failed to set permissions on Unix socket. This may leave the socket with insecure permissions and allow unauthorized access.", "path", s.listenAddr, "error", chmodErr)
+				_ = lis.Close()
+				return
+			}
 		}
 	}
 
@@ -92,16 +113,32 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 
 // Address returns the address of the server
 func (s *Server) Address() string {
-	// For TCP, listenAddr already has a colon prefix (e.g., ":4466")
-	// For Unix, listenAddr is just the path (e.g., "/var/run/tracee.sock")
-	// We want to return format "protocol:address" so remove leading colon for TCP
-	addr := s.listenAddr
-	if s.protocol == "tcp" && strings.HasPrefix(addr, ":") {
-		addr = addr[1:] // Remove leading colon
-	}
-	return fmt.Sprintf("%s:%s", s.protocol, addr)
+	return fmt.Sprintf("%s:%s", s.protocol, s.listenAddr)
 }
 
 func (s *Server) cleanup() {
 	s.server.GracefulStop()
+}
+
+// isLoopbackHost returns true when host is a loopback IP or a hostname
+// that resolves exclusively to loopback addresses. IP literals are
+// checked directly without DNS. For hostnames, resolution is attempted
+// first; if it fails (e.g. minimal container without /etc/hosts),
+// "localhost" is assumed loopback since net.Listen would also fail to
+// bind in that case.
+func isLoopbackHost(host string) bool {
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	addrs, err := net.LookupHost(host)
+	if err != nil {
+		return host == "localhost"
+	}
+	for _, a := range addrs {
+		if ip := net.ParseIP(a); ip == nil || !ip.IsLoopback() {
+			return false
+		}
+	}
+
+	return len(addrs) > 0
 }
