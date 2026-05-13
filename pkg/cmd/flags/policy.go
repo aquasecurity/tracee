@@ -178,7 +178,7 @@ func parseScopeFilters(p *policy.Policy, scopeFlags []scopeFlag) error {
 				if err := p.ContStartedFilter.Parse("started"); err != nil {
 					return err
 				}
-			case scopeFlag.operator == "=":
+			case scopeFlag.operator == "=" || scopeFlag.operator == "!=":
 				if err := p.ContIDFilter.Parse(scopeFlag.operatorAndValues); err != nil {
 					return err
 				}
