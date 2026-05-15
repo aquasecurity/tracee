@@ -48,14 +48,22 @@ func MkdirAt(dir *os.File, relativePath string, perm fs.FileMode) error {
 	return unix.Mkdirat(int(dir.Fd()), relativePath, uint32(perm))
 }
 
-// MkdirAtExist is a wrapper function to the `mkdirat` syscall using golang types, ignoring EEXIST error.
+// MkdirAtExist is a wrapper function to the `mkdirat` syscall using golang types, ignoring EEXIST for directories.
 func MkdirAtExist(dir *os.File, relativePath string, perm fs.FileMode) error {
 	err := unix.Mkdirat(int(dir.Fd()), relativePath, uint32(perm))
 	if err != nil {
 		// Seems that os.ErrExist doesn't catch the error (at least on Manjaro distro)
-		if err != os.ErrExist && err.Error() != "file exists" {
+		if errors.Is(err, os.ErrExist) || err.Error() == "file exists" {
+			var stat unix.Stat_t
+			if statErr := unix.Fstatat(int(dir.Fd()), relativePath, &stat, 0); statErr != nil {
+				return errfmt.WrapError(statErr)
+			}
+			if stat.Mode&unix.S_IFMT == unix.S_IFDIR {
+				return nil
+			}
 			return errfmt.WrapError(err)
 		}
+		return errfmt.WrapError(err)
 	}
 	return nil
 }
