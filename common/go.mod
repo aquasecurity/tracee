@@ -2,7 +2,7 @@ module github.com/aquasecurity/tracee/common
 
 go 1.26.0
 
-toolchain go1.26.2
+toolchain go1.26.3
 
 require (
 	github.com/google/go-cmp v0.7.0
@@ -14,7 +14,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/arch v0.19.0
 	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.43.0
 	gotest.tools v2.2.0+incompatible
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.76
 )
