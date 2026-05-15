@@ -7,7 +7,7 @@ toolchain go1.26.3
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/aquasecurity/libbpfgo v0.9.2-libbpf-1.5.1.0.20250826165200-6296a7fa0a45
+	github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1
 	github.com/aquasecurity/tracee/api v0.0.0
 	github.com/aquasecurity/tracee/common v0.0.0
 	github.com/aquasecurity/tracee/detectors v0.0.0-00010101000000-000000000000
@@ -35,7 +35,7 @@ require (
 	k8s.io/apimachinery v0.32.4
 	k8s.io/client-go v0.32.1
 	k8s.io/cri-api v0.32.3
-	kernel.org/pub/linux/libs/security/libcap/cap v1.2.76
+	kernel.org/pub/linux/libs/security/libcap/cap v1.2.78
 	sigs.k8s.io/controller-runtime v0.20.4
 )
 
@@ -173,7 +173,7 @@ require (
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
-	kernel.org/pub/linux/libs/security/libcap/psx v1.2.76 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.78 // indirect
 )
 
 replace github.com/aquasecurity/tracee/api => ./api
