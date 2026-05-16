@@ -4916,19 +4916,29 @@ int BPF_KPROBE(trace_fd_install)
 
     struct file *file = (struct file *) PT_REGS_PARM2(ctx);
 
-    // check if regular file. otherwise don't save the file_mod_key_t in file_modification_map.
+    // Only track regular files opened for writing
     unsigned short file_mode = get_inode_mode_from_file(file);
     if ((file_mode & S_IFMT) != S_IFREG) {
         return 0;
     }
+    fmode_t f_mode = BPF_CORE_READ(file, f_mode);
+    if (!(f_mode & FMODE_WRITE))
+        return 0;
 
-    file_info_t file_info = get_file_info(file);
+    file_id_t file_id = get_file_id(file);
 
     file_mod_key_t file_mod_key = {
-        p.task_info->context.host_pid, file_info.id.device, file_info.id.inode};
-    int op = FILE_MODIFICATION_SUBMIT;
+        .host_pid = p.task_info->context.host_pid,
+        .device = file_id.device,
+        .inode = file_id.inode,
+    };
+    file_mod_value_t val = {
+        .op = FILE_MODIFICATION_SUBMIT,
+        .open_ctime = file_id.ctime,
+        .open_size = BPF_CORE_READ(file, f_inode, i_size),
+    };
 
-    bpf_map_update_elem(&file_modification_map, &file_mod_key, &op, BPF_ANY);
+    bpf_map_update_elem(&file_modification_map, &file_mod_key, &val, BPF_ANY);
 
     return 0;
 }
@@ -4944,12 +4954,44 @@ int BPF_KPROBE(trace_filp_close)
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
-    file_info_t file_info = get_file_info(file);
+    file_id_t file_id = get_file_id(file);
 
     file_mod_key_t file_mod_key = {
-        p.task_info->context.host_pid, file_info.id.device, file_info.id.inode};
+        .host_pid = p.task_info->context.host_pid,
+        .device = file_id.device,
+        .inode = file_id.inode,
+    };
 
-    bpf_map_delete_elem(&file_modification_map, &file_mod_key);
+    file_mod_value_t *val = bpf_map_lookup_elem(&file_modification_map, &file_mod_key);
+    if (val == NULL)
+        return 0;
+
+    u64 close_size = BPF_CORE_READ(file, f_inode, i_size);
+    bool modified = file_id.ctime != val->open_ctime || close_size != val->open_size;
+
+    if (val->op == FILE_MODIFICATION_SUBMIT && modified) {
+        /*
+         * Filesystems like btrfs update timestamps directly without calling
+         * file_modified()/file_update_time(), so the write-time probes never fire.
+         * Detect modification at close by comparing ctime and size against open-time
+         * values. The size check catches writes within the same coarse timestamp tick.
+         *
+         * If neither changed, don't submit and don't delete: another fd referencing
+         * the same file may still be open and the write hasn't happened yet (e.g. close
+         * of a dup'd fd before the actual write). The LRU map handles stale entries.
+         */
+        void *pathname_p = get_path_str(__builtin_preserve_access_index(&file->f_path));
+        save_str_to_buf(&p.event->args_buf, pathname_p, 0);
+        save_to_submit_buf(&p.event->args_buf, &file_id.device, sizeof(dev_t), 1);
+        save_to_submit_buf(&p.event->args_buf, &file_id.inode, sizeof(unsigned long), 2);
+        save_to_submit_buf(&p.event->args_buf, &val->open_ctime, sizeof(u64), 3);
+        save_to_submit_buf(&p.event->args_buf, &file_id.ctime, sizeof(u64), 4);
+
+        events_perf_submit(&p);
+        bpf_map_delete_elem(&file_modification_map, &file_mod_key);
+    } else if (val->op == FILE_MODIFICATION_DONE) {
+        bpf_map_delete_elem(&file_modification_map, &file_mod_key);
+    }
 
     return 0;
 }
@@ -4994,15 +5036,21 @@ statfunc int common_file_modification_ret(struct pt_regs *ctx)
     file_info_t file_info = get_file_info(file);
 
     file_mod_key_t file_mod_key = {
-        p.task_info->context.host_pid, file_info.id.device, file_info.id.inode};
+        .host_pid = p.task_info->context.host_pid,
+        .device = file_info.id.device,
+        .inode = file_info.id.inode,
+    };
 
-    int *op = bpf_map_lookup_elem(&file_modification_map, &file_mod_key);
-    if (op == NULL || *op == FILE_MODIFICATION_SUBMIT) {
-        // we should submit the event once and mark as done.
-        int op = FILE_MODIFICATION_DONE;
-        bpf_map_update_elem(&file_modification_map, &file_mod_key, &op, BPF_ANY);
+    file_mod_value_t *val = bpf_map_lookup_elem(&file_modification_map, &file_mod_key);
+    if (val == NULL || val->op == FILE_MODIFICATION_SUBMIT) {
+        file_mod_value_t new_val = {};
+        new_val.op = FILE_MODIFICATION_DONE;
+        if (val != NULL) {
+            new_val.open_ctime = val->open_ctime;
+            new_val.open_size = val->open_size;
+        }
+        bpf_map_update_elem(&file_modification_map, &file_mod_key, &new_val, BPF_ANY);
     } else {
-        // no need to submit. return.
         return 0;
     }
 
