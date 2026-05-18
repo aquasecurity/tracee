@@ -3,12 +3,12 @@ package sharedobjs
 import (
 	"debug/elf"
 	"errors"
-	"strings"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/intern"
 	"github.com/aquasecurity/tracee/common/logger"
 )
 
@@ -150,23 +150,22 @@ func loadSharedObjectDynamicSymbols(path string) (*Symbols, error) {
 }
 
 func parseSymbols(symbols, dynamicSymbols []elf.Symbol) *Symbols {
-	objSymbols := NewSOSymbols()
+	nSym := len(symbols)
+	nDyn := len(dynamicSymbols)
+	objSymbols := Symbols{
+		Local:    make(map[string]bool, nSym+nDyn),
+		Imported: make(map[string]bool, nDyn),
+		Exported: make(map[string]bool, nDyn),
+	}
 	for i := range symbols {
 		sym := &symbols[i] // avoid copying the entire struct by taking its address
-		// NOTE(geyslan): unique.Handle might be a better choice here - and elsewhere -
-		// for deduplicating strings or avoiding retention of backing memory.
-		// Issue: #4761
 		if sym.Value != 0 {
-			name := strings.Clone(sym.Name)
-			objSymbols.Local[name] = true
+			objSymbols.Local[intern.String(sym.Name)] = true
 		}
 	}
 	for i := range dynamicSymbols {
 		sym := &dynamicSymbols[i] // avoid copying the entire struct by taking its address
-		// NOTE(geyslan): unique.Handle might be a better choice here - and elsewhere -
-		// for deduplicating strings or avoiding retention of backing memory.
-		// Issue: #4761
-		name := strings.Clone(sym.Name)
+		name := intern.String(sym.Name)
 		if sym.Library != "" || sym.Value == 0 {
 			objSymbols.Imported[name] = true
 		} else {
