@@ -1,11 +1,13 @@
 package ebpf
 
 import (
+	"errors"
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 )
 
 // TODO: Just like recent change in `KernelSymbolTable`, in kernel_symbols.go,
@@ -34,9 +36,18 @@ func (t *Tracee) UpdateKallsyms() error {
 
 	// Wrap long method names.
 	evtDefSymDeps := func(id events.ID) []events.KSymbol {
-		depsNode, _ := t.eventsDependencies.GetEvent(id)
-		deps := depsNode.GetDependencies()
-		return deps.GetKSymbols()
+		depsNode, err := t.eventsDependencies.GetEvent(id)
+		if err != nil {
+			if !errors.Is(err, dependencies.ErrNodeNotFound) {
+				logger.Debugw("GetEvent for ksymbols", "event_id", id, "error", err)
+			}
+			return nil
+		}
+		if depsNode == nil {
+			return nil
+		}
+
+		return depsNode.GetDependencies().GetKSymbols()
 	}
 
 	// Get the symbols all events being traced require (t.eventsState already
