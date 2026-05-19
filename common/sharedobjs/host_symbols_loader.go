@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/hashicorp/golang-lru/simplelru"
-	"golang.org/x/exp/maps"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/intern"
@@ -30,48 +29,51 @@ func InitHostSymbolsLoader(cacheSize int) *HostSymbolsLoader {
 	}
 }
 
-// GetDynamicSymbols try to get shared objects dynamic symbols from lru, and if fails read needed information
-// from ELF file.
+// GetDynamicSymbols returns the union of imported and exported symbols of the
+// shared object. The returned map is freshly allocated on every call and is
+// safe for the caller to mutate.
 func (soLoader *HostSymbolsLoader) GetDynamicSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	dynSyms := copyMap(syms.Imported)
-	for expSym := range syms.Exported {
-		dynSyms[expSym] = true
-	}
-	return dynSyms, nil
+	return syms.View(CategoryDynamic), nil
 }
 
-// GetExportedSymbols try to get shared objects exported symbols from lru, and if fails read needed information
-// from ELF file.
-// The returned map is part of a cache, so if the user wants to modify it he should copy it and modify it there.
+// GetExportedSymbols returns the exported symbols of the shared object.
+//
+// The returned map is freshly built per call from the cached internal store;
+// callers may freely retain or mutate it.
 func (soLoader *HostSymbolsLoader) GetExportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return syms.Exported, nil
+	return syms.View(CategoryExported), nil
 }
 
-// GetImportedSymbols try to get shared objects imported symbols from lru, and if fails read needed information
-// from ELF file.
-// The returned map is part of a cache, so if the user wants to modify it he should copy it and modify it there.
+// GetImportedSymbols returns the imported symbols of the shared object.
+//
+// The returned map is freshly built per call from the cached internal store;
+// callers may freely retain or mutate it.
 func (soLoader *HostSymbolsLoader) GetImportedSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return syms.Imported, nil
+	return syms.View(CategoryImported), nil
 }
 
+// GetLocalSymbols returns the local symbols of the shared object.
+//
+// The returned map is freshly built per call from the cached internal store;
+// callers may freely retain or mutate it.
 func (soLoader *HostSymbolsLoader) GetLocalSymbols(soInfo ObjInfo) (map[string]bool, error) {
 	syms, err := soLoader.loadSOSymbols(soInfo)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
-	return syms.Local, nil
+	return syms.View(CategoryLocal), nil
 }
 
 func (soLoader *HostSymbolsLoader) loadSOSymbols(soInfo ObjInfo) (*Symbols, error) {
@@ -149,35 +151,31 @@ func loadSharedObjectDynamicSymbols(path string) (*Symbols, error) {
 	return parseSymbols(symbols, dynamicSymbols), nil
 }
 
+// parseSymbols classifies ELF symbols into a compact Symbols store.
+//
+// All names are canonicalized via intern.String (Geyslan, issue #4761) so
+// identical symbols across SOs share one backing buffer, and a symbol that
+// belongs to more than one category (e.g. Local + Exported) occupies a single
+// map entry whose category bits are OR'd together.
 func parseSymbols(symbols, dynamicSymbols []elf.Symbol) *Symbols {
-	nSym := len(symbols)
-	nDyn := len(dynamicSymbols)
-	objSymbols := Symbols{
-		Local:    make(map[string]bool, nSym+nDyn),
-		Imported: make(map[string]bool, nDyn),
-		Exported: make(map[string]bool, nDyn),
-	}
+	// Upper bound: every symbol contributes at most one map entry. Pre-sizing
+	// to the sum keeps map growth out of the parse hot path even when there is
+	// no overlap between the two input slices.
+	objSymbols := newSymbolsWithCapacity(len(symbols) + len(dynamicSymbols))
 	for i := range symbols {
 		sym := &symbols[i] // avoid copying the entire struct by taking its address
 		if sym.Value != 0 {
-			objSymbols.Local[intern.String(sym.Name)] = true
+			objSymbols.add(intern.String(sym.Name), CategoryLocal)
 		}
 	}
 	for i := range dynamicSymbols {
 		sym := &dynamicSymbols[i] // avoid copying the entire struct by taking its address
 		name := intern.String(sym.Name)
 		if sym.Library != "" || sym.Value == 0 {
-			objSymbols.Imported[name] = true
+			objSymbols.add(name, CategoryImported)
 		} else {
-			objSymbols.Local[name] = true
-			objSymbols.Exported[name] = true
+			objSymbols.add(name, CategoryLocal|CategoryExported)
 		}
 	}
-	return &objSymbols
-}
-
-func copyMap(source map[string]bool) map[string]bool {
-	copiedMap := make(map[string]bool, len(source))
-	maps.Copy(copiedMap, source)
-	return copiedMap
+	return objSymbols
 }

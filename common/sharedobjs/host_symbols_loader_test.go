@@ -29,6 +29,23 @@ func (s soCacheMock) Add(obj ObjInfo, dynamicSymbols *Symbols) {
 	}
 }
 
+// newTestSymbols builds a *Symbols populated with the given category
+// memberships. It is the test-only counterpart of the legacy literal
+// constructor `&Symbols{Exported: ..., Imported: ..., Local: ...}`.
+func newTestSymbols(local, imported, exported []string) *Symbols {
+	s := &Symbols{m: make(map[string]SymbolCategory)}
+	for _, name := range local {
+		s.add(name, CategoryLocal)
+	}
+	for _, name := range imported {
+		s.add(name, CategoryImported)
+	}
+	for _, name := range exported {
+		s.add(name, CategoryExported)
+	}
+	return s
+}
+
 var testLoadedObjectInfo = ObjInfo{
 	Id: ObjID{
 		Inode:  10,
@@ -39,10 +56,7 @@ var testLoadedObjectInfo = ObjInfo{
 	MountNS: 1,
 }
 
-var testDynamicSymbols = &Symbols{
-	Exported: map[string]bool{"open": true, "close": true},
-	Imported: map[string]bool{"syscall": true},
-}
+var testDynamicSymbols = newTestSymbols(nil, []string{"syscall"}, []string{"open", "close"})
 
 func TestHostSharedObjectSymbolsLoader_GetDynamicSymbols(t *testing.T) {
 	t.Parallel()
@@ -237,44 +251,34 @@ func TestParseDynamicSymbols(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		Name          string
-		Input         []elf.Symbol
-		ExpecteResult Symbols
+		Name           string
+		Input          []elf.Symbol
+		ExpectedImport map[string]bool
+		ExpectedExport map[string]bool
 	}{
 		{
-			Name:          "No symbols",
-			Input:         []elf.Symbol{},
-			ExpecteResult: NewSOSymbols(),
+			Name:           "No symbols",
+			Input:          []elf.Symbol{},
+			ExpectedImport: map[string]bool{},
+			ExpectedExport: map[string]bool{},
 		},
 		{
-			Name:  "Full details import symbols",
-			Input: []elf.Symbol{{Name: "__ctype_toupper_loc", Info: 18, Section: elf.SHN_UNDEF + 12, Version: "GLIBC_2.3", Library: "libc.so.6"}},
-			ExpecteResult: Symbols{
-				Exported: make(map[string]bool),
-				Imported: map[string]bool{
-					"__ctype_toupper_loc": true,
-				},
-			},
+			Name:           "Full details import symbols",
+			Input:          []elf.Symbol{{Name: "__ctype_toupper_loc", Info: 18, Section: elf.SHN_UNDEF + 12, Version: "GLIBC_2.3", Library: "libc.so.6"}},
+			ExpectedImport: map[string]bool{"__ctype_toupper_loc": true},
+			ExpectedExport: map[string]bool{},
 		},
 		{
-			Name:  "Missing details import symbol",
-			Input: []elf.Symbol{{Name: "cap_to_text", Info: 18, Section: elf.SHN_UNDEF}},
-			ExpecteResult: Symbols{
-				Exported: make(map[string]bool),
-				Imported: map[string]bool{
-					"cap_to_text": true,
-				},
-			},
+			Name:           "Missing details import symbol",
+			Input:          []elf.Symbol{{Name: "cap_to_text", Info: 18, Section: elf.SHN_UNDEF}},
+			ExpectedImport: map[string]bool{"cap_to_text": true},
+			ExpectedExport: map[string]bool{},
 		},
 		{
-			Name:  "Export import symbol",
-			Input: []elf.Symbol{{Name: "_obstack_memory_used", Info: 18, Section: elf.SHN_UNDEF + 12, Value: 55424, Size: 38}},
-			ExpecteResult: Symbols{
-				Exported: map[string]bool{
-					"_obstack_memory_used": true,
-				},
-				Imported: make(map[string]bool),
-			},
+			Name:           "Export import symbol",
+			Input:          []elf.Symbol{{Name: "_obstack_memory_used", Info: 18, Section: elf.SHN_UNDEF + 12, Value: 55424, Size: 38}},
+			ExpectedImport: map[string]bool{},
+			ExpectedExport: map[string]bool{"_obstack_memory_used": true},
 		},
 		{
 			Name: "Mixed symbols",
@@ -283,14 +287,12 @@ func TestParseDynamicSymbols(t *testing.T) {
 				{Name: "cap_to_text", Info: 18, Section: elf.SHN_UNDEF},
 				{Name: "_obstack_memory_used", Info: 18, Section: elf.SHN_UNDEF + 12, Value: 55424, Size: 38},
 			},
-			ExpecteResult: Symbols{
-				Exported: map[string]bool{
-					"_obstack_memory_used": true,
-				},
-				Imported: map[string]bool{
-					"__ctype_toupper_loc": true,
-					"cap_to_text":         true,
-				},
+			ExpectedImport: map[string]bool{
+				"__ctype_toupper_loc": true,
+				"cap_to_text":         true,
+			},
+			ExpectedExport: map[string]bool{
+				"_obstack_memory_used": true,
 			},
 		},
 	}
@@ -302,8 +304,8 @@ func TestParseDynamicSymbols(t *testing.T) {
 			t.Parallel()
 
 			dynamicSymbols := parseSymbols([]elf.Symbol{}, testCase.Input)
-			assert.Equal(t, fmt.Sprint(testCase.ExpecteResult.Imported), fmt.Sprint(dynamicSymbols.Imported))
-			assert.Equal(t, fmt.Sprint(testCase.ExpecteResult.Exported), fmt.Sprint(dynamicSymbols.Exported))
+			assert.Equal(t, fmt.Sprint(testCase.ExpectedImport), fmt.Sprint(dynamicSymbols.View(CategoryImported)))
+			assert.Equal(t, fmt.Sprint(testCase.ExpectedExport), fmt.Sprint(dynamicSymbols.View(CategoryExported)))
 		})
 	}
 }
@@ -333,11 +335,11 @@ func TestInitHostSymbolsLoader(t *testing.T) {
 func TestHostSharedObjectSymbolsLoader_GetLocalSymbols(t *testing.T) {
 	t.Parallel()
 
-	testSymbols := &Symbols{
-		Exported: map[string]bool{"open": true},
-		Imported: map[string]bool{"syscall": true},
-		Local:    map[string]bool{"local_func": true, "local_var": true},
-	}
+	testSymbols := newTestSymbols(
+		[]string{"local_func", "local_var"},
+		[]string{"syscall"},
+		[]string{"open"},
+	)
 
 	t.Run("Happy flow", func(t *testing.T) {
 		t.Parallel()
@@ -358,7 +360,7 @@ func TestHostSharedObjectSymbolsLoader_GetLocalSymbols(t *testing.T) {
 		result, err := loader.GetLocalSymbols(testLoadedObjectInfo)
 
 		require.NoError(t, err)
-		assert.Equal(t, testSymbols.Local, result)
+		assert.Equal(t, testSymbols.View(CategoryLocal), result)
 	})
 
 	t.Run("Sad flow", func(t *testing.T) {
@@ -389,11 +391,11 @@ func TestDynamicSymbolsLRUCache_Get(t *testing.T) {
 	cache, ok := loader.soCache.(*dynamicSymbolsLRUCache)
 	require.True(t, ok)
 
-	testSymbols := &Symbols{
-		Exported: map[string]bool{"test": true},
-		Imported: map[string]bool{"import": true},
-		Local:    map[string]bool{"local": true},
-	}
+	testSymbols := newTestSymbols(
+		[]string{"local"},
+		[]string{"import"},
+		[]string{"test"},
+	)
 
 	// Test cache miss
 	result, found := cache.Get(testLoadedObjectInfo.Id)
@@ -414,17 +416,8 @@ func TestDynamicSymbolsLRUCache_Add(t *testing.T) {
 	cache, ok := loader.soCache.(*dynamicSymbolsLRUCache)
 	require.True(t, ok)
 
-	testSymbols1 := &Symbols{
-		Exported: map[string]bool{"test1": true},
-		Imported: map[string]bool{"import1": true},
-		Local:    map[string]bool{"local1": true},
-	}
-
-	testSymbols2 := &Symbols{
-		Exported: map[string]bool{"test2": true},
-		Imported: map[string]bool{"import2": true},
-		Local:    map[string]bool{"local2": true},
-	}
+	testSymbols1 := newTestSymbols([]string{"local1"}, []string{"import1"}, []string{"test1"})
+	testSymbols2 := newTestSymbols([]string{"local2"}, []string{"import2"}, []string{"test2"})
 
 	obj1 := ObjInfo{Id: ObjID{Inode: 1, Device: 1, Ctime: 1}, Path: "/test1.so"}
 	obj2 := ObjInfo{Id: ObjID{Inode: 2, Device: 2, Ctime: 2}, Path: "/test2.so"}
@@ -502,12 +495,13 @@ func TestParseSymbols_LocalSymbols(t *testing.T) {
 
 	result := parseSymbols(localSymbols, []elf.Symbol{})
 
-	assert.Len(t, result.Local, 2)
-	assert.True(t, result.Local["local_func1"])
-	assert.True(t, result.Local["local_func2"])
-	assert.False(t, result.Local["zero_value_func"])
-	assert.Empty(t, result.Imported)
-	assert.Empty(t, result.Exported)
+	local := result.View(CategoryLocal)
+	assert.Len(t, local, 2)
+	assert.True(t, local["local_func1"])
+	assert.True(t, local["local_func2"])
+	assert.False(t, local["zero_value_func"])
+	assert.Empty(t, result.View(CategoryImported))
+	assert.Empty(t, result.View(CategoryExported))
 }
 
 func TestParseSymbols_MixedSymbols(t *testing.T) {
@@ -526,31 +520,83 @@ func TestParseSymbols_MixedSymbols(t *testing.T) {
 	result := parseSymbols(localSymbols, dynamicSymbols)
 
 	// Local symbols
-	assert.Len(t, result.Local, 3) // local_func, export_func, both_func
-	assert.True(t, result.Local["local_func"])
-	assert.True(t, result.Local["export_func"])
-	assert.True(t, result.Local["both_func"])
-	assert.False(t, result.Local["zero_local"])
+	local := result.View(CategoryLocal)
+	assert.Len(t, local, 3) // local_func, export_func, both_func
+	assert.True(t, local["local_func"])
+	assert.True(t, local["export_func"])
+	assert.True(t, local["both_func"])
+	assert.False(t, local["zero_local"])
 
 	// Imported symbols
-	assert.Len(t, result.Imported, 1)
-	assert.True(t, result.Imported["import_func"])
+	imported := result.View(CategoryImported)
+	assert.Len(t, imported, 1)
+	assert.True(t, imported["import_func"])
 
 	// Exported symbols
-	assert.Len(t, result.Exported, 2) // export_func, both_func
-	assert.True(t, result.Exported["export_func"])
-	assert.True(t, result.Exported["both_func"])
+	exported := result.View(CategoryExported)
+	assert.Len(t, exported, 2) // export_func, both_func
+	assert.True(t, exported["export_func"])
+	assert.True(t, exported["both_func"])
+}
+
+func TestParseSymbols_OverlapDedupesEntries(t *testing.T) {
+	// A symbol that is both Local (static) and Exported (dynamic) should occupy
+	// a single internal map entry whose category bits are OR'd together.
+	localSymbols := []elf.Symbol{
+		{Name: "shared_sym", Value: 0x1000},
+	}
+	dynamicSymbols := []elf.Symbol{
+		{Name: "shared_sym", Value: 0x1000}, // local + exported
+	}
+
+	result := parseSymbols(localSymbols, dynamicSymbols)
+
+	assert.Equal(t, 1, result.Len(), "overlapping name must collapse to one entry")
+	assert.True(t, result.Has("shared_sym", CategoryLocal))
+	assert.True(t, result.Has("shared_sym", CategoryExported))
+	assert.False(t, result.Has("shared_sym", CategoryImported))
 }
 
 func TestNewSOSymbols(t *testing.T) {
 	symbols := NewSOSymbols()
 
-	assert.NotNil(t, symbols.Exported)
-	assert.NotNil(t, symbols.Imported)
-	assert.NotNil(t, symbols.Local)
-	assert.Empty(t, symbols.Exported)
-	assert.Empty(t, symbols.Imported)
-	assert.Empty(t, symbols.Local)
+	assert.NotNil(t, symbols.m)
+	assert.Equal(t, 0, symbols.Len())
+	assert.Empty(t, symbols.View(CategoryLocal))
+	assert.Empty(t, symbols.View(CategoryImported))
+	assert.Empty(t, symbols.View(CategoryExported))
+	assert.Empty(t, symbols.View(CategoryDynamic))
+}
+
+func TestSymbols_View(t *testing.T) {
+	s := newTestSymbols(
+		[]string{"a", "shared"},
+		[]string{"b"},
+		[]string{"c", "shared"},
+	)
+
+	// shared is Local|Exported, so it appears in both views.
+	assert.Equal(t, map[string]bool{"a": true, "shared": true}, s.View(CategoryLocal))
+	assert.Equal(t, map[string]bool{"b": true}, s.View(CategoryImported))
+	assert.Equal(t, map[string]bool{"c": true, "shared": true}, s.View(CategoryExported))
+	assert.Equal(t, map[string]bool{"b": true, "c": true, "shared": true}, s.View(CategoryDynamic))
+
+	// View returns a fresh map: mutating it must not change subsequent views.
+	v := s.View(CategoryLocal)
+	v["new"] = true
+	assert.False(t, s.Has("new", CategoryLocal))
+}
+
+func TestSymbols_Has(t *testing.T) {
+	s := newTestSymbols([]string{"a"}, []string{"b"}, []string{"c"})
+
+	assert.True(t, s.Has("a", CategoryLocal))
+	assert.False(t, s.Has("a", CategoryExported))
+	assert.True(t, s.Has("b", CategoryImported))
+	assert.True(t, s.Has("b", CategoryDynamic))
+	assert.True(t, s.Has("c", CategoryExported))
+	assert.True(t, s.Has("c", CategoryDynamic))
+	assert.False(t, s.Has("missing", CategoryLocal|CategoryImported|CategoryExported))
 }
 
 func TestInitUnsupportedFileError(t *testing.T) {
@@ -574,28 +620,4 @@ func TestUnsupportedFileError_Unwrap(t *testing.T) {
 
 	unwrapped := unsupportedErr.Unwrap()
 	assert.Equal(t, originalErr, unwrapped)
-}
-
-func TestCopyMap(t *testing.T) {
-	original := map[string]bool{
-		"key1": true,
-		"key2": false,
-		"key3": true,
-	}
-
-	copied := copyMap(original)
-
-	// Check that all values are copied
-	assert.Equal(t, original, copied)
-
-	// Check that it's a different map (modifying one doesn't affect the other)
-	copied["key4"] = true
-	assert.False(t, original["key4"])
-	assert.True(t, copied["key4"])
-
-	// Test with empty map
-	emptyOriginal := map[string]bool{}
-	emptyCopied := copyMap(emptyOriginal)
-	assert.Equal(t, emptyOriginal, emptyCopied)
-	assert.Len(t, emptyCopied, 0)
 }
