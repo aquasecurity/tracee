@@ -306,8 +306,6 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		},
 	}
 
-	emptyEvent := protocol.Event{}
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -343,11 +341,6 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			var sigs []detect.Signature
 			sigs = append(sigs, tc.inputSignature)
 
-			// FIXME We should use another Go concurrency pattern to make this test logically correct.
-			//       The gotNumEvents variable is causing data race, because it's accessed
-			//       by two goroutines. Temporary workaround is to change from int to uint32 and
-			//       use atomic.AddUint32 and atomic.LoadUint32 methods.
-			//       go test -v -run=TestConsumeSources -race ./pkg/signatures/engine/...
 			var gotNumEvents uint32
 			tc.inputSignature.FakeOnEvent = func(event protocol.Event) error {
 				assert.Equal(t, tc.expectedEvent, event.Payload, tc.name)
@@ -369,16 +362,14 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			// send a test event
 			e.inputs.Tracee <- tc.inputEvent
 
-			// assert
-			var gotEvent protocol.Event
-			time.Sleep(time.Millisecond * 1) // wait for events to propagate
-
-			eventsCount := int(atomic.LoadUint32(&gotNumEvents))
 			if tc.expectedNumEvents <= 0 {
-				assert.Equal(t, emptyEvent, gotEvent, tc.name)
-				assert.Zero(t, eventsCount, tc.name)
+				require.Never(t, func() bool {
+					return atomic.LoadUint32(&gotNumEvents) > 0
+				}, 50*time.Millisecond, 10*time.Millisecond, tc.name)
 			} else {
-				assert.Equal(t, tc.expectedNumEvents, eventsCount, tc.name)
+				require.Eventually(t, func() bool {
+					return int(atomic.LoadUint32(&gotNumEvents)) == tc.expectedNumEvents
+				}, 5*time.Second, 10*time.Millisecond, tc.name)
 			}
 
 			if tc.expectedError != "" {
