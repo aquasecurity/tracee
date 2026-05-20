@@ -80,10 +80,11 @@ func (s *Symbols) Len() int { return len(s.m) }
 // in mask. The returned map is owned by the caller and is safe to mutate; it
 // is recomputed on every call.
 //
-// View intentionally allocates: the live-heap footprint of cached Symbols is
-// constant in the number of unique names, regardless of how many categories
-// each name belongs to. Callers that need repeated category iteration over
-// the same object should cache the result themselves.
+// View allocates a fresh map on every call by design. The layout collapses
+// three parallel maps (Local / Imported / Exported) into one bitmask-backed
+// store, saving two map headers and bucket arrays per cached Symbols.
+// Callers that iterate the same category repeatedly should cache the
+// returned map.
 func (s *Symbols) View(mask SymbolCategory) map[string]bool {
 	if len(s.m) == 0 {
 		return map[string]bool{}
