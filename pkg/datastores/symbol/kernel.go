@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
+	"github.com/aquasecurity/tracee/common/intern"
 )
 
 const (
@@ -122,7 +123,7 @@ func NewKernelSymbolTable(lazyNameLookup bool, requiredDataSymbolsOnly bool, req
 // Read the contents of the given buffer and update the symbol table
 func (kst *KernelSymbolTable) update(reader io.Reader, requiredDataSymbolsOnly bool, requiredDataSymbols []string) error {
 	// Build set of required data symbols for efficient lookup
-	requiredDataSymbolsSet := make(map[string]struct{})
+	requiredDataSymbolsSet := make(map[string]struct{}, len(requiredDataSymbols))
 	for _, symbolName := range requiredDataSymbols {
 		requiredDataSymbolsSet[symbolName] = struct{}{}
 	}
@@ -162,17 +163,27 @@ func (kst *KernelSymbolTable) update(reader io.Reader, requiredDataSymbolsOnly b
 			symbolOwner = strings.TrimSuffix(symbolOwner, "]")
 		}
 
-		// This is a data symbol, requiredDataSymbolsOnly is true, and this symbol isn't required
+		// This is a data symbol, requiredDataSymbolsOnly is true, and this symbol isn't required.
+		// Filter using the scanner-substring view to avoid an intern allocation for skipped symbols.
 		if requiredDataSymbolsOnly && strings.ContainsAny(symbolType, "DdBbRr") {
 			if _, exists := requiredDataSymbolsSet[symbolName]; !exists {
 				continue
 			}
 		}
 
+		// Detach the name from the per-line scanner.Text() allocation: fields[2]
+		// is a substring of that buffer, so retaining it would pin the whole line
+		// for the lifetime of the symbol table. Kernel symbol names are mostly
+		// unique (~200K distinct entries), so we use strings.Clone rather than the
+		// intern table — interning here was measured to cost ~25 MiB and ~870k
+		// extra allocations per load with no dedup benefit (see issue #4761
+		// discussion and pkg/datastores/symbol bench history).
+		ownedName := strings.Clone(symbolName)
+
 		// Get index of symbol owner, or add it if it doesn't exist
 		ownerIdx := kst.getOrAddSymbolOwner(symbolOwner)
 
-		symbols = append(symbols, newKernelSymbolInternal(symbolName, symbolAddr, ownerIdx))
+		symbols = append(symbols, newKernelSymbolInternal(ownedName, symbolAddr, ownerIdx))
 	}
 
 	// We didn't hold the required privileges
@@ -189,6 +200,12 @@ func (kst *KernelSymbolTable) update(reader io.Reader, requiredDataSymbolsOnly b
 func (kst *KernelSymbolTable) getOrAddSymbolOwner(ownerStr string) uint16 {
 	ownerIdx, found := kst.symbolOwnerToIdx[ownerStr]
 	if !found {
+		// First time we see this owner. ownerStr is a substring of the scanner's
+		// per-line buffer; intern it so we don't pin the line and so subsequent
+		// modules with the same owner string share one canonical copy. Owners
+		// form a small set (tens of modules) with very high reuse, which is
+		// exactly the workload intern.String is good at.
+		ownerStr = intern.String(ownerStr)
 		kst.idxToSymbolOwner = append(kst.idxToSymbolOwner, ownerStr)
 		ownerIdx = uint16(len(kst.idxToSymbolOwner) - 1)
 		kst.symbolOwnerToIdx[ownerStr] = ownerIdx

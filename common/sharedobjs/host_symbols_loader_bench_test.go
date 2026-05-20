@@ -57,6 +57,7 @@ func benchSymbolSetUnique(n int) (static, dyn []elf.Symbol) {
 
 func BenchmarkParseSymbols(b *testing.B) {
 	static, dyn := benchSymbolSetDeduped(4000)
+	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		parseSymbols(static, dyn)
@@ -65,6 +66,7 @@ func BenchmarkParseSymbols(b *testing.B) {
 
 func BenchmarkParseSymbolsUniqueNames(b *testing.B) {
 	static, dyn := benchSymbolSetUnique(4000)
+	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		parseSymbols(static, dyn)
