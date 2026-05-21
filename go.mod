@@ -12,7 +12,7 @@ require (
 	github.com/aquasecurity/tracee/common v0.0.0
 	github.com/aquasecurity/tracee/detectors v0.0.0-00010101000000-000000000000
 	github.com/aquasecurity/tracee/types v0.0.0-20251205142631-7dc44bdb801c
-	github.com/containerd/containerd v1.7.29
+	github.com/containerd/containerd v1.7.32
 	github.com/google/cel-go v0.22.0
 	github.com/google/gopacket v1.1.19
 	github.com/grafana/pyroscope-go v1.2.2
@@ -155,7 +155,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
-	github.com/opencontainers/selinux v1.13.0 // indirect
+	github.com/opencontainers/selinux v1.13.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
