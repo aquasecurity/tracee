@@ -1146,6 +1146,36 @@ go-tidy:: \
 	done
 	@echo "Workspace maintenance complete!"
 
+# Prevent make from treating package arguments as targets
+ifneq ($(filter go-get,$(MAKECMDGOALS)),)
+go-get-args := $(filter-out go-get,$(MAKECMDGOALS))
+ifneq ($(strip $(go-get-args)),)
+$(go-get-args):
+	@:
+endif
+endif
+
+.PHONY: go-get
+go-get:: \
+	| .checkver_$(CMD_GO)
+#
+	@args="$(filter-out go-get,$(MAKECMDGOALS))"; \
+	if [ -z "$$args" ]; then \
+		echo "Usage: make go-get <package>[@version]..."; \
+		exit 1; \
+	fi; \
+	echo "Running go get $$args on all workspace modules..."; \
+	if [ -f "./go.mod" ]; then \
+		echo "Getting in root module..."; \
+		$(CMD_GO) get $$args; \
+	fi; \
+	for mod_file in $$(find . -name "go.mod" -type f -not -path "./go.mod" $(foreach path,$(EXCLUDED_MODULES),-not -path "$(path)") | sort); do \
+		mod_dir=$$(dirname "$$mod_file"); \
+		echo "Getting in $$mod_dir..."; \
+		(cd "$$mod_dir" && $(CMD_GO) get $$args); \
+	done; \
+	echo "Workspace go get complete!"
+
 .PHONY: check-fmt
 check-fmt::
 #
