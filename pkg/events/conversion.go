@@ -32,11 +32,23 @@ func ConvertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 }
 
 // ConvertToProto converts a trace.Event to v1beta1.Event.
+//
+// This acquires a fresh slab from protoSlabPool; the caller owns the returned
+// proto event and the slab escapes pool reuse. For pipeline use, prefer
+// PipelineEvent.ToProto() which manages slab lifecycle via the pool.
 func ConvertToProto(e *trace.Event) *pb.Event {
-	event := &pb.Event{
-		Id:   pb.EventId(e.EventID),
-		Name: sanitizeStringForProtobuf(e.EventName),
-	}
+	s := protoSlabPool.Get().(*eventSlab)
+	s.reset()
+	return fillProtoSlab(e, s)
+}
+
+// fillProtoSlab converts a trace.Event into a pb.Event using the supplied slab
+// for the top-level Event, Policies, and EventValue array. Workload and its
+// children remain heap-allocated; see eventSlab for the rationale.
+func fillProtoSlab(e *trace.Event, s *eventSlab) *pb.Event {
+	event := &s.event
+	event.Id = pb.EventId(e.EventID)
+	event.Name = sanitizeStringForProtobuf(e.EventName)
 
 	if e.Timestamp != 0 {
 		event.Timestamp = timestamppb.New(time.Unix(0, int64(e.Timestamp)))
@@ -133,9 +145,8 @@ func ConvertToProto(e *trace.Event) *pb.Event {
 
 	// Policies
 	if len(e.MatchedPolicies) > 0 {
-		event.Policies = &pb.Policies{
-			Matched: sanitizeStringArrayForProtobuf(e.MatchedPolicies),
-		}
+		s.policies.Matched = sanitizeStringArrayForProtobuf(e.MatchedPolicies)
+		event.Policies = &s.policies
 	}
 
 	// Threat info from metadata
@@ -143,8 +154,8 @@ func ConvertToProto(e *trace.Event) *pb.Event {
 		event.Threat = getThreat(e.Metadata.Description, e.Metadata.Properties)
 	}
 
-	// Convert event data (Args) to Data field
-	eventData, err := getEventData(*e)
+	// Convert event data (Args) to Data field using slab-allocated EventValue slots.
+	eventData, err := getEventDataSlab(*e, s)
 	if err != nil {
 		logger.Errorw("Failed to convert event data", "event", e.EventName, "error", err)
 		// Continue with partial conversion rather than failing completely
@@ -284,6 +295,118 @@ func ConvertFromProto(e *pb.Event) *trace.Event {
 	}
 
 	return event
+}
+
+// getEventDataSlab converts trace.Event.Args to a protobuf EventValue array
+// using the slab's pre-allocated EventValue slots for the first maxSlabArgs
+// args. Args beyond that — and args whose type does not map to a primitive
+// EventValue oneof — fall back to heap-allocated EventValues via parseArgument.
+//
+// The returned slice is backed by s.dataPtrs while it stays within the pool's
+// capacity; appending past maxSlabArgs grows it onto the heap normally.
+func getEventDataSlab(e trace.Event, s *eventSlab) ([]*pb.EventValue, error) {
+	data := s.dataPtrs[:0]
+	slabIdx := 0
+
+	for _, arg := range e.Args {
+		// Handled separately in fillProtoSlab via getDetectedFrom.
+		if arg.ArgMeta.Name == "detectedFrom" {
+			continue
+		}
+
+		var ev *pb.EventValue
+		if slabIdx < maxSlabArgs {
+			candidate := &s.dataValues[slabIdx]
+			handled, err := fillEventValue(candidate, arg)
+			if err != nil {
+				return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
+			}
+			if handled {
+				ev = candidate
+				slabIdx++
+			}
+		}
+		if ev == nil {
+			// Either past the slab's capacity or the type is not a primitive
+			// the slab path handles; fall back to heap allocation.
+			var err error
+			ev, err = parseArgument(arg)
+			if err != nil {
+				return nil, errfmt.Errorf("can't convert event data: %s - %v - %T", arg.Name, arg.Value, arg.Value)
+			}
+			if ev == nil {
+				logger.Errorw(
+					"Can't convert event argument. Please add it as a GRPC event data type or implement detect.FindingDataStruct interface.",
+					"name", arg.Name,
+					"type", fmt.Sprintf("%T", arg.Value),
+				)
+				continue
+			}
+		}
+
+		ev.Name = sanitizeStringForProtobuf(arg.ArgMeta.Name)
+		data = append(data, ev)
+	}
+
+	return data, nil
+}
+
+// fillEventValue populates an existing EventValue slot in place for primitive
+// arg types, avoiding a fresh *pb.EventValue allocation per arg. It returns
+// (true, nil) when the arg matched a primitive case; (false, nil) when the
+// caller must fall back to parseArgument for complex types.
+//
+// Keep the type set here aligned with the primitive cases of parseArgument.
+func fillEventValue(ev *pb.EventValue, arg trace.Argument) (bool, error) {
+	switch v := arg.Value.(type) {
+	case nil:
+		ev.Value = nil
+	case int:
+		ev.Value = &pb.EventValue_Int64{Int64: int64(v)}
+	case int32:
+		ev.Value = &pb.EventValue_Int32{Int32: v}
+	case uint8:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case uint16:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case uint32:
+		ev.Value = &pb.EventValue_UInt32{UInt32: v}
+	case int64:
+		ev.Value = &pb.EventValue_Int64{Int64: v}
+	case uint64:
+		ev.Value = &pb.EventValue_UInt64{UInt64: v}
+	case bool:
+		ev.Value = &pb.EventValue_Bool{Bool: v}
+	case string:
+		ev.Value = &pb.EventValue_Str{Str: sanitizeStringForProtobuf(v)}
+	case []string:
+		ev.Value = &pb.EventValue_StrArray{StrArray: &pb.StringArray{Value: sanitizeStringArrayForProtobuf(v)}}
+	case []byte:
+		ev.Value = &pb.EventValue_Bytes{Bytes: v}
+	case []uint64:
+		ev.Value = &pb.EventValue_UInt64Array{UInt64Array: &pb.UInt64Array{Value: v}}
+	case [2]int32:
+		intArray := make([]int32, 0, len(v))
+		for _, i := range v {
+			intArray = append(intArray, i)
+		}
+		ev.Value = &pb.EventValue_Int32Array{Int32Array: &pb.Int32Array{Value: intArray}}
+	case uintptr:
+		ev.Value = &pb.EventValue_UInt64{UInt64: uint64(v)}
+	case trace.Pointer:
+		ev.Value = &pb.EventValue_Pointer{Pointer: uint64(v)}
+	case time.Time:
+		ev.Value = &pb.EventValue_UInt64{UInt64: uint64(v.UnixNano())}
+	case float64:
+		ev.Value = &pb.EventValue_Timespec{Timespec: &pb.Timespec{Value: wrapperspb.Double(v)}}
+	case layers.TCPPort:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	case layers.UDPPort:
+		ev.Value = &pb.EventValue_UInt32{UInt32: uint32(v)}
+	default:
+		return false, nil
+	}
+	return true, nil
 }
 
 // getEventData converts trace.Event.Args to protobuf EventValue array
