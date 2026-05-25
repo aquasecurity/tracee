@@ -818,6 +818,10 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 
 			// Send the event to the streams.
 			if t.streamsManager.HasSubscribers() {
+				// Detach the slab from pool management — the stream takes ownership.
+				// This prevents the slab from being recycled while the stream still
+				// holds a reference to the proto event.
+				pbEvent = event.DetachProto()
 				// Translate event ID to external format for streams (external API boundary)
 				pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
 				t.streamsManager.Publish(pbEvent, event.MatchedPoliciesBitmap)
