@@ -103,7 +103,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.41.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/arch v0.19.0 // indirect
+	golang.org/x/arch v0.27.0 // indirect
 	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
