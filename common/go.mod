@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/arch v0.19.0
+	golang.org/x/arch v0.27.0
 	golang.org/x/exp v0.0.0-20250718183923-645b1fa84792
 	golang.org/x/sys v0.45.0
 	gotest.tools v2.2.0+incompatible
