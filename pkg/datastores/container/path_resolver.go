@@ -269,7 +269,7 @@ func (cPathRes *ContainerPathResolver) GetProcMounts(mountNS uint32) (string, er
 	// Try using cached PIDs in this mount NS
 	pids := cPathRes.mountNSPIDsCache.GetBucket(mountNS)
 	for _, pid := range pids {
-		path := fmt.Sprintf("/proc/%d/mounts", pid)
+		path := proc.GetMountsPath(int32(pid))
 		if cPathRes.isFileAccessible(path) {
 			return path, nil
 		}
@@ -283,12 +283,47 @@ func (cPathRes *ContainerPathResolver) GetProcMounts(mountNS uint32) (string, er
 		return "", errfmt.Errorf("could not find any process in mount namespace %d: %v", mountNS, err)
 	}
 
-	path := fmt.Sprintf("/proc/%d/mounts", pid)
+	path := proc.GetMountsPath(pid)
 	if !cPathRes.isFileAccessible(path) {
 		return "", errfmt.Errorf("mounts file %s is not accessible", path)
 	}
 
 	// Register this process in the mount namespace cache for future use
+	cPathRes.mountNSPIDsCache.AddBucketItem(mountNS, uint32(pid))
+
+	return path, nil
+}
+
+// GetProcMountInfo returns the path of a /proc/<pid>/mountinfo file for any process in the given mount namespace.
+// It first tries to use cached PIDs for the namespace, and falls back to searching procfs.
+//
+// Parameters:
+//   - mountNS: mount namespace ID
+//
+// Returns the path to a valid /proc/<pid>/mountinfo file for the namespace.
+func (cPathRes *ContainerPathResolver) GetProcMountInfo(mountNS uint32) (string, error) {
+	if mountNS == 0 {
+		return "", errfmt.Errorf("invalid mount namespace ID: %d", mountNS)
+	}
+
+	pids := cPathRes.mountNSPIDsCache.GetBucket(mountNS)
+	for _, pid := range pids {
+		path := proc.GetMountInfoPath(int32(pid))
+		if cPathRes.isFileAccessible(path) {
+			return path, nil
+		}
+	}
+
+	pid, err := proc.GetAnyProcessInNS("mnt", mountNS)
+	if err != nil {
+		return "", errfmt.Errorf("could not find any process in mount namespace %d: %v", mountNS, err)
+	}
+
+	path := proc.GetMountInfoPath(pid)
+	if !cPathRes.isFileAccessible(path) {
+		return "", errfmt.Errorf("mountinfo file %s is not accessible", path)
+	}
+
 	cPathRes.mountNSPIDsCache.AddBucketItem(mountNS, uint32(pid))
 
 	return path, nil

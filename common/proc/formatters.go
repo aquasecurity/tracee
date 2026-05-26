@@ -58,3 +58,17 @@ func GetProcNSDirPath(pid int32) string {
 func GetProcNSPath(pid int32, nsName string) string {
 	return GetProcNSDirPath(pid) + "/" + nsName
 }
+
+// GetMountInfoPath returns the path to the mountinfo file of a process given its PID.
+// The path is in the form /proc/<pid>/mountinfo.
+func GetMountInfoPath(pid int32) string {
+	pidStr := strconv.FormatInt(int64(pid), 10)
+	return "/proc/" + pidStr + "/mountinfo"
+}
+
+// GetMountsPath returns the path to the mounts file of a process given its PID.
+// The path is in the form /proc/<pid>/mounts.
+func GetMountsPath(pid int32) string {
+	pidStr := strconv.FormatInt(int64(pid), 10)
+	return "/proc/" + pidStr + "/mounts"
+}

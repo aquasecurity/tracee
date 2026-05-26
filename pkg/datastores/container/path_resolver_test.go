@@ -3,6 +3,7 @@ package container
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"testing"
 	"testing/fstest"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/aquasecurity/tracee/common/bucketcache"
 	"github.com/aquasecurity/tracee/common/capabilities"
+	"github.com/aquasecurity/tracee/common/proc"
 )
 
 func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
@@ -265,6 +267,38 @@ func TestPathResolver_GetProcMounts(t *testing.T) {
 	_, err := pres.GetProcMounts(0)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid mount namespace ID")
+}
+
+func TestPathResolver_GetProcMountInfo(t *testing.T) {
+	t.Run("invalid mount namespace", func(t *testing.T) {
+		t.Parallel()
+
+		bucket := bucketcache.BucketCache{}
+		bucket.Init(20)
+		pres := InitContainerPathResolver(&bucket)
+
+		_, err := pres.GetProcMountInfo(0)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid mount namespace ID")
+	})
+
+	t.Run("from cached pid", func(t *testing.T) {
+		pid := os.Getpid()
+		want := proc.GetMountInfoPath(int32(pid))
+		if _, err := os.Stat(want); err != nil {
+			t.Skipf("requires %s: %v", want, err)
+		}
+
+		const mntNS uint32 = 424242
+		bucket := bucketcache.BucketCache{}
+		bucket.Init(20)
+		bucket.AddBucketItem(mntNS, uint32(pid))
+
+		pres := InitContainerPathResolver(&bucket)
+		got, err := pres.GetProcMountInfo(mntNS)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+	})
 }
 
 func TestPathResolver_isWithinMountNS(t *testing.T) {
