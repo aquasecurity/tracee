@@ -24,7 +24,8 @@ jobs:
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MICRO
     permissions:
-      pull-requests: write # gh pr list, gh pr comment
+      issues: write # gh label create
+      pull-requests: write # gh pr list, comment, edit labels
     container:
       image: alpine:3.23.3@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
 
@@ -79,7 +80,39 @@ jobs:
           echo "Found PR number: ${num}"
           echo "pr_number=${num}" >> "${GITHUB_OUTPUT}"
 
+      - name: Check if PR already synced
+        id: check-synced
+        if: steps.pr-number.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
+        shell: sh
+        run: |
+          set -eu
+
+          readonly LABEL_SYNCED="private-synced"
+
+          already_synced=$(
+              gh pr view "${PR_NUMBER}" \
+                  --repo "${GH_REPO}" \
+                  --json labels \
+                  --jq "any(.labels[]; .name == \"${LABEL_SYNCED}\")"
+          )
+          case "${already_synced}" in
+              true)
+                  echo "PR #${PR_NUMBER} already has label ${LABEL_SYNCED}; skipping sync."
+                  echo "already_synced=true" >> "${GITHUB_OUTPUT}"
+                  ;;
+              *)
+                  echo "already_synced=false" >> "${GITHUB_OUTPUT}"
+                  ;;
+          esac
+
       - name: Validate private-sync configuration
+        if: >-
+          steps.pr-number.outcome == 'success' &&
+          steps.check-synced.outputs.already_synced != 'true'
         env:
           TRACEE_PRIVATE_REPO_OWNER: ${{ secrets.TRACEE_PRIVATE_REPO_OWNER }}
           TRACEE_PRIVATE_REPO: ${{ secrets.TRACEE_PRIVATE_REPO }}
@@ -111,6 +144,9 @@ jobs:
 
       - name: Create GitHub App token
         id: app-token
+        if: >-
+          steps.pr-number.outcome == 'success' &&
+          steps.check-synced.outputs.already_synced != 'true'
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ secrets.ACTIONS_TRACEE_WRITE_GH_APP_CLIENT_ID }}
@@ -121,6 +157,9 @@ jobs:
 
       - name: Trigger private sync workflow
         id: sync
+        if: >-
+          steps.pr-number.outcome == 'success' &&
+          steps.check-synced.outputs.already_synced != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           TRACEE_PRIVATE_REPO_OWNER: ${{ secrets.TRACEE_PRIVATE_REPO_OWNER }}
@@ -182,32 +221,114 @@ jobs:
               exit 1
           fi
 
+      - name: Update PR sync labels
+        if: >-
+          always() &&
+          steps.pr-number.outcome == 'success' &&
+          steps.check-synced.outputs.already_synced != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
+          SYNC_RESULT: ${{ steps.sync.outcome }}
+        shell: sh
+        run: |
+          set -eu
+
+          readonly LABEL_SYNCED="private-synced"
+          readonly LABEL_NOT_SYNCED="private-non-synced"
+          readonly LABEL_COLOR_BLUE="1d76db"
+          readonly LABEL_COLOR_RED="d73a4a"
+
+          ensure_label() {
+              name="${1}"
+              color="${2}"
+              description="${3}"
+
+              exists=$(
+                  gh label list \
+                      --repo "${GH_REPO}" \
+                      --json name \
+                      --jq "any(.[]; .name == \"${name}\")"
+              )
+              case "${exists}" in
+                  true)
+                      echo "Label ${name} already exists."
+                      return 0
+                      ;;
+              esac
+
+              err_file=$(mktemp)
+              if gh label create "${name}" \
+                  --repo "${GH_REPO}" \
+                  --color "${color}" \
+                  --description "${description}" \
+                  2> "${err_file}"; then
+                  rm -f "${err_file}"
+                  return 0
+              fi
+              if grep -qi 'already exists' "${err_file}"; then
+                  echo "Label ${name} already exists."
+                  rm -f "${err_file}"
+                  return 0
+              fi
+              echo "ERROR: Failed to create label ${name}." >&2
+              cat "${err_file}" >&2
+              rm -f "${err_file}"
+              exit 1
+          }
+
+          ensure_label "${LABEL_SYNCED}" "${LABEL_COLOR_BLUE}" \
+              "Private mirror sync dispatch succeeded"
+          ensure_label "${LABEL_NOT_SYNCED}" "${LABEL_COLOR_RED}" \
+              "Private mirror sync dispatch failed"
+
+          case "${SYNC_RESULT}" in
+              success)
+                  gh pr edit "${PR_NUMBER}" \
+                      --repo "${GH_REPO}" \
+                      --add-label "${LABEL_SYNCED}" \
+                      --remove-label "${LABEL_NOT_SYNCED}"
+                  ;;
+              *)
+                  gh pr edit "${PR_NUMBER}" \
+                      --repo "${GH_REPO}" \
+                      --add-label "${LABEL_NOT_SYNCED}" \
+                      --remove-label "${LABEL_SYNCED}"
+                  ;;
+          esac
+
       - name: Comment on original PR
         if: always() && steps.pr-number.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
+          ALREADY_SYNCED: ${{ steps.check-synced.outputs.already_synced }}
           SYNC_RESULT: ${{ steps.sync.outcome }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         shell: sh
         run: |
           set -eu
 
-          case "${SYNC_RESULT}" in
-              success)
-                  body="Private mirror sync was triggered successfully."
-                  ;;
-              failure)
-                  body="Private mirror sync could not be triggered. See [workflow run](${RUN_URL}) for details."
-                  ;;
-              skipped|cancelled)
-                  body="Private mirror sync was not run (an earlier step failed or was skipped). See [workflow run](${RUN_URL})."
-                  ;;
-              *)
-                  body="Private mirror sync status is unknown. See [workflow run](${RUN_URL})."
-                  ;;
-          esac
+          if [ "${ALREADY_SYNCED}" = "true" ]; then
+              body="Private mirror sync was already completed for this PR (label \`private-synced\`). Skipping sync dispatch."
+          else
+              case "${SYNC_RESULT}" in
+                  success)
+                      body="Private mirror sync was triggered successfully."
+                      ;;
+                  failure)
+                      body="Private mirror sync could not be triggered. See [workflow run](${RUN_URL}) for details."
+                      ;;
+                  skipped|cancelled)
+                      body="Private mirror sync was not run (an earlier step failed or was skipped). See [workflow run](${RUN_URL})."
+                      ;;
+                  *)
+                      body="Private mirror sync status is unknown. See [workflow run](${RUN_URL})."
+                      ;;
+              esac
+          fi
 
           gh pr comment "${PR_NUMBER}" \
               --repo "${GH_REPO}" \
@@ -218,6 +339,7 @@ jobs:
         env:
           PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
           PR_NUMBER_OUTCOME: ${{ steps.pr-number.outcome }}
+          ALREADY_SYNCED: ${{ steps.check-synced.outputs.already_synced }}
           SYNC_RESULT: ${{ steps.sync.outcome }}
         shell: sh
         run: |
@@ -226,6 +348,8 @@ jobs:
               echo ""
               if [ "${PR_NUMBER_OUTCOME}" != "success" ]; then
                   echo "Did not run: merged PR number could not be determined."
+              elif [ "${ALREADY_SYNCED}" = "true" ]; then
+                  echo "Skipped: OSS PR **#${PR_NUMBER}** already has the \`private-synced\` label."
               elif [ "${SYNC_RESULT}" = "success" ]; then
                   echo "Triggered the private sync workflow for OSS PR **#${PR_NUMBER}**."
               elif [ "${SYNC_RESULT}" = "skipped" ]; then
