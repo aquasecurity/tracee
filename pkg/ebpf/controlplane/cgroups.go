@@ -75,5 +75,9 @@ func (ctrl *Controller) processCgroupRmdir(args []trace.Argument) error {
 		return errfmt.Errorf("error parsing cgroup_rmdir args: %v", err)
 	}
 	ctrl.cgroupManager.CgroupRemove(cgroupId, hId)
+
+	// Notify extended cgroup-rmdir hooks
+	cgroupRmdirExtended(cgroupId)
+
 	return nil
 }
