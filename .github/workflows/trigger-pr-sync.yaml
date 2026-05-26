@@ -24,7 +24,7 @@ jobs:
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MICRO
     permissions:
-      pull-requests: read # gh pr list
+      pull-requests: write # gh pr list, gh pr comment
     container:
       image: alpine:3.23.3@sha256:25109184c71bdad752c8312a8623239686a9a2071e8825f20acb8f2198c3f659
 
@@ -181,6 +181,37 @@ jobs:
               } >> "${GITHUB_STEP_SUMMARY}"
               exit 1
           fi
+
+      - name: Comment on original PR
+        if: always() && steps.pr-number.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr-number.outputs.pr_number }}
+          SYNC_RESULT: ${{ steps.sync.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: sh
+        run: |
+          set -eu
+
+          case "${SYNC_RESULT}" in
+              success)
+                  body="Private mirror sync was triggered successfully."
+                  ;;
+              failure)
+                  body="Private mirror sync could not be triggered. See [workflow run](${RUN_URL}) for details."
+                  ;;
+              skipped|cancelled)
+                  body="Private mirror sync was not run (an earlier step failed or was skipped). See [workflow run](${RUN_URL})."
+                  ;;
+              *)
+                  body="Private mirror sync status is unknown. See [workflow run](${RUN_URL})."
+                  ;;
+          esac
+
+          gh pr comment "${PR_NUMBER}" \
+              --repo "${GH_REPO}" \
+              --body "${body}"
 
       - name: Summary
         if: always()
