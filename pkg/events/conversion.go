@@ -280,7 +280,6 @@ func ConvertFromProto(e *pb.Event) *trace.Event {
 	if e.Threat != nil {
 		event.Metadata = &trace.Metadata{
 			Description: e.Threat.Name,
-			Properties:  make(map[string]interface{}),
 		}
 	}
 

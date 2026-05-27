@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/exp/maps"
 
+	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -157,6 +158,88 @@ func (f *DataFilter) Filter(data []trace.Argument) bool {
 	}
 
 	return true
+}
+
+// FilterProto evaluates the data filter directly against a protobuf EventValue
+// slice, avoiding the allocation of []trace.Argument that convertDataToArgs
+// would create. The matching logic mirrors Filter exactly.
+func (f *DataFilter) FilterProto(data []*v1beta1.EventValue) bool {
+	if !f.Enabled() {
+		return true
+	}
+
+	for fieldName, filter := range f.filters {
+		if !f.skipKernelFilter && f.kernelDataFilter.IsKernelFilterEnabled(fieldName) {
+			continue
+		}
+
+		found := false
+		var fieldVal interface{}
+
+		for _, ev := range data {
+			if ev == nil {
+				continue
+			}
+			// Match convertDataToArgs: returnValue is not exposed as a filterable arg.
+			if ev.GetName() == "returnValue" {
+				continue
+			}
+			if ev.GetName() == fieldName {
+				found = true
+				fieldVal = protoValueToInterface(ev)
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+
+		fieldVal = fmt.Sprint(fieldVal)
+		if !filter.Filter(fieldVal) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// protoValueToInterface extracts the Go value from a proto EventValue oneof.
+func protoValueToInterface(ev *v1beta1.EventValue) interface{} {
+	switch v := ev.GetValue().(type) {
+	case *v1beta1.EventValue_Int32:
+		return v.Int32
+	case *v1beta1.EventValue_Int64:
+		return v.Int64
+	case *v1beta1.EventValue_UInt32:
+		return v.UInt32
+	case *v1beta1.EventValue_UInt64:
+		return v.UInt64
+	case *v1beta1.EventValue_Str:
+		return v.Str
+	case *v1beta1.EventValue_Bool:
+		return v.Bool
+	case *v1beta1.EventValue_Pointer:
+		return trace.Pointer(v.Pointer)
+	case *v1beta1.EventValue_Bytes:
+		return v.Bytes
+	case *v1beta1.EventValue_StrArray:
+		if v.StrArray != nil {
+			return v.StrArray.Value
+		}
+		return nil
+	case *v1beta1.EventValue_Int32Array:
+		if v.Int32Array != nil {
+			return v.Int32Array.Value
+		}
+		return nil
+	case *v1beta1.EventValue_UInt64Array:
+		if v.UInt64Array != nil {
+			return v.UInt64Array.Value
+		}
+		return nil
+	default:
+		return ev
+	}
 }
 
 func (f *DataFilter) Parse(id events.ID, fieldName string, operatorAndValues string) error {
