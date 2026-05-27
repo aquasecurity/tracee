@@ -484,6 +484,64 @@ func TestDispatchWithScopeFilter(t *testing.T) {
 	assert.Len(t, outputs, 1) // Should pass through filter
 }
 
+func TestDispatchWithDataFilter(t *testing.T) {
+	detector := &producingDetector{
+		id:        "test_data_dispatch",
+		eventName: "test_data_dispatch_event",
+		requirements: detection.DetectorRequirements{
+			Events: []detection.EventRequirement{
+				{
+					Name:        "security_file_open",
+					Dependency:  detection.DependencyRequired,
+					DataFilters: []string{"pathname=/etc/passwd"},
+				},
+			},
+		},
+		autoPopulate: detection.AutoPopulateFields{},
+	}
+
+	_, err := CreateEventsFromDetectors(events.StartDetectorID+20006, []detection.EventDetector{detector})
+	require.NoError(t, err)
+
+	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
+	policyMgr := newTestPolicyManager(detEventID)
+
+	engine := NewEngine(policyMgr, nil)
+	params := detection.DetectorParams{
+		Config: detection.NewEmptyDetectorConfig(),
+	}
+
+	err = engine.RegisterDetector(detector, params)
+	require.NoError(t, err)
+
+	err = engine.EnableDetector(detector.id)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+
+	mismatchEvent := &v1beta1.Event{
+		Id:   v1beta1.EventId(events.SecurityFileOpen),
+		Name: "security_file_open",
+		Data: []*v1beta1.EventValue{
+			{Name: "pathname", Value: &v1beta1.EventValue_Str{Str: "/etc/shadow"}},
+		},
+	}
+	outputs, err := engine.DispatchToDetectors(ctx, mismatchEvent)
+	assert.NoError(t, err)
+	assert.Empty(t, outputs)
+
+	matchEvent := &v1beta1.Event{
+		Id:   v1beta1.EventId(events.SecurityFileOpen),
+		Name: "security_file_open",
+		Data: []*v1beta1.EventValue{
+			{Name: "pathname", Value: &v1beta1.EventValue_Str{Str: "/etc/passwd"}},
+		},
+	}
+	outputs, err = engine.DispatchToDetectors(ctx, matchEvent)
+	assert.NoError(t, err)
+	assert.Len(t, outputs, 1)
+}
+
 func TestCollectAllDetectors(t *testing.T) {
 	// CollectAllDetectors gathers detectors from built-in sources
 	// Since we can't easily mock the builtin module, we just verify it doesn't panic

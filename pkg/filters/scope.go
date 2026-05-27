@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/interfaces"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -112,6 +113,114 @@ func (f *ScopeFilter) Filter(evt trace.Event) bool {
 		f.podUIDFilter.Filter(evt.Kubernetes.PodUID) &&
 		f.tidFilter.Filter(int64(evt.ThreadID)) &&
 		f.uidFilter.Filter(int64(evt.UserID))
+}
+
+// FilterProto evaluates the scope filter directly against a protobuf Event,
+// avoiding the allocation of a trace.Event that ConvertFromProto would create.
+//
+// Five fields are absent from the proto schema: CgroupID, HostName, MountNS,
+// PIDNS, and ProcessorID. Zero values are passed for these, which is identical
+// to what ConvertFromProto produces (it never populates them either).
+func (f *ScopeFilter) FilterProto(e *v1beta1.Event) bool {
+	if !f.enabled {
+		return true
+	}
+
+	// Extract container info
+	var containerID, containerName, imageName string
+	var containerStarted bool
+	w := e.GetWorkload()
+	if w != nil {
+		if c := w.GetContainer(); c != nil {
+			containerID = c.GetId()
+			containerName = c.GetName()
+			containerStarted = c.GetStarted()
+			if img := c.GetImage(); img != nil {
+				imageName = img.GetName()
+			}
+		}
+	}
+
+	// Extract process info
+	var processName, syscall string
+	var pid, hostPid, tid, hostTid, uid int64
+	var ppid, hostPpid int64
+	if w != nil {
+		if p := w.GetProcess(); p != nil {
+			if p.GetPid() != nil {
+				pid = int64(p.GetPid().GetValue())
+			}
+			if p.GetHostPid() != nil {
+				hostPid = int64(p.GetHostPid().GetValue())
+			}
+			if p.GetRealUser() != nil && p.GetRealUser().GetId() != nil {
+				uid = int64(p.GetRealUser().GetId().GetValue())
+			}
+			if t := p.GetThread(); t != nil {
+				processName = t.GetName()
+				syscall = t.GetSyscall()
+				if t.GetTid() != nil {
+					tid = int64(t.GetTid().GetValue())
+				}
+				if t.GetHostTid() != nil {
+					hostTid = int64(t.GetHostTid().GetValue())
+				}
+			}
+			// Parent info from ancestors
+			if ancestors := p.GetAncestors(); len(ancestors) > 0 {
+				parent := ancestors[0]
+				if parent.GetHostPid() != nil {
+					hostPpid = int64(parent.GetHostPid().GetValue())
+				}
+				if parent.GetPid() != nil {
+					ppid = int64(parent.GetPid().GetValue())
+				}
+			}
+		}
+	}
+
+	// Extract kubernetes info
+	var podName, podNS, podUID string
+	if w != nil {
+		if k := w.GetK8S(); k != nil {
+			if pod := k.GetPod(); pod != nil {
+				podName = pod.GetName()
+				podUID = pod.GetUid()
+			}
+			if ns := k.GetNamespace(); ns != nil {
+				podNS = ns.GetName()
+			}
+		}
+	}
+
+	var ts int64
+	if e.GetTimestamp() != nil {
+		ts = e.GetTimestamp().AsTime().UnixNano()
+	}
+
+	return f.containerFilter.Filter(containerID != "") &&
+		f.containerStartedFilter.Filter(containerStarted) &&
+		f.processNameFilter.Filter(processName) &&
+		f.timestampFilter.Filter(ts) &&
+		f.cgroupIDFilter.Filter(uint64(0)) &&
+		f.containerIDFilter.Filter(containerID) &&
+		f.containerImageFilter.Filter(imageName) &&
+		f.containerNameFilter.Filter(containerName) &&
+		f.hostNameFilter.Filter("") &&
+		f.hostPidFilter.Filter(hostPid) &&
+		f.hostPpidFilter.Filter(hostPpid) &&
+		f.syscallFilter.Filter(syscall) &&
+		f.hostTidFilter.Filter(hostTid) &&
+		f.mntNSFilter.Filter(int64(0)) &&
+		f.pidFilter.Filter(pid) &&
+		f.ppidFilter.Filter(ppid) &&
+		f.pidNSFilter.Filter(int64(0)) &&
+		f.processorIDFilter.Filter(int64(0)) &&
+		f.podNameFilter.Filter(podName) &&
+		f.podNSFilter.Filter(podNS) &&
+		f.podUIDFilter.Filter(podUID) &&
+		f.tidFilter.Filter(tid) &&
+		f.uidFilter.Filter(uid)
 }
 
 func (f *ScopeFilter) Parse(field string, operatorAndValues string) error {

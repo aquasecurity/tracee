@@ -131,24 +131,15 @@ func (d *dispatcher) dispatchToDetectors(ctx context.Context, inputEvent *v1beta
 			continue
 		}
 
-		// Apply filters if any are present
-		// Convert once and apply both scope and data filters
-		if sub.scopeFilter != nil || sub.dataFilter != nil {
-			// Convert v1beta1.Event to trace.Event for filter compatibility
-			traceEvent := events.ConvertFromProto(inputEvent)
-
-			// Apply scope filter
-			if sub.scopeFilter != nil && sub.scopeFilter.Enabled() {
-				if !sub.scopeFilter.Filter(*traceEvent) {
-					continue // Skip if scope filter doesn't match
-				}
+		// Apply filters directly on proto (zero allocations)
+		if sub.scopeFilter != nil && sub.scopeFilter.Enabled() {
+			if !sub.scopeFilter.FilterProto(inputEvent) {
+				continue
 			}
-
-			// Apply data filter
-			if sub.dataFilter != nil && sub.dataFilter.Enabled() {
-				if !sub.dataFilter.Filter(traceEvent.Args) {
-					continue // Skip if data filter doesn't match
-				}
+		}
+		if sub.dataFilter != nil && sub.dataFilter.Enabled() {
+			if !sub.dataFilter.FilterProto(inputEvent.Data) {
+				continue
 			}
 		}
 
