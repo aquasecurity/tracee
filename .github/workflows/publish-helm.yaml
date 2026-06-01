@@ -21,6 +21,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: publish-helm-${{ env.HELM_REP }}
+  cancel-in-progress: false
+
 env:
   HELM_REP: helm-charts
   GH_OWNER: aquasecurity
@@ -173,13 +177,46 @@ jobs:
 
       - name: Push index file
         if: inputs.dry-run != true
-        uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # v1.1.1
         env:
-          API_TOKEN_GITHUB: ${{ steps.app-token.outputs.token }}
-        with:
-          source_file: "index.yaml"
-          destination_repo: "${{ env.GH_OWNER }}/${{ env.HELM_REP }}"
-          destination_folder: "."
-          destination_branch: "gh-pages"
-          user_email: ${{ steps.bot.outputs.email }}
-          user_name: ${{ steps.bot.outputs.name }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT_NAME: ${{ steps.bot.outputs.name }}
+          BOT_EMAIL: ${{ steps.bot.outputs.email }}
+        run: |
+          set -euo pipefail
+          git config --global user.email "${BOT_EMAIL}"
+          git config --global user.name "${BOT_NAME}"
+          max_attempts=3
+          attempt=1
+          while [ "${attempt}" -le "${max_attempts}" ]; do
+              if [ "${attempt}" -gt 1 ]; then
+                  ./cr index --owner "${GH_OWNER}" \
+                      --git-repo "${HELM_REP}" \
+                      --charts-repo "https://${GH_OWNER}.github.io/${HELM_REP}/" \
+                      --index-path index.yaml
+              fi
+              clone_dir="$(mktemp -d)"
+              git clone --single-branch --branch gh-pages \
+                  "https://x-access-token:${GH_TOKEN}@github.com/${GH_OWNER}/${HELM_REP}.git" \
+                  "${clone_dir}"
+              cp index.yaml "${clone_dir}/index.yaml"
+              cd "${clone_dir}"
+              git add index.yaml
+              if git diff --cached --quiet; then
+                  echo "No index changes to push"
+                  rm -rf "${clone_dir}"
+                  exit 0
+              fi
+              git commit -m "Update index.yaml from https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+              if git push origin "HEAD:gh-pages"; then
+                  rm -rf "${clone_dir}"
+                  exit 0
+              fi
+              push_status=$?
+              rm -rf "${clone_dir}"
+              cd "${GITHUB_WORKSPACE}"
+              if [ "${attempt}" -eq "${max_attempts}" ]; then
+                  exit "${push_status}"
+              fi
+              echo "Push rejected (attempt ${attempt}/${max_attempts}), re-indexing and retrying..."
+              attempt=$((attempt + 1))
+          done
