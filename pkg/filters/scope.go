@@ -194,8 +194,10 @@ func (f *ScopeFilter) FilterProto(e *v1beta1.Event) bool {
 	}
 
 	var ts int64
-	if e.GetTimestamp() != nil {
-		ts = e.GetTimestamp().AsTime().UnixNano()
+	if f.timestampFilter.Enabled() {
+		if t := e.GetTimestamp(); t != nil {
+			ts = t.AsTime().UnixNano()
+		}
 	}
 
 	return f.containerFilter.Filter(containerID != "") &&
