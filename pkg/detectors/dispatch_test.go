@@ -286,6 +286,90 @@ func TestAutoPopulateFields_DetectedFrom(t *testing.T) {
 	assert.Equal(t, "pid", output.DetectedFrom.Data[1].Name)
 }
 
+// TestAutoPopulateFields_DetectedFrom_NoSlabAliasing guards against a
+// use-after-recycle bug: a detector finding's DetectedFrom.Data must NOT alias
+// the input event's Data backing storage. For pipeline events the input's Data
+// points into a pooled proto slab (see pkg/events/proto_slab.go). The sink
+// recycles that slab as soon as the input event is dropped/published, and a
+// later event reuses it — overwriting the EventValue slots in place. If the
+// finding only shallow-copied the input's *EventValue pointers, its audit trail
+// would silently show the *new* event's data instead of what actually triggered
+// the detection. Here we simulate the slab reset+reuse by mutating the input's
+// EventValue in place after dispatch; a correct (deep) copy is unaffected.
+func TestAutoPopulateFields_DetectedFrom_NoSlabAliasing(t *testing.T) {
+	detector := &producingDetector{
+		id:        "test_autopop_detectedfrom_aliasing",
+		eventName: "test_autopop_detectedfrom_aliasing_event",
+		requirements: detection.DetectorRequirements{
+			Events: []detection.EventRequirement{
+				{Name: "execve", Dependency: detection.DependencyRequired},
+			},
+		},
+		autoPopulate: detection.AutoPopulateFields{
+			DetectedFrom: true,
+		},
+	}
+
+	_, err := CreateEventsFromDetectors(events.StartDetectorID+20006, []detection.EventDetector{detector})
+	require.NoError(t, err)
+
+	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
+	policyMgr := newTestPolicyManager(detEventID)
+
+	engine := NewEngine(policyMgr, nil)
+	params := detection.DetectorParams{
+		Config: detection.NewEmptyDetectorConfig(),
+	}
+	require.NoError(t, engine.RegisterDetector(detector, params))
+	require.NoError(t, engine.EnableDetector(detector.id))
+
+	// Input event whose Data, in production, points into a pooled proto slab.
+	inputEvent := &v1beta1.Event{
+		Id:   v1beta1.EventId(events.Execve),
+		Name: "execve",
+		Data: []*v1beta1.EventValue{
+			{Name: "pathname", Value: &v1beta1.EventValue_Str{Str: "/bin/bash"}},
+			{Name: "pid", Value: &v1beta1.EventValue_Int32{Int32: 1234}},
+		},
+	}
+
+	ctx := context.Background()
+	outputs, err := engine.DispatchToDetectors(ctx, inputEvent)
+	require.NoError(t, err)
+	require.Len(t, outputs, 1)
+
+	output := outputs[0]
+	require.NotNil(t, output.DetectedFrom)
+	require.Len(t, output.DetectedFrom.Data, 2)
+
+	// Sanity: the finding captured the triggering event's data.
+	require.Equal(t, "/bin/bash", output.DetectedFrom.Data[0].GetStr())
+	require.Equal(t, int32(1234), output.DetectedFrom.Data[1].GetInt32())
+
+	// The finding must own its audit-trail data, not alias the input's
+	// (slab-backed) EventValue pointers.
+	assert.NotSame(t, inputEvent.Data[0], output.DetectedFrom.Data[0],
+		"DetectedFrom.Data[0] must not alias the input's slab-backed EventValue")
+	assert.NotSame(t, inputEvent.Data[1], output.DetectedFrom.Data[1],
+		"DetectedFrom.Data[1] must not alias the input's slab-backed EventValue")
+
+	// Simulate the slab being reset and reused by a subsequent event: the
+	// backing EventValue slots are overwritten in place (exactly what
+	// eventSlab.reset + getEventDataSlab do on the next event).
+	inputEvent.Data[0].Reset()
+	inputEvent.Data[0].Name = "pathname"
+	inputEvent.Data[0].Value = &v1beta1.EventValue_Str{Str: "/usr/bin/evil"}
+	inputEvent.Data[1].Reset()
+	inputEvent.Data[1].Name = "pid"
+	inputEvent.Data[1].Value = &v1beta1.EventValue_Int32{Int32: 9999}
+
+	// The finding's audit trail must still reflect what actually triggered it.
+	assert.Equal(t, "/bin/bash", output.DetectedFrom.Data[0].GetStr(),
+		"DetectedFrom audit trail was corrupted by input slab recycling")
+	assert.Equal(t, int32(1234), output.DetectedFrom.Data[1].GetInt32(),
+		"DetectedFrom audit trail was corrupted by input slab recycling")
+}
+
 func TestAutoPopulateFields_Combined(t *testing.T) {
 	detector := &producingDetector{
 		id:        "test_autopop_combined",
