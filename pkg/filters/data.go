@@ -174,6 +174,7 @@ func (f *DataFilter) FilterProto(data []*v1beta1.EventValue) bool {
 		}
 
 		found := false
+		evaluated := false
 		var fieldVal interface{}
 
 		for _, ev := range data {
@@ -186,12 +187,25 @@ func (f *DataFilter) FilterProto(data []*v1beta1.EventValue) bool {
 			}
 			if ev.GetName() == fieldName {
 				found = true
-				fieldVal = protoValueToInterface(ev)
+				if s, ok := ev.GetValue().(*v1beta1.EventValue_Str); ok {
+					// Fast path: string values need no boxing or
+					// fmt.Sprint allocation (fmt.Sprint of a string is
+					// the string itself).
+					if !filter.Filter(s.Str) {
+						return false
+					}
+					evaluated = true
+				} else {
+					fieldVal = protoValueToInterface(ev)
+				}
 				break
 			}
 		}
 		if !found {
 			return false
+		}
+		if evaluated {
+			continue
 		}
 
 		fieldVal = fmt.Sprint(fieldVal)
