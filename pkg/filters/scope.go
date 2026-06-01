@@ -147,33 +147,35 @@ func (f *ScopeFilter) FilterProto(e *v1beta1.Event) bool {
 	var ppid, hostPpid int64
 	if w != nil {
 		if p := w.GetProcess(); p != nil {
-			if p.GetPid() != nil {
-				pid = int64(p.GetPid().GetValue())
+			if pidW := p.GetPid(); pidW != nil {
+				pid = int64(pidW.GetValue())
 			}
-			if p.GetHostPid() != nil {
-				hostPid = int64(p.GetHostPid().GetValue())
+			if hostPidW := p.GetHostPid(); hostPidW != nil {
+				hostPid = int64(hostPidW.GetValue())
 			}
-			if p.GetRealUser() != nil && p.GetRealUser().GetId() != nil {
-				uid = int64(p.GetRealUser().GetId().GetValue())
+			if u := p.GetRealUser(); u != nil {
+				if uidW := u.GetId(); uidW != nil {
+					uid = int64(uidW.GetValue())
+				}
 			}
 			if t := p.GetThread(); t != nil {
 				processName = t.GetName()
 				syscall = t.GetSyscall()
-				if t.GetTid() != nil {
-					tid = int64(t.GetTid().GetValue())
+				if tidW := t.GetTid(); tidW != nil {
+					tid = int64(tidW.GetValue())
 				}
-				if t.GetHostTid() != nil {
-					hostTid = int64(t.GetHostTid().GetValue())
+				if hostTidW := t.GetHostTid(); hostTidW != nil {
+					hostTid = int64(hostTidW.GetValue())
 				}
 			}
 			// Parent info from ancestors
 			if ancestors := p.GetAncestors(); len(ancestors) > 0 {
 				parent := ancestors[0]
-				if parent.GetHostPid() != nil {
-					hostPpid = int64(parent.GetHostPid().GetValue())
+				if hostPpidW := parent.GetHostPid(); hostPpidW != nil {
+					hostPpid = int64(hostPpidW.GetValue())
 				}
-				if parent.GetPid() != nil {
-					ppid = int64(parent.GetPid().GetValue())
+				if ppidW := parent.GetPid(); ppidW != nil {
+					ppid = int64(ppidW.GetValue())
 				}
 			}
 		}
