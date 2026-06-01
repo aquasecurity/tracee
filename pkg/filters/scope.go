@@ -126,11 +126,17 @@ func (f *ScopeFilter) FilterProto(e *v1beta1.Event) bool {
 		return true
 	}
 
-	// Extract container info
 	var containerID, containerName, imageName string
 	var containerStarted bool
-	w := e.GetWorkload()
-	if w != nil {
+	var processName, syscall string
+	var pid, hostPid, tid, hostTid, uid int64
+	var ppid, hostPpid int64
+	var podName, podNS, podUID string
+
+	// A single workload nil-check covers container, process, and kubernetes
+	// extraction, saving two redundant nil checks per event.
+	if w := e.GetWorkload(); w != nil {
+		// Extract container info
 		if c := w.GetContainer(); c != nil {
 			containerID = c.GetId()
 			containerName = c.GetName()
@@ -139,13 +145,8 @@ func (f *ScopeFilter) FilterProto(e *v1beta1.Event) bool {
 				imageName = img.GetName()
 			}
 		}
-	}
 
-	// Extract process info
-	var processName, syscall string
-	var pid, hostPid, tid, hostTid, uid int64
-	var ppid, hostPpid int64
-	if w != nil {
+		// Extract process info
 		if p := w.GetProcess(); p != nil {
 			if pidW := p.GetPid(); pidW != nil {
 				pid = int64(pidW.GetValue())
@@ -179,11 +180,8 @@ func (f *ScopeFilter) FilterProto(e *v1beta1.Event) bool {
 				}
 			}
 		}
-	}
 
-	// Extract kubernetes info
-	var podName, podNS, podUID string
-	if w != nil {
+		// Extract kubernetes info
 		if k := w.GetK8S(); k != nil {
 			if pod := k.GetPod(); pod != nil {
 				podName = pod.GetName()
