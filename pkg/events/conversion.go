@@ -37,7 +37,10 @@ func ConvertTraceeEventToProto(e trace.Event) (*pb.Event, error) {
 // proto event and the slab escapes pool reuse. For pipeline use, prefer
 // PipelineEvent.ToProto() which manages slab lifecycle via the pool.
 func ConvertToProto(e *trace.Event) *pb.Event {
-	s := protoSlabPool.Get().(*eventSlab)
+	s, ok := protoSlabPool.Get().(*eventSlab)
+	if !ok {
+		s = new(eventSlab)
+	}
 	s.reset()
 	return fillProtoSlab(e, s)
 }

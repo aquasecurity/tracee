@@ -244,9 +244,21 @@ func (d *dispatcher) autoPopulateFieldsFromOutput(event *v1beta1.Event, output *
 			Name: inputEvent.Name,
 		}
 		if len(inputEvent.Data) > 0 {
-			// Copy input event data for audit trail
+			// Deep-copy the input's data for the audit trail. A shallow copy
+			// would alias the input's EventValue pointers, which point into a
+			// pooled proto slab (see pkg/events/proto_slab.go); once the input
+			// is recycled and the slab reused, the finding would silently expose
+			// another event's data. See
+			// TestAutoPopulateFields_DetectedFrom_NoSlabAliasing.
 			event.DetectedFrom.Data = make([]*v1beta1.EventValue, len(inputEvent.Data))
-			copy(event.DetectedFrom.Data, inputEvent.Data)
+			for i, ev := range inputEvent.Data {
+				if ev == nil {
+					continue
+				}
+				if cloned, ok := proto.Clone(ev).(*v1beta1.EventValue); ok {
+					event.DetectedFrom.Data[i] = cloned
+				}
+			}
 		}
 		// Preserve detection chain: clone input's DetectedFrom (if exists)
 		if inputEvent.DetectedFrom != nil {

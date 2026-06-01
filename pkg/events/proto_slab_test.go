@@ -38,7 +38,8 @@ func TestEventSlabReset(t *testing.T) {
 func TestProtoSlabPoolReuse(t *testing.T) {
 	// Not parallel — protoSlabPool is a process-wide pool whose internal state
 	// can be perturbed by other tests running concurrently.
-	first := protoSlabPool.Get().(*eventSlab)
+	first, ok := protoSlabPool.Get().(*eventSlab)
+	require.True(t, ok)
 	first.event.Name = "marker"
 	protoSlabPool.Put(first)
 
@@ -46,7 +47,8 @@ func TestProtoSlabPoolReuse(t *testing.T) {
 	// activity on the pool the next Get is overwhelmingly likely to return the
 	// one we just Put. Either way the contract under test is that the slab is
 	// usable after reset.
-	second := protoSlabPool.Get().(*eventSlab)
+	second, ok := protoSlabPool.Get().(*eventSlab)
+	require.True(t, ok)
 	second.reset()
 	assert.Empty(t, second.event.Name, "reset should have cleared event.Name")
 	protoSlabPool.Put(second)
@@ -59,10 +61,10 @@ func TestPipelineEvent_ToProto_AttachesSlab(t *testing.T) {
 	require.NotNil(t, pe)
 	require.Nil(t, pe.protoSlab)
 
-	proto := pe.ToProto()
-	require.NotNil(t, proto)
+	protoEvent := pe.ToProto()
+	require.NotNil(t, protoEvent)
 	require.NotNil(t, pe.protoSlab, "ToProto should attach a slab")
-	assert.Same(t, &pe.protoSlab.event, proto, "ProtoEvent should be backed by the slab")
+	assert.Same(t, &pe.protoSlab.event, protoEvent, "ProtoEvent should be backed by the slab")
 }
 
 func TestPipelineEvent_Reset_ReturnsSlab(t *testing.T) {
@@ -120,11 +122,11 @@ func TestProtoArgsOverflow(t *testing.T) {
 		Args:      args,
 	}
 
-	proto := ConvertToProto(e)
-	require.NotNil(t, proto)
-	require.Len(t, proto.Data, maxSlabArgs+4)
+	protoEvent := ConvertToProto(e)
+	require.NotNil(t, protoEvent)
+	require.Len(t, protoEvent.Data, maxSlabArgs+4)
 
-	for i, ev := range proto.Data {
+	for i, ev := range protoEvent.Data {
 		assert.Equal(t, fmt.Sprintf("arg%d", i), ev.Name)
 		v, ok := ev.Value.(*pb.EventValue_Int32)
 		require.True(t, ok, "arg %d had unexpected type %T", i, ev.Value)
@@ -141,11 +143,13 @@ func TestProtoStableAcrossSlabReuse(t *testing.T) {
 	e := buildSyntheticTraceEvent()
 
 	first := ConvertToProto(e)
-	firstClone := proto.Clone(first).(*pb.Event)
+	firstClone, ok := proto.Clone(first).(*pb.Event)
+	require.True(t, ok)
 
 	// Return the first slab to the pool, then convert again. The next Get may
 	// return the same slab.
-	s := protoSlabPool.Get().(*eventSlab)
+	s, ok := protoSlabPool.Get().(*eventSlab)
+	require.True(t, ok)
 	protoSlabPool.Put(s)
 
 	second := ConvertToProto(e)
@@ -196,4 +200,3 @@ func buildSyntheticTraceEvent() *trace.Event {
 		MatchedPolicies: []string{"policy1"},
 	}
 }
-

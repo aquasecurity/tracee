@@ -96,7 +96,10 @@ func (pe *PipelineEvent) ToProto() *pb.Event {
 	// pool and fill it. The slab is returned to the pool on Reset, or escapes
 	// via DetachProto when the proto is published to a stream.
 	if pe.ProtoEvent == nil {
-		s := protoSlabPool.Get().(*eventSlab)
+		s, ok := protoSlabPool.Get().(*eventSlab)
+		if !ok {
+			s = new(eventSlab)
+		}
 		s.reset()
 		pe.protoSlab = s
 		pe.ProtoEvent = fillProtoSlab(pe.Event, s)
