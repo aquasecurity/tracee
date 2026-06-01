@@ -18,16 +18,19 @@ on:
         description: Validate chart and auth WITHOUT publishing to helm-charts (dry run)
         type: boolean
         default: false
-permissions:
-  contents: read
+
+permissions: {}
+
 env:
   HELM_REP: helm-charts
   GH_OWNER: aquasecurity
   CHART_DIR: deploy/helm/tracee
-  KIND_VERSION: "v0.14.0"
-  KIND_IMAGE: "kindest/node:v1.23.6@sha256:b1fa224cc6c7ff32455e0b1fd9cbfd3d3bc87ecaa8fcb06961ed1afb3db0f9ae"
+
 jobs:
   publish:
+    name: ${{ inputs.dry-run && 'Publish Helm (dry run)' || 'Publish Helm' }}
+    permissions:
+      contents: read
     runs-on:
       # Ubuntu 24.04 generic (6.11.0-29) [x86_64]
       - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
@@ -39,6 +42,7 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
+
       - name: Generate GitHub App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -47,6 +51,7 @@ jobs:
           private-key: ${{ secrets.HELM_CHARTS_GH_APP_PRIVATE_KEY }}
           owner: ${{ env.GH_OWNER }}
           repositories: ${{ env.HELM_REP }}
+
       - name: Resolve bot identity
         id: bot
         env:
@@ -57,35 +62,20 @@ jobs:
           bot_id="$(gh api "/users/${login}" --jq .id)"
           echo "name=${login}" >> "${GITHUB_OUTPUT}"
           echo "email=${bot_id}+${login}@users.noreply.github.com" >> "${GITHUB_OUTPUT}"
-      - name: Install Helm
-        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
-        with:
-          version: v3.14.3
-      - name: Set up python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: 3.12.3
-      - name: Set up aqua charts
-        run: |
-          helm repo add aqua https://aquasecurity.github.io/helm-charts
-      - name: Setup Chart Linting
-        id: lint
-        uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
-      - name: Setup Kubernetes cluster (KIND)
-        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
-        with:
-          version: ${{ env.KIND_VERSION }}
-          node_image: ${{ env.KIND_IMAGE }}
-      - name: Run chart-testing
-        run: ct lint-and-install --validate-maintainers=false --charts "${CHART_DIR}"
+
+      - name: Test Helm chart
+        uses: ./.github/actions/test-helm-chart
+
       - name: Install chart-releaser
         run: |
           wget https://github.com/helm/chart-releaser/releases/download/v1.3.0/chart-releaser_1.3.0_linux_amd64.tar.gz
           echo "baed2315a9bb799efb71d512c5198a2a3b8dcd139d7f22f878777cffcd649a37  chart-releaser_1.3.0_linux_amd64.tar.gz" | sha256sum -c -
           tar xzvf chart-releaser_1.3.0_linux_amd64.tar.gz cr
+
       - name: Package helm chart
         run: |
           ./cr package --package-path .cr-release-packages "${CHART_DIR}"
+
       - name: Upload helm chart
         # Failed with upload the same version: https://github.com/helm/chart-releaser/issues/101
         if: inputs.dry-run != true
@@ -97,12 +87,14 @@ jobs:
             --git-repo "${HELM_REP}" \
             --package-path .cr-release-packages \
             --token "${CR_TOKEN}"
+
       - name: Index helm chart
         run: |
           ./cr index --owner "${GH_OWNER}" \
             --git-repo "${HELM_REP}" \
             --charts-repo "https://${GH_OWNER}.github.io/${HELM_REP}/" \
             --index-path index.yaml
+
       - name: Verify helm-charts access
         if: inputs.dry-run == true
         env:
@@ -116,12 +108,14 @@ jobs:
           fi
           gh api "repos/${GH_OWNER}/${HELM_REP}/releases?per_page=1" >/dev/null
           echo "GitHub App token can access ${GH_OWNER}/${HELM_REP}"
+
       - name: Helm install dry-run
         if: inputs.dry-run == true
         run: |
           set -euo pipefail
           package_file="$(ls -1 .cr-release-packages/*.tgz | head -1)"
           helm install --dry-run tracee "${package_file}" -n tracee --create-namespace
+
       - name: Dry-run summary
         if: inputs.dry-run == true
         env:
@@ -129,6 +123,7 @@ jobs:
           REF: ${{ github.event.inputs.ref }}
           BOT_NAME: ${{ steps.bot.outputs.name }}
           BOT_EMAIL: ${{ steps.bot.outputs.email }}
+
         run: |
           set -euo pipefail
           chart_name="$(grep '^name:' "${CHART_DIR}/Chart.yaml" | awk '{print $2}' | tr -d '"')"
@@ -166,6 +161,7 @@ jobs:
               echo "- Push \`index.yaml\` to \`gh-pages\`"
           } >> "${GITHUB_STEP_SUMMARY}"
           echo "Dry run complete for ${chart_name} ${chart_version}"
+
       - name: Upload dry-run artifacts
         if: inputs.dry-run == true
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -174,6 +170,7 @@ jobs:
           path: |
             .cr-release-packages/
             index.yaml
+
       - name: Push index file
         if: inputs.dry-run != true
         uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # v1.1.1

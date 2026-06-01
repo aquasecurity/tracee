@@ -1,0 +1,75 @@
+name: Test Helm Chart
+description: Lint and install the Tracee Helm chart with chart-testing and KIND.
+
+inputs:
+  helm-version:
+    description: Helm CLI version
+    required: false
+    default: v3.14.3
+  python-version:
+    description: Python version for chart-testing
+    required: false
+    default: "3.12.3"
+  ct-config:
+    description: chart-testing config file
+    required: false
+    default: deploy/helm/ct.yaml
+  lint-conf:
+    description: yamllint config for chart-testing
+    required: false
+    default: deploy/helm/lintconf.yaml
+  chart-schema:
+    description: Chart.yaml JSON schema for chart-testing
+    required: false
+    default: deploy/helm/chart_schema.yaml
+  kind-version:
+    description: KIND version
+    required: false
+    default: v0.14.0
+  kind-image:
+    description: KIND node image
+    required: false
+    default: kindest/node:v1.23.6@sha256:b1fa224cc6c7ff32455e0b1fd9cbfd3d3bc87ecaa8fcb06961ed1afb3db0f9ae
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Helm
+      uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+      with:
+        version: ${{ inputs.helm-version }}
+
+    - name: Set up Python
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Set up chart-testing
+      uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
+
+    - name: Run chart-testing (lint)
+      shell: bash
+      env:
+        CT_CONFIG: ${{ inputs.ct-config }}
+        LINT_CONF: ${{ inputs.lint-conf }}
+        CHART_SCHEMA: ${{ inputs.chart-schema }}
+      run: |
+          set -euo pipefail
+          ct lint \
+              --config "${CT_CONFIG}" \
+              --lint-conf "${LINT_CONF}" \
+              --chart-yaml-schema "${CHART_SCHEMA}"
+
+    - name: Create KIND cluster
+      uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+      with:
+        version: ${{ inputs.kind-version }}
+        node_image: ${{ inputs.kind-image }}
+
+    - name: Run chart-testing (install)
+      shell: bash
+      env:
+        CT_CONFIG: ${{ inputs.ct-config }}
+      run: |
+          set -euo pipefail
+          ct install --config "${CT_CONFIG}"

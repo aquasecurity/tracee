@@ -4,10 +4,13 @@ on:
   pull_request:
     paths:
       - "deploy/helm/**"
-permissions:
-  contents: read
+
+permissions: {}
+
 jobs:
   test:
+    permissions:
+      contents: read
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     steps:
       - name: Checkout
@@ -15,23 +18,5 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Helm
-        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
-        with:
-          version: v3.14.3
-
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: 3.12.3
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@6ec842c01de15ebb84c8627d2744a0c2f2755c9f # v2.8.0
-
-      - name: Run chart-testing (lint)
-        run: ct lint --config deploy/helm/ct.yaml --lint-conf  deploy/helm/lintconf.yaml --chart-yaml-schema deploy/helm/chart_schema.yaml
-
-      - name: Create KIND Cluster
-        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
-
-      - name: Run chart-testing (install)
-        run: ct install --config deploy/helm/ct.yaml
+      - name: Test Helm chart
+        uses: ./.github/actions/test-helm-chart
