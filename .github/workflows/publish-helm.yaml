@@ -28,6 +28,24 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref }}
           fetch-depth: 0
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.HELM_CHARTS_GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.HELM_CHARTS_GH_APP_PRIVATE_KEY }}
+          owner: ${{ env.GH_OWNER }}
+          repositories: ${{ env.HELM_REP }}
+      - name: Resolve bot identity
+        id: bot
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          login="${APP_SLUG}[bot]"
+          bot_id="$(gh api "/users/${login}" --jq .id)"
+          echo "name=${login}" >> "${GITHUB_OUTPUT}"
+          echo "email=${bot_id}+${login}@users.noreply.github.com" >> "${GITHUB_OUTPUT}"
       - name: Install Helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
         with:
@@ -48,7 +66,7 @@ jobs:
           version: ${{ env.KIND_VERSION }}
           node_image: ${{ env.KIND_IMAGE }}
       - name: Run chart-testing
-        run: ct lint-and-install --validate-maintainers=false --charts ${{ env.CHART_DIR }}
+        run: ct lint-and-install --validate-maintainers=false --charts "${CHART_DIR}"
       - name: Install chart-releaser
         run: |
           wget https://github.com/helm/chart-releaser/releases/download/v1.3.0/chart-releaser_1.3.0_linux_amd64.tar.gz
@@ -56,29 +74,31 @@ jobs:
           tar xzvf chart-releaser_1.3.0_linux_amd64.tar.gz cr
       - name: Package helm chart
         run: |
-          ./cr package --package-path .cr-release-packages ${{ env.CHART_DIR }}
+          ./cr package --package-path .cr-release-packages "${CHART_DIR}"
       - name: Upload helm chart
         # Failed with upload the same version: https://github.com/helm/chart-releaser/issues/101
         continue-on-error: true
+        env:
+          CR_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          ./cr upload --owner ${{ env.GH_OWNER }} \
-            --git-repo ${{ env.HELM_REP }} \
+          ./cr upload --owner "${GH_OWNER}" \
+            --git-repo "${HELM_REP}" \
             --package-path .cr-release-packages \
-            --token ${{ secrets.ORG_REPO_TOKEN }}
+            --token "${CR_TOKEN}"
       - name: Index helm chart
         run: |
-          ./cr index --owner ${{ env.GH_OWNER }} \
-            --git-repo ${{ env.HELM_REP }} \
-            --charts-repo https://${{ env.GH_OWNER }}.github.io/${{ env.HELM_REP }}/ \
+          ./cr index --owner "${GH_OWNER}" \
+            --git-repo "${HELM_REP}" \
+            --charts-repo "https://${GH_OWNER}.github.io/${HELM_REP}/" \
             --index-path index.yaml
       - name: Push index file
         uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # v1.1.1
         env:
-          API_TOKEN_GITHUB: ${{ secrets.ORG_REPO_TOKEN }}
+          API_TOKEN_GITHUB: ${{ steps.app-token.outputs.token }}
         with:
           source_file: "index.yaml"
           destination_repo: "${{ env.GH_OWNER }}/${{ env.HELM_REP }}"
           destination_folder: "."
           destination_branch: "gh-pages"
-          user_email: aqua-bot@users.noreply.github.com
-          user_name: "aqua-bot"
+          user_email: ${{ steps.bot.outputs.email }}
+          user_name: ${{ steps.bot.outputs.name }}
