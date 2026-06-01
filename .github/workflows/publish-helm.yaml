@@ -4,6 +4,9 @@
 # from the specified Git revision (e.g., main branch or v0.7.0 tag) to Helm
 # repository on https://github.com/aquasecurity/helm-charts.
 #
+# Set dry-run to validate the chart, app auth, and local packaging without
+# creating GitHub Releases or pushing index.yaml to gh-pages.
+#
 name: Publish Helm
 on:
   workflow_dispatch:
@@ -11,6 +14,10 @@ on:
       ref:
         description: The branch, tag or SHA to publish, e.g. v0.0.1
         required: true
+      dry-run:
+        description: Validate chart and auth WITHOUT publishing to helm-charts (dry run)
+        type: boolean
+        default: false
 permissions:
   contents: read
 env:
@@ -77,6 +84,7 @@ jobs:
           ./cr package --package-path .cr-release-packages "${CHART_DIR}"
       - name: Upload helm chart
         # Failed with upload the same version: https://github.com/helm/chart-releaser/issues/101
+        if: inputs.dry-run != true
         continue-on-error: true
         env:
           CR_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -91,7 +99,79 @@ jobs:
             --git-repo "${HELM_REP}" \
             --charts-repo "https://${GH_OWNER}.github.io/${HELM_REP}/" \
             --index-path index.yaml
+      - name: Verify helm-charts access
+        if: inputs.dry-run == true
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          repo_full_name="$(gh api "repos/${GH_OWNER}/${HELM_REP}" --jq .full_name)"
+          if [ "${repo_full_name}" != "${GH_OWNER}/${HELM_REP}" ]; then
+              echo "Unexpected repository: ${repo_full_name}" >&2
+              exit 1
+          fi
+          gh api "repos/${GH_OWNER}/${HELM_REP}/releases?per_page=1" >/dev/null
+          echo "GitHub App token can access ${GH_OWNER}/${HELM_REP}"
+      - name: Helm install dry-run
+        if: inputs.dry-run == true
+        run: |
+          set -euo pipefail
+          package_file="$(ls -1 .cr-release-packages/*.tgz | head -1)"
+          helm install --dry-run tracee "${package_file}" -n tracee --create-namespace
+      - name: Dry-run summary
+        if: inputs.dry-run == true
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REF: ${{ github.event.inputs.ref }}
+          BOT_NAME: ${{ steps.bot.outputs.name }}
+          BOT_EMAIL: ${{ steps.bot.outputs.email }}
+        run: |
+          set -euo pipefail
+          chart_name="$(grep '^name:' "${CHART_DIR}/Chart.yaml" | awk '{print $2}' | tr -d '"')"
+          chart_version="$(grep '^version:' "${CHART_DIR}/Chart.yaml" | awk '{print $2}' | tr -d '"')"
+          release_tag="${chart_name}-${chart_version}"
+          if gh api "repos/${GH_OWNER}/${HELM_REP}/releases/tags/${release_tag}" >/dev/null 2>&1; then
+              release_status="exists (upload would be skipped or fail)"
+          else
+              release_status="not found (would create new release)"
+          fi
+          package_files="$(ls -1 .cr-release-packages/*.tgz)"
+          {
+              echo "## Publish Helm dry run"
+              echo ""
+              echo "**Result:** Validation passed; publish steps skipped"
+              echo ""
+              echo "| Field | Value |"
+              echo "| --- | --- |"
+              echo "| Ref | \`${REF}\` |"
+              echo "| Chart | \`${chart_name}\` |"
+              echo "| Version | \`${chart_version}\` |"
+              echo "| Release tag | \`${release_tag}\` |"
+              echo "| Release status | ${release_status} |"
+              echo "| Bot author | \`${BOT_NAME}\` |"
+              echo "| Bot email | \`${BOT_EMAIL}\` |"
+              echo "| Repository | \`${GH_OWNER}/${HELM_REP}\` |"
+              echo ""
+              echo "### Package files"
+              echo "\`\`\`"
+              echo "${package_files}"
+              echo "\`\`\`"
+              echo ""
+              echo "### Skipped steps"
+              echo "- \`cr upload\` (GitHub Release)"
+              echo "- Push \`index.yaml\` to \`gh-pages\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
+          echo "Dry run complete for ${chart_name} ${chart_version}"
+      - name: Upload dry-run artifacts
+        if: inputs.dry-run == true
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: helm-publish-dry-run
+          path: |
+            .cr-release-packages/
+            index.yaml
       - name: Push index file
+        if: inputs.dry-run != true
         uses: dmnemec/copy_file_to_another_repo_action@c93037aa10fa8893de271f19978c980d0c1a9b37 # v1.1.1
         env:
           API_TOKEN_GITHUB: ${{ steps.app-token.outputs.token }}
