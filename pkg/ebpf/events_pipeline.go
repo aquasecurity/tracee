@@ -74,10 +74,16 @@ func (t *Tracee) handleEvents(ctx context.Context, initialized chan<- struct{}, 
 	errcList = append(errcList, errc)
 
 	// Detect events stage: ctx passed through to detector OnEvent interface.
+	// Only wire the stage when detectors are actually registered. With none
+	// (e.g. signature-based deployments), skipping the stage avoids a goroutine,
+	// a pipeline-sized channel, the per-event hand-off, and the early proto
+	// conversion it forces - the sink performs that conversion anyway.
 
-	eventsChan, errc = t.detectEvents(ctx, eventsChan)
-	t.stats.Channels["detect"] = eventsChan
-	errcList = append(errcList, errc)
+	if t.detectorEngine != nil && t.detectorEngine.GetDetectorCount() > 0 {
+		eventsChan, errc = t.detectEvents(ctx, eventsChan)
+		t.stats.Channels["detect"] = eventsChan
+		errcList = append(errcList, errc)
+	}
 
 	// Engine events stage: events go through the signatures engine for detection.
 
