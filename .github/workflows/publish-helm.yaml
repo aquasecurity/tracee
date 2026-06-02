@@ -22,7 +22,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: publish-helm-${{ env.HELM_REP }}
+  group: publish-helm-helm-charts
   cancel-in-progress: false
 
 env:
