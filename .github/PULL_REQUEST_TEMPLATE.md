@@ -2,8 +2,8 @@
 Checklist:
 
   1. Make sure the PR fixes an issue, if that is the case, so issue can be closed.
-  2. Flag your PR with at least one label "kind/xxx".
-  3. Flag your PR with at least one label "area/xxx".
+  2. Use a conventional PR title/commit scope so auto-label can apply "kind/xxx" and "area/xxx".
+  3. If auto-label did not infer the right labels, add/fix labels manually.
   4. Do not use "kind/feature" without explicitly adding a release feature.
   5. Add "milestone/v0.x.y" label if you want it in milestone 0.x.y.
   6. Make sure all tests pass before asking for review.

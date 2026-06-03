@@ -1,0 +1,287 @@
+#
+# Auto-label PRs from title, commits, and merge conventions.
+# Runs identically in OSS and private repos.
+#
+# Rules:
+#   1. kind/*  - on PR update; union of title + commit types
+#   2. area/*  - on PR update; union of title + commit scopes
+#   3. hotfix + port-to-main/needed - on merge; [hotfix] + release-v* target
+#   4. backport cross-ref - on merge; body "Backport of #NNN"
+#   5. port-to-main cross-ref - on merge; body "Port of #NNN" into main
+#      (#NNN must target release-v* or the update is skipped with a warning)
+#
+
+name: Auto Label PR
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited, reopened, closed]
+
+permissions: {}
+
+jobs:
+  sync-kind-area-labels:
+    name: Sync kind and area labels
+    if: github.event.action != 'closed'
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL }}
+    container:
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
+    permissions:
+      contents: read
+      issues: write        # POST /repos/.../labels (create label) uses Issues API
+      pull-requests: write # add/remove labels on PR via Issues endpoint
+    timeout-minutes: 5
+    steps:
+      - name: Install tools
+        run: apk add --no-cache github-cli
+        shell: sh
+
+      - name: Checkout helpers
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Sync kind and area from title and commits
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        shell: sh
+        run: |
+          set -eu
+          . .github/scripts/ci-helpers.sh
+
+          type_to_kind() {
+              case "${1}" in
+                  fix)       printf '%s' "kind/bug" ;;
+                  feat)      printf '%s' "kind/enhancement" ;;
+                  chore)     printf '%s' "kind/chore" ;;
+                  ci)        printf '%s' "kind/ci" ;;
+                  docs)      printf '%s' "kind/docs" ;;
+                  test)      printf '%s' "kind/test" ;;
+                  perf)      printf '%s' "kind/perf" ;;
+                  refactor)  printf '%s' "kind/refactor" ;;
+                  build)     printf '%s' "kind/build" ;;
+                  revert)    printf '%s' "kind/revert" ;;
+                  *)         printf '%s' "" ;;
+              esac
+          }
+
+          kinds_file="$(mktemp)"
+          areas_file="$(mktemp)"
+          desired_kinds_file="$(mktemp)"
+          desired_areas_file="$(mktemp)"
+          current_kinds_file="$(mktemp)"
+          current_areas_file="$(mktemp)"
+          trap 'rm -f "${kinds_file}" "${areas_file}" "${desired_kinds_file}" "${desired_areas_file}" "${current_kinds_file}" "${current_areas_file}"' EXIT
+
+          label_in_file() {
+              _needle="${1}"
+              _haystack="${2}"
+              [ -s "${_haystack}" ] && grep -Fxq "${_needle}" "${_haystack}"
+          }
+
+          collect_from_line() {
+              _line="${1}"
+              _core="$(printf '%s' "${_line}" \
+                  | sed 's/^\(\[[^]]*\]\)*[[:space:]]*//')"
+              _type="$(printf '%s' "${_core}" \
+                  | sed -n 's/^\(fix\|feat\|chore\|ci\|docs\|test\|perf\|refactor\|build\|revert\)\(([^)]*)\)\{0,1\}!*\:.*/\1/p' \
+                  | head -1)"
+              _scope="$(printf '%s' "${_core}" \
+                  | sed -n 's/^[a-z]*(\([^)]*\)).*/\1/p' \
+                  | head -1)"
+              _kind="$(type_to_kind "${_type}")"
+              if [ -n "${_kind}" ]; then
+                  printf '%s\n' "${_kind}" >> "${kinds_file}"
+              fi
+              if [ -n "${_scope}" ]; then
+                  printf '%s\n' "area/${_scope}" >> "${areas_file}"
+              fi
+          }
+
+          collect_from_line "${PR_TITLE}"
+
+          gh api --paginate "repos/${GH_REPO}/pulls/${PR_NUMBER}/commits" \
+              --jq '.[] | (.commit.message | split("\n") | .[0])' \
+              | while IFS= read -r _subject; do
+                  [ -n "${_subject}" ] && collect_from_line "${_subject}"
+              done
+
+          sort -u "${kinds_file}" > "${desired_kinds_file}" 2> /dev/null || : > "${desired_kinds_file}"
+          sort -u "${areas_file}" > "${desired_areas_file}" 2> /dev/null || : > "${desired_areas_file}"
+
+          gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" \
+              --jq '.[].name' \
+              | while IFS= read -r _existing; do
+                  case "${_existing}" in
+                      kind/*)
+                          printf '%s\n' "${_existing}" >> "${current_kinds_file}"
+                          ;;
+                      area/*)
+                          printf '%s\n' "${_existing}" >> "${current_areas_file}"
+                          ;;
+                  esac
+              done
+
+          if [ -s "${current_kinds_file}" ]; then
+              sort -u -o "${current_kinds_file}" "${current_kinds_file}"
+          fi
+          if [ -s "${current_areas_file}" ]; then
+              sort -u -o "${current_areas_file}" "${current_areas_file}"
+          fi
+
+          # Diff sync: remove only stale kind/* and area/*; add only missing.
+          if [ -s "${current_kinds_file}" ]; then
+              while IFS= read -r _existing; do
+                  [ -z "${_existing}" ] && continue
+                  if ! label_in_file "${_existing}" "${desired_kinds_file}"; then
+                      remove_label "${PR_NUMBER}" "${_existing}"
+                      echo "Removed ${_existing} from #${PR_NUMBER}."
+                  fi
+              done < "${current_kinds_file}"
+          fi
+
+          if [ -s "${current_areas_file}" ]; then
+              while IFS= read -r _existing; do
+                  [ -z "${_existing}" ] && continue
+                  if ! label_in_file "${_existing}" "${desired_areas_file}"; then
+                      remove_label "${PR_NUMBER}" "${_existing}"
+                      echo "Removed ${_existing} from #${PR_NUMBER}."
+                  fi
+              done < "${current_areas_file}"
+          fi
+
+          if [ -s "${desired_kinds_file}" ]; then
+              while IFS= read -r _kind_label; do
+                  [ -z "${_kind_label}" ] && continue
+                  if label_in_file "${_kind_label}" "${current_kinds_file}"; then
+                      continue
+                  fi
+                  ensure_label "${_kind_label}" "ededed" "Auto-applied from PR title or commits"
+                  add_label "${PR_NUMBER}" "${_kind_label}"
+                  echo "Added ${_kind_label} to #${PR_NUMBER}."
+              done < "${desired_kinds_file}"
+          fi
+
+          if [ -s "${desired_areas_file}" ]; then
+              while IFS= read -r _area_label; do
+                  [ -z "${_area_label}" ] && continue
+                  if label_in_file "${_area_label}" "${current_areas_file}"; then
+                      continue
+                  fi
+                  ensure_label "${_area_label}" "0075ca" "Auto-applied from PR title or commits"
+                  add_label "${PR_NUMBER}" "${_area_label}"
+                  echo "Added ${_area_label} to #${PR_NUMBER}."
+              done < "${desired_areas_file}"
+          fi
+
+  label-on-merge:
+    name: Auto-label merged PR
+    if: >-
+      github.event.action == 'closed'
+      && github.event.pull_request.merged == true
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL }}
+    container:
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
+    permissions:
+      contents: read
+      issues: write        # POST /repos/.../labels (create label) uses Issues API
+      pull-requests: write # add/remove labels on PR via Issues endpoint
+    timeout-minutes: 5
+    steps:
+      - name: Install tools
+        run: apk add --no-cache github-cli
+        shell: sh
+
+      - name: Checkout helpers
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Apply merge labels from title and body
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        shell: sh
+        run: |
+          set -eu
+          . .github/scripts/ci-helpers.sh
+
+          extract_pr_refs() {
+              _pattern="${1}"
+              printf '%s' "${PR_BODY}" \
+                  | grep -iE "${_pattern}" \
+                  | head -1 \
+                  | grep -oE '#[0-9]+' \
+                  | tr -d '#' \
+                  || true
+          }
+
+          ensure_label "hotfix" "d73a4a" "Urgent fix on release branch before OSS/main"
+          ensure_label "port-to-main/needed" "7057ff" "Hotfix still needs porting to main"
+          ensure_label "port-to-main/done" "7057ff" "Hotfix ported to main"
+
+          # Rule 3: hotfix detection
+          case "${PR_TITLE}" in
+              *"[hotfix]"*)
+                  case "${BASE_REF}" in
+                      release-v*)
+                          add_label "${PR_NUMBER}" "hotfix"
+                          add_label "${PR_NUMBER}" "port-to-main/needed"
+                          echo "Hotfix labels applied to #${PR_NUMBER}."
+                          ;;
+                  esac
+                  ;;
+          esac
+
+          # Rule 4: backport cross-reference
+          backport_refs="$(extract_pr_refs 'backport of #')"
+          if [ -n "${backport_refs}" ]; then
+              backport_label="backport/${BASE_REF}"
+              backport_done="backport-done/${BASE_REF}"
+              backport_needed="backport-needed/${BASE_REF}"
+
+              ensure_label "${backport_label}" "0e8a16" "Backport PR for ${BASE_REF}"
+              ensure_label "${backport_done}" "0e8a16" "Backport to ${BASE_REF} complete"
+              ensure_label "${backport_needed}" "fbca04" "Backport to ${BASE_REF} needed"
+
+              add_label "${PR_NUMBER}" "${backport_label}"
+              echo "Added ${backport_label} to #${PR_NUMBER}."
+
+              for ref in ${backport_refs}; do
+                  add_label "${ref}" "${backport_done}"
+                  remove_label "${ref}" "${backport_needed}"
+                  echo "Updated #${ref}: +${backport_done}, -${backport_needed}."
+              done
+          fi
+
+          # Rule 5: port-to-main cross-reference (#NNN must target release-v*)
+          if [ "${BASE_REF}" = "main" ]; then
+              port_refs="$(extract_pr_refs 'port of #')"
+              if [ -n "${port_refs}" ]; then
+                  for ref in ${port_refs}; do
+                      ref_base="$(gh api "repos/${GH_REPO}/pulls/${ref}" \
+                          --jq '.base.ref' 2> /dev/null || printf '%s' "")"
+                      case "${ref_base}" in
+                          release-v*)
+                              add_label "${ref}" "port-to-main/done"
+                              remove_label "${ref}" "port-to-main/needed"
+                              echo "Updated #${ref}: +port-to-main/done, -port-to-main/needed."
+                              ;;
+                          *)
+                              echo "::warning::Port of #${ref} skipped: #${ref} targets '${ref_base:-unknown}', expected release-v*."
+                              ;;
+                      esac
+                  done
+              fi
+          fi
