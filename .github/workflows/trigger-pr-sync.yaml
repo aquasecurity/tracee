@@ -17,13 +17,14 @@ permissions: {}
 jobs:
   pr-sync:
     name: Trigger PR Sync
-    environment: private-sync
+    environment: pr-sync
     runs-on:
       # Ubuntu 24.04 generic (6.11.0-29) [x86_64]
       - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=SHORT
       - INSTANCE_TYPE=MICRO
     permissions:
+      contents: read # sparse checkout for ci-helpers.sh
       issues: write # gh label create
       pull-requests: write # gh pr list, comment, edit labels
     container:
@@ -91,7 +92,7 @@ jobs:
         run: |
           set -eu
 
-          readonly LABEL_SYNCED="private-synced"
+          readonly LABEL_SYNCED="pr-synced"
 
           already_synced=$(
               gh pr view "${PR_NUMBER}" \
@@ -109,7 +110,7 @@ jobs:
                   ;;
           esac
 
-      - name: Validate private-sync configuration
+      - name: Validate pr-sync configuration
         if: >-
           steps.pr-number.outcome == 'success' &&
           steps.check-synced.outputs.already_synced != 'true'
@@ -129,8 +130,8 @@ jobs:
               "${GH_APP_CLIENT_ID}" \
               "${GH_APP_PRIVATE_KEY}"; do
               if [ -z "${v}" ]; then
-                  echo "ERROR: One or more required private-sync secrets are not configured." >&2
-                  echo "Set them under Environments -> private-sync -> Environment secrets." >&2
+                  echo "ERROR: One or more required pr-sync secrets are not configured." >&2
+                  echo "Set them under Environments -> pr-sync -> Environment secrets." >&2
                   exit 1
               fi
           done
@@ -155,7 +156,7 @@ jobs:
           repositories: ${{ secrets.TRACEE_PRIVATE_REPO }}
           permission-actions: write
 
-      - name: Trigger private sync workflow
+      - name: Trigger pr sync workflow
         id: sync
         if: >-
           steps.pr-number.outcome == 'success' &&
@@ -190,7 +191,7 @@ jobs:
                   break
               fi
 
-              echo "Attempt ${attempts}/${max_attempts} failed to dispatch private sync workflow." >&2
+              echo "Attempt ${attempts}/${max_attempts} failed to dispatch pr sync workflow." >&2
               if [ -s "${gh_err_file}" ]; then
                   echo "gh error output:" >&2
                   cat "${gh_err_file}" >&2
@@ -201,12 +202,12 @@ jobs:
           done
 
           if [ "${succeeded}" != true ]; then
-              echo "ERROR: Failed to dispatch private sync workflow after ${max_attempts} attempts." >&2
+              echo "ERROR: Failed to dispatch pr sync workflow after ${max_attempts} attempts." >&2
               {
                   echo ""
                   echo "### Workflow dispatch failure"
                   echo ""
-                  echo "Could not trigger the private sync workflow for OSS PR #${PR_NUMBER}."
+                  echo "Could not trigger the pr sync workflow for OSS PR #${PR_NUMBER}."
                   if [ -s "${gh_err_file}" ]; then
                       echo ""
                       echo "<details><summary>Last gh error output</summary>"
@@ -221,6 +222,13 @@ jobs:
               exit 1
           fi
 
+      - name: Checkout helpers
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/scripts
+          sparse-checkout-cone-mode: false
+
       - name: Update PR sync labels
         if: >-
           always() &&
@@ -234,67 +242,24 @@ jobs:
         shell: sh
         run: |
           set -eu
+          . .github/scripts/ci-helpers.sh
 
-          readonly LABEL_SYNCED="private-synced"
-          readonly LABEL_NOT_SYNCED="private-non-synced"
-          readonly LABEL_COLOR_BLUE="1d76db"
-          readonly LABEL_COLOR_RED="d73a4a"
+          readonly LABEL_SYNCED="pr-synced"
+          readonly LABEL_NOT_SYNCED="pr-non-synced"
 
-          ensure_label() {
-              name="${1}"
-              color="${2}"
-              description="${3}"
-
-              exists=$(
-                  gh label list \
-                      --repo "${GH_REPO}" \
-                      --json name \
-                      --jq "any(.[]; .name == \"${name}\")"
-              )
-              case "${exists}" in
-                  true)
-                      echo "Label ${name} already exists."
-                      return 0
-                      ;;
-              esac
-
-              err_file=$(mktemp)
-              if gh label create "${name}" \
-                  --repo "${GH_REPO}" \
-                  --color "${color}" \
-                  --description "${description}" \
-                  2> "${err_file}"; then
-                  rm -f "${err_file}"
-                  return 0
-              fi
-              if grep -qi 'already exists' "${err_file}"; then
-                  echo "Label ${name} already exists."
-                  rm -f "${err_file}"
-                  return 0
-              fi
-              echo "ERROR: Failed to create label ${name}." >&2
-              cat "${err_file}" >&2
-              rm -f "${err_file}"
-              exit 1
-          }
-
-          ensure_label "${LABEL_SYNCED}" "${LABEL_COLOR_BLUE}" \
-              "Private mirror sync dispatch succeeded"
-          ensure_label "${LABEL_NOT_SYNCED}" "${LABEL_COLOR_RED}" \
-              "Private mirror sync dispatch failed"
+          ensure_label "${LABEL_SYNCED}" "1d76db" \
+              "PR sync dispatch succeeded"
+          ensure_label "${LABEL_NOT_SYNCED}" "d73a4a" \
+              "PR sync dispatch failed"
 
           case "${SYNC_RESULT}" in
               success)
-                  gh pr edit "${PR_NUMBER}" \
-                      --repo "${GH_REPO}" \
-                      --add-label "${LABEL_SYNCED}" \
-                      --remove-label "${LABEL_NOT_SYNCED}"
+                  add_label "${PR_NUMBER}" "${LABEL_SYNCED}"
+                  remove_label "${PR_NUMBER}" "${LABEL_NOT_SYNCED}"
                   ;;
               *)
-                  gh pr edit "${PR_NUMBER}" \
-                      --repo "${GH_REPO}" \
-                      --add-label "${LABEL_NOT_SYNCED}" \
-                      --remove-label "${LABEL_SYNCED}"
+                  add_label "${PR_NUMBER}" "${LABEL_NOT_SYNCED}"
+                  remove_label "${PR_NUMBER}" "${LABEL_SYNCED}"
                   ;;
           esac
 
@@ -312,20 +277,20 @@ jobs:
           set -eu
 
           if [ "${ALREADY_SYNCED}" = "true" ]; then
-              body="Private mirror sync was already completed for this PR (label \`private-synced\`). Skipping sync dispatch."
+              body="PR sync was already completed for this PR (label \`pr-synced\`). Skipping sync dispatch."
           else
               case "${SYNC_RESULT}" in
                   success)
-                      body="Private mirror sync was triggered successfully."
+                      body="PR sync was triggered successfully."
                       ;;
                   failure)
-                      body="Private mirror sync could not be triggered. See [workflow run](${RUN_URL}) for details."
+                      body="PR sync could not be triggered. See [workflow run](${RUN_URL}) for details."
                       ;;
                   skipped|cancelled)
-                      body="Private mirror sync was not run (an earlier step failed or was skipped). See [workflow run](${RUN_URL})."
+                      body="PR sync was not run (an earlier step failed or was skipped). See [workflow run](${RUN_URL})."
                       ;;
                   *)
-                      body="Private mirror sync status is unknown. See [workflow run](${RUN_URL})."
+                      body="PR sync status is unknown. See [workflow run](${RUN_URL})."
                       ;;
               esac
           fi
@@ -349,12 +314,12 @@ jobs:
               if [ "${PR_NUMBER_OUTCOME}" != "success" ]; then
                   echo "Did not run: merged PR number could not be determined."
               elif [ "${ALREADY_SYNCED}" = "true" ]; then
-                  echo "Skipped: OSS PR **#${PR_NUMBER}** already has the \`private-synced\` label."
+                  echo "Skipped: OSS PR **#${PR_NUMBER}** already has the \`pr-synced\` label."
               elif [ "${SYNC_RESULT}" = "success" ]; then
-                  echo "Triggered the private sync workflow for OSS PR **#${PR_NUMBER}**."
+                  echo "Triggered the pr sync workflow for OSS PR **#${PR_NUMBER}**."
               elif [ "${SYNC_RESULT}" = "skipped" ]; then
                   echo "Did not run: a step before sync failed or was skipped."
               else
-                  echo "Failed to trigger the private sync workflow for OSS PR **#${PR_NUMBER}**."
+                  echo "Failed to trigger the pr sync workflow for OSS PR **#${PR_NUMBER}**."
               fi
           } >> "${GITHUB_STEP_SUMMARY}"
