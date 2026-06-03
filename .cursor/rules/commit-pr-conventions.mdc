@@ -16,3 +16,15 @@ When preparing commits or PR text in this repository, follow these rules from `d
 - For cross-area work, suggest splitting into self-contained commits when possible.
 - Remind contributors that commits must be signed (GPG/SSH/S/MIME).
 
+## Jira Ticket References
+
+When a commit resolves or is tracked by a Jira ticket, place the ticket ID in
+brackets immediately after `type(scope): `, before the description:
+
+```
+type(optional scope): [JIRA-XXX] description
+```
+
+- Brackets are required: `[ENF-123]` not `ENF-123`.
+- Place it in the subject only, never in the body or footer.
+- Omit entirely when no Jira ticket applies.
