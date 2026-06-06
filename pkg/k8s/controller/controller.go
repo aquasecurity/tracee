@@ -75,6 +75,34 @@ func (r *PolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+// DetectorReconciler is the controller for the Tracee Detector CRD. It is responsible
+// for updating the Tracee DaemonSet whenever a change is detected in a Detector object.
+type DetectorReconciler struct {
+	client.Client
+	Scheme          *runtime.Scheme
+	TraceeNamespace string
+	TraceeName      string
+}
+
+// +kubebuilder:rbac:groups=tracee.aquasec.com,resources=detectors,verbs=get;list;watch;
+// +kubebuilder:rbac:groups=apps,resources=daemonsets,verbs=get;list;watch;patch;update;
+
+// Reconcile is where the reconciliation logic resides. Every time a change is detected in
+// a v1beta1.Detector object, this function will be called. It will update the Tracee
+// DaemonSet, so that the Tracee pods will be restarted with the new detector.
+func (r *DetectorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	return restartDaemonSet(ctx, r.Client, r.TraceeNamespace, r.TraceeName)
+}
+
+// SetupWithManager is responsible for connecting the DetectorReconciler to the main
+// controller manager. It tells the manager that for changes in v1beta1.Detector objects, the
+// DetectorReconciler should be invoked.
+func (r *DetectorReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1beta1.Detector{}).
+		Complete(r)
+}
+
 // ConfigMapReconciler is the controller for the Tracee ConfigMap. It is responsible
 // for updating the Tracee DaemonSet whenever a change is detected in the Tracee ConfigMap.
 type ConfigMapReconciler struct {
@@ -99,7 +127,9 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 // controller manager. It tells the manager that for changes in the Tracee ConfigMap, the
 // ConfigMapReconciler should be invoked. It filters to only watch the specific Tracee ConfigMap.
 func (r *ConfigMapReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	controllerName := "configmap-" + r.ConfigMapName
 	return ctrl.NewControllerManagedBy(mgr).
+		Named(controllerName).
 		For(&corev1.ConfigMap{}).
 		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
 			// Only watch the specific Tracee ConfigMap

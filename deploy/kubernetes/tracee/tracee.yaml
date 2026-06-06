@@ -63,6 +63,33 @@ data:
             - stdout
         sort-events: false
 ---
+# Source: tracee/templates/tracee-lists.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracee-lists
+  labels:
+    helm.sh/chart: tracee-0.24.1
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/instance: tracee
+    app.kubernetes.io/version: "0.24.1"
+    app.kubernetes.io/managed-by: Helm
+data:
+  lists.yaml: |-
+    # Lists are defined here as a YAML array
+    # Each list must have:
+    #   - name: uppercase snake_case (e.g., SHELL_BINARIES)
+    #   - type: "string_list"
+    #   - values: array of strings
+    #
+    # Example:
+    # - name: SHELL_BINARIES
+    #   type: string_list
+    #   values:
+    #     - /bin/bash
+    #     - /bin/sh
+    #     - /bin/zsh
+---
 # Source: tracee/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -186,6 +213,10 @@ spec:
               readOnly: true
               mountPath: /tracee/config.yaml
               subPath: config.yaml
+            - name: tracee-lists
+              readOnly: true
+              mountPath: /etc/tracee/lists.yaml
+              subPath: lists.yaml
           resources:
             {}
       tolerations:
@@ -215,6 +246,9 @@ spec:
         - name: tracee-config
           configMap:
             name: tracee-config
+        - name: tracee-lists
+          configMap:
+            name: tracee-lists
 ---
 # Source: tracee/templates/deploy.yaml
 apiVersion: apps/v1

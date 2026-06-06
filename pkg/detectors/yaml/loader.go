@@ -184,24 +184,38 @@ func LoadFromDirectory(dir string) LoadResult {
 	return result
 }
 
-// peekFileType reads just the type field from a YAML file
-// Returns empty string if type field is missing
+// peekFileType reads the type field or detects CRD format from a YAML file
+// Returns "detector" for plain format, "detector" for CRD format, or empty string if neither detected
 func peekFileType(path string) (string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
 
-	var peek struct {
+	// Check for plain format (type field)
+	var typePeek struct {
 		Type string `yaml:"type"`
 	}
-
-	if err := yaml.Unmarshal(data, &peek); err != nil {
-		return "", err
+	if err := yaml.Unmarshal(data, &typePeek); err == nil {
+		normalizedType := strings.TrimSpace(strings.ToLower(typePeek.Type))
+		if normalizedType == TypeDetector {
+			return TypeDetector, nil
+		}
 	}
 
-	// Normalize: trim whitespace, lowercase for case-insensitive comparison
-	return strings.TrimSpace(strings.ToLower(peek.Type)), nil
+	// Check for CRD format (apiVersion and kind fields)
+	var crdPeek struct {
+		APIVersion string `yaml:"apiVersion"`
+		Kind       string `yaml:"kind"`
+	}
+	if err := yaml.Unmarshal(data, &crdPeek); err == nil {
+		if crdPeek.APIVersion == "tracee.aquasec.com/v1beta1" && crdPeek.Kind == "Detector" {
+			return TypeDetector, nil
+		}
+	}
+
+	// No type detected
+	return "", nil
 }
 
 // LoadFromDirectories loads detectors and lists from multiple directories

@@ -1,0 +1,206 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.0
+  name: detectors.tracee.aquasec.com
+spec:
+  group: tracee.aquasec.com
+  names:
+    kind: Detector
+    listKind: DetectorList
+    plural: detectors
+    singular: detector
+  scope: Cluster
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: tracee detector spec
+            properties:
+              id:
+                description: Unique detector identifier (e.g., "TRC-YAML-001", "DRV-YAML-001")
+                type: string
+              produced_event:
+                description: Definition of the event this detector produces
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  description:
+                    type: string
+                  tags:
+                    items:
+                      type: string
+                    type: array
+                  fields:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        type:
+                          type: string
+                        description:
+                          type: string
+                        optional:
+                          type: boolean
+                      required:
+                      - name
+                      - type
+                      type: object
+                    type: array
+                required:
+                - name
+                - version
+                - description
+                type: object
+              requirements:
+                description: Detector dependencies and constraints
+                properties:
+                  events:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        dependency:
+                          type: string
+                        min_version:
+                          type: string
+                        max_version:
+                          type: string
+                        data_filters:
+                          items:
+                            type: string
+                          type: array
+                        scope_filters:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  enrichments:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        dependency:
+                          type: string
+                        config:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
+                  architectures:
+                    items:
+                      type: string
+                    type: array
+                  min_tracee_version:
+                    type: string
+                  max_tracee_version:
+                    type: string
+                type: object
+              threat:
+                description: Threat metadata (optional - presence determines if this is a threat detector)
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  severity:
+                    type: string
+                  mitre:
+                    properties:
+                      tactic:
+                        properties:
+                          name:
+                            type: string
+                        required:
+                        - name
+                        type: object
+                      technique:
+                        properties:
+                          id:
+                            type: string
+                          name:
+                            type: string
+                        required:
+                        - id
+                        type: object
+                    type: object
+                  properties:
+                    additionalProperties:
+                      type: string
+                    type: object
+                required:
+                - description
+                - severity
+                type: object
+              auto_populate:
+                description: Fields the engine should auto-populate
+                properties:
+                  threat:
+                    type: boolean
+                  detected_from:
+                    type: boolean
+                  process_ancestry:
+                    type: boolean
+                type: object
+              conditions:
+                description: CEL expressions that must all evaluate to true for detection
+                items:
+                  type: string
+                type: array
+              output:
+                description: How to extract fields from input events
+                properties:
+                  fields:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        expression:
+                          type: string
+                        optional:
+                          type: boolean
+                      required:
+                      - name
+                      - expression
+                      type: object
+                    type: array
+                type: object
+            required:
+            - id
+            - produced_event
+            - requirements
+            - auto_populate
+            type: object
+        required:
+        - metadata
+        - spec
+        type: object
+    served: true
+    storage: true

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/aquasecurity/tracee/api/v1beta1/detection"
 	"github.com/aquasecurity/tracee/common/environment"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -115,9 +116,30 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		yamlDetectorDirs = detectorsConfig.Paths
 	}
 
+	var allDetectors []detection.EventDetector
+	var k8sDetectors []v1beta1.DetectorInterface
+	var k8sClient *k8s.Client
+
+	k8sClient, err = k8s.New()
+	if err == nil {
+		k8sDetectors, err = k8sClient.GetDetector(c.Context())
+	}
+	if err != nil {
+		logger.Debugw("kubernetes cluster", "error", err)
+	}
+	if len(k8sDetectors) > 0 {
+		logger.Debugw("using detectors from kubernetes crd")
+		allDetectors, err = createDetectorsFromK8SCRDs(k8sDetectors)
+		if err != nil {
+			return runner, fmt.Errorf("failed to create detectors from K8s CRD: %w", err)
+		}
+	} else {
+		logger.Debugw("using detectors from YAML directories")
+		allDetectors = detectors.CollectAllDetectors(yamlDetectorDirs)
+	}
+
 	// Pre-register detector events in events.Core before policy initialization
 	// This allows the policy manager to select detector events just like regular events
-	allDetectors := detectors.CollectAllDetectors(yamlDetectorDirs)
 	_, err = detectors.CreateEventsFromDetectors(events.StartDetectorID, allDetectors)
 	if err != nil {
 		return runner, fmt.Errorf("failed to create detector events: %w", err)
@@ -248,12 +270,11 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	var k8sPolicies []v1beta1.PolicyInterface
 	var initialPolicies []*policy.Policy
 
-	k8sClient, err := k8s.New()
-	if err == nil {
+	if k8sClient != nil {
 		k8sPolicies, err = k8sClient.GetPolicy(c.Context())
-	}
-	if err != nil {
-		logger.Debugw("kubernetes cluster", "error", err)
+		if err != nil {
+			logger.Debugw("kubernetes cluster", "error", err)
+		}
 	}
 	if len(k8sPolicies) > 0 {
 		logger.Debugw("using policies from kubernetes crd")

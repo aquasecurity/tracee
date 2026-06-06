@@ -18,6 +18,7 @@ rules:
   - tracee.aquasec.com
   resources:
   - policies
+  - detectors
   verbs:
   - get
   - list
