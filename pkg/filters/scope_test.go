@@ -162,3 +162,200 @@ func TestScopeFilter_ContainerStarted(t *testing.T) {
 		})
 	}
 }
+
+// TestScopeFilter_ContainerPodFiltersWithInequality tests that container/pod filters
+// with inequality operators (!=) do not implicitly exclude host events.
+// This is a regression test for https://github.com/aquasecurity/tracee/issues/5224
+func TestScopeFilter_ContainerPodFiltersWithInequality(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		field          string
+		operatorValues string
+		event          trace.Event
+		expectedMatch  bool
+	}{
+		// podNamespace tests
+		{
+			name:           "podNamespace!= - matches host events",
+			field:          "podNamespace",
+			operatorValues: "!=kube-system",
+			event: trace.Event{
+				Container:  trace.Container{ID: ""},
+				Kubernetes: trace.Kubernetes{PodNamespace: ""},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "podNamespace!= - excludes matching pod",
+			field:          "podNamespace",
+			operatorValues: "!=kube-system",
+			event: trace.Event{
+				Container:  trace.Container{ID: "abc123"},
+				Kubernetes: trace.Kubernetes{PodNamespace: "kube-system"},
+			},
+			expectedMatch: false,
+		},
+		{
+			name:           "podNamespace!= - matches non-matching pod",
+			field:          "podNamespace",
+			operatorValues: "!=kube-system",
+			event: trace.Event{
+				Container:  trace.Container{ID: "abc123"},
+				Kubernetes: trace.Kubernetes{PodNamespace: "default"},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "podNamespace= - excludes host events",
+			field:          "podNamespace",
+			operatorValues: "=default",
+			event: trace.Event{
+				Container:  trace.Container{ID: ""},
+				Kubernetes: trace.Kubernetes{PodNamespace: ""},
+			},
+			expectedMatch: false,
+		},
+		{
+			name:           "podNamespace= - matches matching pod",
+			field:          "podNamespace",
+			operatorValues: "=default",
+			event: trace.Event{
+				Container:  trace.Container{ID: "abc123"},
+				Kubernetes: trace.Kubernetes{PodNamespace: "default"},
+			},
+			expectedMatch: true,
+		},
+		// podName tests
+		{
+			name:           "podName!= - matches host events",
+			field:          "podName",
+			operatorValues: "!=some-pod",
+			event: trace.Event{
+				Container:  trace.Container{ID: ""},
+				Kubernetes: trace.Kubernetes{PodName: ""},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "podName!= - excludes matching pod",
+			field:          "podName",
+			operatorValues: "!=some-pod",
+			event: trace.Event{
+				Container:  trace.Container{ID: "abc123"},
+				Kubernetes: trace.Kubernetes{PodName: "some-pod"},
+			},
+			expectedMatch: false,
+		},
+		// containerImage tests
+		{
+			name:           "containerImage!= - matches host events",
+			field:          "containerImage",
+			operatorValues: "!=nginx",
+			event: trace.Event{
+				Container: trace.Container{ID: "", ImageName: ""},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "containerImage!= - excludes matching container",
+			field:          "containerImage",
+			operatorValues: "!=nginx",
+			event: trace.Event{
+				Container: trace.Container{ID: "abc123", ImageName: "nginx"},
+			},
+			expectedMatch: false,
+		},
+		{
+			name:           "containerImage!= - matches non-matching container",
+			field:          "containerImage",
+			operatorValues: "!=nginx",
+			event: trace.Event{
+				Container: trace.Container{ID: "abc123", ImageName: "redis"},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "containerImage= - excludes host events",
+			field:          "containerImage",
+			operatorValues: "=nginx",
+			event: trace.Event{
+				Container: trace.Container{ID: "", ImageName: ""},
+			},
+			expectedMatch: false,
+		},
+		// containerId tests
+		{
+			name:           "containerId!= - matches host events",
+			field:          "containerId",
+			operatorValues: "!=abc123",
+			event: trace.Event{
+				Container: trace.Container{ID: ""},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "containerId!= - excludes matching container",
+			field:          "containerId",
+			operatorValues: "!=abc123",
+			event: trace.Event{
+				Container: trace.Container{ID: "abc123"},
+			},
+			expectedMatch: false,
+		},
+		// containerName tests
+		{
+			name:           "containerName!= - matches host events",
+			field:          "containerName",
+			operatorValues: "!=my-container",
+			event: trace.Event{
+				Container: trace.Container{ID: "", Name: ""},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "containerName= - excludes host events",
+			field:          "containerName",
+			operatorValues: "=my-container",
+			event: trace.Event{
+				Container: trace.Container{ID: "", Name: ""},
+			},
+			expectedMatch: false,
+		},
+		// podUid tests
+		{
+			name:           "podUid!= - matches host events",
+			field:          "podUid",
+			operatorValues: "!=12345",
+			event: trace.Event{
+				Container:  trace.Container{ID: ""},
+				Kubernetes: trace.Kubernetes{PodUID: ""},
+			},
+			expectedMatch: true,
+		},
+		{
+			name:           "podUid= - excludes host events",
+			field:          "podUid",
+			operatorValues: "=12345",
+			event: trace.Event{
+				Container:  trace.Container{ID: "", Name: ""},
+				Kubernetes: trace.Kubernetes{PodUID: ""},
+			},
+			expectedMatch: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			filter := NewScopeFilter()
+			err := filter.Parse(tt.field, tt.operatorValues)
+			require.NoError(t, err)
+
+			match := filter.Filter(tt.event)
+			assert.Equal(t, tt.expectedMatch, match, "Event should match=%v, got=%v", tt.expectedMatch, match)
+		})
+	}
+}
