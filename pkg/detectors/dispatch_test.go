@@ -310,7 +310,7 @@ func TestAutoPopulateFields_DetectedFrom_NoSlabAliasing(t *testing.T) {
 		},
 	}
 
-	_, err := CreateEventsFromDetectors(events.StartDetectorID+20006, []detection.EventDetector{detector})
+	_, err := CreateEventsFromDetectors(events.StartDetectorID+20007, []detection.EventDetector{detector})
 	require.NoError(t, err)
 
 	detEventID, _ := events.Core.GetDefinitionIDByName(detector.eventName)
