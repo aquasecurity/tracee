@@ -27,6 +27,7 @@ on:
       - "**.h"
       - "**.go"
       - "**/codeql.yaml"
+      - "!.cursor/**"
 
   pull_request:
     branches:
