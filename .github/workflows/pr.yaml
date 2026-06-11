@@ -54,6 +54,7 @@ on:
       - "**.sh"
       - "**/pr.yaml"
       - "**/action.yaml"
+      - "!.cursor/**"
 
 permissions: {}
 
