@@ -1,6 +1,6 @@
 ---
 description: Commit and pull request conventions for Tracee contributors
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Commit and PR Conventions
@@ -16,8 +16,3 @@ When preparing commits or PR text in this repository, follow these rules from `d
 - For cross-area work, suggest splitting into self-contained commits when possible.
 - Remind contributors that commits must be signed (GPG/SSH/S/MIME).
 
-## Examples
-
-- `fix(ebpf): handle map resize race`
-- `docs(contributing): clarify commit signing requirement`
-- `feat(cli)!: remove deprecated --cache flag`

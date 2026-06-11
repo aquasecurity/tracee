@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": ".cursor/hooks/docs-style-check.sh",
+        "matcher": "Write",
+        "failClosed": true
+      }
+    ]
+  }
+}

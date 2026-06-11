@@ -1,0 +1,6 @@
+# Keep source visible by default; ignore only heavy/generated paths
+.git/
+3rdparty/
+dist/
+output/
+.vagrant/

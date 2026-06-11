@@ -1,0 +1,17 @@
+---
+description: Markdown docs style and policy alignment
+globs:
+  - "**/*.md"
+alwaysApply: false
+---
+
+# Markdown Docs Rule
+
+When editing markdown docs:
+
+- Keep policy text aligned with canonical project sources.
+- Use normative language consistently (`must`, `should`, `may`).
+- Keep guidance actionable and concise.
+- Avoid duplicating nearby docs; prefer links to canonical references.
+- If policy changes (not only wording), update all affected docs in the same PR.
+- Apply the same standards to man-page markdown sources under `docs/docs/**/man/*.md` and `docs/docs/flags/*.md`.
