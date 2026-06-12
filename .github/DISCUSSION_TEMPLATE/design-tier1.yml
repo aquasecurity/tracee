@@ -1,0 +1,99 @@
+title: "Tier 1 Design Note: <short title>"
+labels: ["design-review", "tier/1"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for default feature design review.
+        - Human-first discussion is mandatory before implementation work.
+        - LLM can help drafting/ideation, but not implementation before ACK.
+        - Expected review window: up to 2 business days.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem statement"
+      description: "Who is affected and what pain are we solving?"
+      placeholder: "2-4 lines describing user/system impact."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "Proposal"
+      description: "What change are we making?"
+      placeholder: "Short paragraph with scope and approach."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives considered"
+      description: "List at least one alternative and why it was not chosen."
+      placeholder: "- Option A: ...\n- Option B: ..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ff_needed
+    attributes:
+      label: "Feature flag needed?"
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ff_category
+    attributes:
+      label: "If yes, feature flag category"
+      description: "Select category when flag is needed."
+      options:
+        - "release"
+        - "ops"
+        - "permission"
+        - "N/A"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ff_stage
+    attributes:
+      label: "Initial feature flag stage"
+      options:
+        - "experimental"
+        - "preview"
+        - "stable"
+        - "N/A"
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: "Validation plan"
+      description: "How will we test/verify this change?"
+      placeholder: "- Test 1\n- Test 2"
+    validations:
+      required: true
+
+  - type: input
+    id: requested_ack
+    attributes:
+      label: "Requested maintainer ACK"
+      description: "Tag at least one maintainer."
+      placeholder: "@maintainer"
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Decision summary (to fill when accepted)
+        - Decision:
+        - ACK by:
+        - Tracking issue/PR:
+        - Feature flag plan:

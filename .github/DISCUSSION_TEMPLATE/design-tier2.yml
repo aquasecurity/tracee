@@ -1,0 +1,115 @@
+title: "Tier 2 Design Doc: <short title>"
+labels: ["design-review", "tier/2"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for major or hard-to-reverse decisions.
+        Examples: architecture shifts, security model changes, persistent format changes,
+        or multi-release strategy/vision work.
+        - Human-first discussion is mandatory before implementation work.
+        - LLM can help strategy drafting/options analysis, but not implementation before ACKs.
+        - Expected review window: 3-5 business days.
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: "Status"
+      options:
+        - "Draft"
+        - "In Review"
+        - "Accepted"
+        - "Rejected"
+        - "Superseded"
+    validations:
+      required: true
+
+  - type: input
+    id: owner
+    attributes:
+      label: "Owner"
+      placeholder: "@owner"
+    validations:
+      required: true
+
+  - type: input
+    id: deciders
+    attributes:
+      label: "Deciders"
+      description: "Tag maintainers expected to ACK."
+      placeholder: "@maintainer1, @maintainer2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Context / problem"
+      placeholder: "Current constraints and why this is needed now."
+    validations:
+      required: true
+
+  - type: textarea
+    id: goals
+    attributes:
+      label: "Goals"
+      placeholder: "- Goal 1\n- Goal 2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: "Non-goals"
+      placeholder: "- Explicitly out of scope"
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_design
+    attributes:
+      label: "Proposed design"
+      placeholder: "Core approach, boundaries, and flow."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives considered"
+      placeholder: "- Option A: pros/cons\n- Option B: pros/cons"
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: "Risks and trade-offs"
+      placeholder: "- Risk 1 + mitigation\n- Risk 2 + mitigation"
+    validations:
+      required: true
+
+  - type: textarea
+    id: migration_rollback
+    attributes:
+      label: "Migration / rollback"
+      placeholder: "Roll-forward and rollback plan."
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollout
+    attributes:
+      label: "Rollout and observability"
+      placeholder: "Feature flag strategy, metrics, alerts, success criteria."
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Decision summary (to fill when accepted)
+        - Decision:
+        - ACK by:
+        - Tracking issue/PR:
+        - Feature flag plan:
