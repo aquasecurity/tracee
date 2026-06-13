@@ -428,6 +428,20 @@ func TestMkdirAllAtExist(t *testing.T) {
 			t.Errorf("Should not error when path already exists: %v", err)
 		}
 	})
+
+	t.Run("existing file path - should error", func(t *testing.T) {
+		path := "existing_file"
+		fullPath := filepath.Join(tempDir, path)
+		err := os.WriteFile(fullPath, []byte("not a directory"), 0644)
+		if err != nil {
+			t.Fatalf("Failed to create existing file: %v", err)
+		}
+
+		err = MkdirAllAtExist(dirFile, path, 0755)
+		if err == nil {
+			t.Error("Expected error when path exists as a regular file")
+		}
+	})
 }
 
 // Test CreateAt
