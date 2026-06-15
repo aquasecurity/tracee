@@ -10249,6 +10249,682 @@ var CoreEvents = map[ID]Definition{
 			},
 		},
 	},
+	// Note: futex_waitv is a noisy syscall
+	FutexWaitv: {
+		id:      FutexWaitv,
+		id32Bit: Sys32futex_waitv,
+		name:    "futex_waitv",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "ipc", "ipc_futex"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "waiters"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "nr_futexes"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexWaitv)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexWaitv)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexWaitv)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FutexWaitv)}},
+				},
+			},
+		},
+	},
+	SetMempolicyHomeNode: {
+		id:      SetMempolicyHomeNode,
+		id32Bit: Sys32set_mempolicy_home_node,
+		name:    "set_mempolicy_home_node",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls"},
+		fields: []DataField{
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "start"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "home_node"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(SetMempolicyHomeNode)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(SetMempolicyHomeNode)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(SetMempolicyHomeNode)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(SetMempolicyHomeNode)}},
+				},
+			},
+		},
+	},
+	Cachestat: {
+		id:      Cachestat,
+		id32Bit: Sys32cachestat,
+		name:    "cachestat",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls"},
+		fields: []DataField{
+			// fd kernel type is unsigned int; INT_T matches Tracee fd convention
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "fd"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "cstat_range"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "cstat"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Cachestat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Cachestat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Cachestat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Cachestat)}},
+				},
+			},
+		},
+	},
+	Fchmodat2: {
+		id:      Fchmodat2,
+		id32Bit: Sys32fchmodat2,
+		name:    "fchmodat2",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs", "fs_file_attr"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
+			{DecodeAs: data.U16_T, ArgMeta: trace.ArgMeta{Type: "uint16", Name: "mode"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Fchmodat2)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Fchmodat2)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Fchmodat2)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Fchmodat2)}},
+				},
+			},
+		},
+	},
+	MapShadowStack: {
+		id:      MapShadowStack,
+		id32Bit: Sys32map_shadow_stack,
+		name:    "map_shadow_stack",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "proc", "proc_mem"},
+		fields: []DataField{
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "addr"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(MapShadowStack)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(MapShadowStack)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(MapShadowStack)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(MapShadowStack)}},
+				},
+			},
+		},
+	},
+	// Note: futex_wake is a noisy syscall
+	FutexWake: {
+		id:      FutexWake,
+		id32Bit: Sys32futex_wake,
+		name:    "futex_wake",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "ipc", "ipc_futex"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "mask"}},
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "nr"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexWake)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexWake)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexWake)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FutexWake)}},
+				},
+			},
+		},
+	},
+	// Note: futex_wait is a noisy syscall
+	FutexWait: {
+		id:      FutexWait,
+		id32Bit: Sys32futex_wait,
+		name:    "futex_wait",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "ipc", "ipc_futex"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uaddr"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "val"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "mask"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "timeout"}},
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "clockid"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexWait)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexWait)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexWait)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FutexWait)}},
+				},
+			},
+		},
+	},
+	// Note: futex_requeue is a noisy syscall
+	FutexRequeue: {
+		id:      FutexRequeue,
+		id32Bit: Sys32futex_requeue,
+		name:    "futex_requeue",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "ipc", "ipc_futex"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "waiters"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "nr_wake"}},
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "nr_requeue"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FutexRequeue)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FutexRequeue)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FutexRequeue)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FutexRequeue)}},
+				},
+			},
+		},
+	},
+	Statmount: {
+		id:      Statmount,
+		id32Bit: Sys32statmount,
+		name:    "statmount",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "req"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "buf"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "bufsize"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Statmount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Statmount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Statmount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Statmount)}},
+				},
+			},
+		},
+	},
+	Listmount: {
+		id:      Listmount,
+		id32Bit: Sys32listmount,
+		name:    "listmount",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "req"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "mnt_ids"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nr_mnt_ids"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listmount)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listmount)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listmount)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listmount)}},
+				},
+			},
+		},
+	},
+	LsmGetSelfAttr: {
+		id:      LsmGetSelfAttr,
+		id32Bit: Sys32lsm_get_self_attr,
+		name:    "lsm_get_self_attr",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "security"},
+		fields: []DataField{
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "attr"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "size"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LsmGetSelfAttr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LsmGetSelfAttr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LsmGetSelfAttr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LsmGetSelfAttr)}},
+				},
+			},
+		},
+	},
+	LsmSetSelfAttr: {
+		id:      LsmSetSelfAttr,
+		id32Bit: Sys32lsm_set_self_attr,
+		name:    "lsm_set_self_attr",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "security"},
+		fields: []DataField{
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "attr"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ctx"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "size"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LsmSetSelfAttr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LsmSetSelfAttr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LsmSetSelfAttr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LsmSetSelfAttr)}},
+				},
+			},
+		},
+	},
+	LsmListModules: {
+		id:      LsmListModules,
+		id32Bit: Sys32lsm_list_modules,
+		name:    "lsm_list_modules",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "security"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ids"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "size"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(LsmListModules)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(LsmListModules)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(LsmListModules)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(LsmListModules)}},
+				},
+			},
+		},
+	},
+	Mseal: {
+		id:      Mseal,
+		id32Bit: Sys32mseal,
+		name:    "mseal",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "proc", "proc_mem"},
+		fields: []DataField{
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "start"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "len"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Mseal)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Mseal)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Mseal)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Mseal)}},
+				},
+			},
+		},
+	},
+	Setxattrat: {
+		id:      Setxattrat,
+		id32Bit: Sys32setxattrat,
+		name:    "setxattrat",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs", "fs_file_attr"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "at_flags"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uargs"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "usize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Setxattrat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Setxattrat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Setxattrat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Setxattrat)}},
+				},
+			},
+		},
+	},
+	Getxattrat: {
+		id:      Getxattrat,
+		id32Bit: Sys32getxattrat,
+		name:    "getxattrat",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs", "fs_file_attr"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "at_flags"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uargs"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "usize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Getxattrat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Getxattrat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Getxattrat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Getxattrat)}},
+				},
+			},
+		},
+	},
+	Listxattrat: {
+		id:      Listxattrat,
+		id32Bit: Sys32listxattrat,
+		name:    "listxattrat",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs", "fs_file_attr"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "at_flags"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "list"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "size"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listxattrat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listxattrat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listxattrat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listxattrat)}},
+				},
+			},
+		},
+	},
+	Removexattrat: {
+		id:      Removexattrat,
+		id32Bit: Sys32removexattrat,
+		name:    "removexattrat",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs", "fs_file_attr"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "at_flags"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "name"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Removexattrat)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Removexattrat)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Removexattrat)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Removexattrat)}},
+				},
+			},
+		},
+	},
+	OpenTreeAttr: {
+		id:      OpenTreeAttr,
+		id32Bit: Sys32open_tree_attr,
+		name:    "open_tree_attr",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "uattr"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "usize"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(OpenTreeAttr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(OpenTreeAttr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(OpenTreeAttr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(OpenTreeAttr)}},
+				},
+			},
+		},
+	},
+	FileGetattr: {
+		id:      FileGetattr,
+		id32Bit: Sys32file_getattr,
+		name:    "file_getattr",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs", "fs_file_attr"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ufattr"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "usize"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "at_flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FileGetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FileGetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FileGetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FileGetattr)}},
+				},
+			},
+		},
+	},
+	FileSetattr: {
+		id:      FileSetattr,
+		id32Bit: Sys32file_setattr,
+		name:    "file_setattr",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "fs", "fs_file_attr"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "filename"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ufattr"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "usize"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "at_flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(FileSetattr)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(FileSetattr)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(FileSetattr)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(FileSetattr)}},
+				},
+			},
+		},
+	},
+	Listns: {
+		id:      Listns,
+		id32Bit: Sys32listns,
+		name:    "listns",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "proc"},
+		fields: []DataField{
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "req"}},
+			{DecodeAs: data.POINTER_T, ArgMeta: trace.ArgMeta{Type: "trace.Pointer", Name: "ns_ids"}},
+			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "nr_ns_ids"}},
+			{DecodeAs: data.UINT_T, ArgMeta: trace.ArgMeta{Type: "uint32", Name: "flags"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(Listns)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(Listns)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(Listns)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(Listns)}},
+				},
+			},
+		},
+	},
+	RseqSliceYield: {
+		id:      RseqSliceYield,
+		id32Bit: Sys32rseq_slice_yield,
+		name:    "rseq_slice_yield",
+		version: NewVersion(1, 0, 0),
+		syscall: true,
+		sets:    []string{"syscalls", "proc"},
+		fields: []DataField{
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
+		},
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.SyscallEnter__Internal, required: true},
+					{handle: probes.SyscallExit__Internal, required: true},
+				},
+				tailCalls: []TailCall{
+					{"sys_enter_init_tail", "sys_enter_init", []uint32{uint32(RseqSliceYield)}},
+					{"sys_enter_submit_tail", "sys_enter_submit", []uint32{uint32(RseqSliceYield)}},
+					{"sys_exit_init_tail", "sys_exit_init", []uint32{uint32(RseqSliceYield)}},
+					{"sys_exit_submit_tail", "sys_exit_submit", []uint32{uint32(RseqSliceYield)}},
+				},
+			},
+		},
+	},
 	Waitpid: {
 		id:      Waitpid,
 		id32Bit: Sys32waitpid,

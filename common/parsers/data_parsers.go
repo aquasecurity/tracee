@@ -276,6 +276,7 @@ func ParseFaccessatFlag(flags uint64) (string, error) {
 
 var fchmodatFlagsValues = []SystemFunctionArgument{
 	AT_SYMLINK_NOFOLLOW,
+	AT_EMPTY_PATH,
 }
 
 func ParseFchmodatFlag(flags uint64) (string, error) {
@@ -289,6 +290,271 @@ func ParseFchmodatFlag(flags uint64) (string, error) {
 
 	if sb.Len() == 0 {
 		return "", fmt.Errorf("no valid fchmodat flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var atPathFlagsValues = []SystemFunctionArgument{
+	AT_SYMLINK_NOFOLLOW,
+	AT_EMPTY_PATH,
+}
+
+// ParseAtPathFlag parses at_* style path resolution flags.
+func ParseAtPathFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, atPathFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid at_* path flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var (
+	// from linux/mount.h
+	OPEN_TREE_CLONE     = SystemFunctionArgument{rawValue: 0x00000001, stringValue: "OPEN_TREE_CLONE"}
+	OPEN_TREE_NAMESPACE = SystemFunctionArgument{rawValue: 0x00000002, stringValue: "OPEN_TREE_NAMESPACE"}
+	OPEN_TREE_CLOEXEC   = SystemFunctionArgument{rawValue: 0x00080000, stringValue: "OPEN_TREE_CLOEXEC"}
+)
+
+var openTreeFlagsValues = []SystemFunctionArgument{
+	AT_EMPTY_PATH,
+	AT_NO_AUTOMOUNT,
+	AT_RECURSIVE,
+	AT_SYMLINK_NOFOLLOW,
+	OPEN_TREE_CLONE,
+	OPEN_TREE_NAMESPACE,
+	OPEN_TREE_CLOEXEC,
+}
+
+// ParseOpenTreeFlag parses the flags bitmask for open_tree/open_tree_attr.
+func ParseOpenTreeFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, openTreeFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid open_tree flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var (
+	// from asm-generic/mman-common.h
+	SHADOW_STACK_SET_TOKEN  = SystemFunctionArgument{rawValue: 0x1, stringValue: "SHADOW_STACK_SET_TOKEN"}
+	SHADOW_STACK_SET_MARKER = SystemFunctionArgument{rawValue: 0x2, stringValue: "SHADOW_STACK_SET_MARKER"}
+)
+
+var mapShadowStackFlagsValues = []SystemFunctionArgument{
+	SHADOW_STACK_SET_TOKEN,
+	SHADOW_STACK_SET_MARKER,
+}
+
+// ParseMapShadowStackFlag parses the flags bitmask for map_shadow_stack.
+func ParseMapShadowStackFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+
+	buildStringFromValues(&sb, mapShadowStackFlagsValues, flags)
+
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid map_shadow_stack flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var (
+	// from linux/futex.h and linux/kernel/futex/futex.h
+	FUTEX2_SIZE_U16  = SystemFunctionArgument{rawValue: 0x00000001, stringValue: "FUTEX2_SIZE_U16"}
+	FUTEX2_SIZE_U32  = SystemFunctionArgument{rawValue: 0x00000002, stringValue: "FUTEX2_SIZE_U32"}
+	FUTEX2_SIZE_U64  = SystemFunctionArgument{rawValue: 0x00000003, stringValue: "FUTEX2_SIZE_U64"}
+	FUTEX2_NUMA_FLAG = SystemFunctionArgument{rawValue: 0x00000004, stringValue: "FUTEX2_NUMA"}
+	FUTEX2_MPOL_FLAG = SystemFunctionArgument{rawValue: 0x00000008, stringValue: "FUTEX2_MPOL"}
+	FUTEX2_PRIVATE   = SystemFunctionArgument{rawValue: 0x00000080, stringValue: "FUTEX2_PRIVATE"}
+)
+
+var futex2FlagValues = []SystemFunctionArgument{
+	FUTEX2_NUMA_FLAG,
+	FUTEX2_MPOL_FLAG,
+	FUTEX2_PRIVATE,
+}
+
+// ParseFutex2Flag parses futex2 flags used by futex_wake/futex_wait.
+func ParseFutex2Flag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+	recognizedMask := uint64(0x3)
+
+	switch flags & 0x3 {
+	case 0:
+		// size defaults to U8, represented by no bits.
+	case FUTEX2_SIZE_U16.Value():
+		sb.WriteString(FUTEX2_SIZE_U16.String())
+	case FUTEX2_SIZE_U32.Value():
+		sb.WriteString(FUTEX2_SIZE_U32.String())
+	case FUTEX2_SIZE_U64.Value():
+		sb.WriteString(FUTEX2_SIZE_U64.String())
+	}
+
+	buildStringFromValues(&sb, futex2FlagValues, flags)
+	for _, arg := range futex2FlagValues {
+		recognizedMask |= arg.Value()
+	}
+
+	if flags&^recognizedMask != 0 {
+		return "", fmt.Errorf("unknown futex2 flag values present in flags value: 0x%x", flags)
+	}
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid futex2 flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var (
+	// from linux/mount.h
+	STATMOUNT_BY_FD   = SystemFunctionArgument{rawValue: 0x00000001, stringValue: "STATMOUNT_BY_FD"}
+	LISTMOUNT_REVERSE = SystemFunctionArgument{rawValue: 0x00000001, stringValue: "LISTMOUNT_REVERSE"}
+)
+
+var statmountFlagValues = []SystemFunctionArgument{
+	STATMOUNT_BY_FD,
+}
+
+func ParseStatmountFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+	buildStringFromValues(&sb, statmountFlagValues, flags)
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid statmount flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var listmountFlagValues = []SystemFunctionArgument{
+	LISTMOUNT_REVERSE,
+}
+
+func ParseListmountFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+	buildStringFromValues(&sb, listmountFlagValues, flags)
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid listmount flag values present in flags value: 0x%x", flags)
+	}
+
+	return sb.String(), nil
+}
+
+var (
+	// from linux/lsm.h
+	LSM_ATTR_UNDEF      = SystemFunctionArgument{rawValue: 0, stringValue: "LSM_ATTR_UNDEF"}
+	LSM_ATTR_CURRENT    = SystemFunctionArgument{rawValue: 100, stringValue: "LSM_ATTR_CURRENT"}
+	LSM_ATTR_EXEC       = SystemFunctionArgument{rawValue: 101, stringValue: "LSM_ATTR_EXEC"}
+	LSM_ATTR_FSCREATE   = SystemFunctionArgument{rawValue: 102, stringValue: "LSM_ATTR_FSCREATE"}
+	LSM_ATTR_KEYCREATE  = SystemFunctionArgument{rawValue: 103, stringValue: "LSM_ATTR_KEYCREATE"}
+	LSM_ATTR_PREV       = SystemFunctionArgument{rawValue: 104, stringValue: "LSM_ATTR_PREV"}
+	LSM_ATTR_SOCKCREATE = SystemFunctionArgument{rawValue: 105, stringValue: "LSM_ATTR_SOCKCREATE"}
+	LSM_FLAG_SINGLE     = SystemFunctionArgument{rawValue: 0x0001, stringValue: "LSM_FLAG_SINGLE"}
+)
+
+var lsmAttrValues = []SystemFunctionArgument{
+	LSM_ATTR_UNDEF,
+	LSM_ATTR_CURRENT,
+	LSM_ATTR_EXEC,
+	LSM_ATTR_FSCREATE,
+	LSM_ATTR_KEYCREATE,
+	LSM_ATTR_PREV,
+	LSM_ATTR_SOCKCREATE,
+}
+
+func ParseLsmAttr(attr uint64) (string, error) {
+	for _, arg := range lsmAttrValues {
+		if arg.Value() == attr {
+			return arg.String(), nil
+		}
+	}
+	return "", fmt.Errorf("unknown lsm attr value: 0x%x", attr)
+}
+
+var (
+	// from linux/time.h (POSIX clock IDs)
+	CLOCK_REALTIME           = SystemFunctionArgument{rawValue: 0, stringValue: "CLOCK_REALTIME"}
+	CLOCK_MONOTONIC          = SystemFunctionArgument{rawValue: 1, stringValue: "CLOCK_MONOTONIC"}
+	CLOCK_PROCESS_CPUTIME_ID = SystemFunctionArgument{rawValue: 2, stringValue: "CLOCK_PROCESS_CPUTIME_ID"}
+	CLOCK_THREAD_CPUTIME_ID  = SystemFunctionArgument{rawValue: 3, stringValue: "CLOCK_THREAD_CPUTIME_ID"}
+	CLOCK_MONOTONIC_RAW      = SystemFunctionArgument{rawValue: 4, stringValue: "CLOCK_MONOTONIC_RAW"}
+	CLOCK_REALTIME_COARSE    = SystemFunctionArgument{rawValue: 5, stringValue: "CLOCK_REALTIME_COARSE"}
+	CLOCK_MONOTONIC_COARSE   = SystemFunctionArgument{rawValue: 6, stringValue: "CLOCK_MONOTONIC_COARSE"}
+	CLOCK_BOOTTIME           = SystemFunctionArgument{rawValue: 7, stringValue: "CLOCK_BOOTTIME"}
+	CLOCK_REALTIME_ALARM     = SystemFunctionArgument{rawValue: 8, stringValue: "CLOCK_REALTIME_ALARM"}
+	CLOCK_BOOTTIME_ALARM     = SystemFunctionArgument{rawValue: 9, stringValue: "CLOCK_BOOTTIME_ALARM"}
+	CLOCK_TAI                = SystemFunctionArgument{rawValue: 11, stringValue: "CLOCK_TAI"}
+)
+
+var clockIdValues = []SystemFunctionArgument{
+	CLOCK_REALTIME,
+	CLOCK_MONOTONIC,
+	CLOCK_PROCESS_CPUTIME_ID,
+	CLOCK_THREAD_CPUTIME_ID,
+	CLOCK_MONOTONIC_RAW,
+	CLOCK_REALTIME_COARSE,
+	CLOCK_MONOTONIC_COARSE,
+	CLOCK_BOOTTIME,
+	CLOCK_REALTIME_ALARM,
+	CLOCK_BOOTTIME_ALARM,
+	CLOCK_TAI,
+}
+
+// ParseClockId returns the symbolic name of a POSIX clock ID (clockid_t).
+func ParseClockId(clockid uint64) (string, error) {
+	for _, arg := range clockIdValues {
+		if arg.Value() == clockid {
+			return arg.String(), nil
+		}
+	}
+	return "", fmt.Errorf("unknown clock id: %d", clockid)
+}
+
+var lsmGetSelfAttrFlagValues = []SystemFunctionArgument{
+	LSM_FLAG_SINGLE,
+}
+
+func ParseLsmGetSelfAttrFlag(flags uint64) (string, error) {
+	if flags == 0 {
+		return "", nil
+	}
+
+	var sb strings.Builder
+	buildStringFromValues(&sb, lsmGetSelfAttrFlagValues, flags)
+	if sb.Len() == 0 {
+		return "", fmt.Errorf("no valid lsm_get_self_attr flag values present in flags value: 0x%x", flags)
 	}
 
 	return sb.String(), nil

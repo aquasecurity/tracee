@@ -368,6 +368,29 @@ const (
 	LandlockRestrictSelf
 	MemfdSecret
 	ProcessMrelease
+	FutexWaitv
+	SetMempolicyHomeNode
+	Cachestat
+	Fchmodat2
+	MapShadowStack
+	FutexWake
+	FutexWait
+	FutexRequeue
+	Statmount
+	Listmount
+	LsmGetSelfAttr
+	LsmSetSelfAttr
+	LsmListModules
+	Mseal
+	Setxattrat
+	Getxattrat
+	Listxattrat
+	Removexattrat
+	OpenTreeAttr
+	FileGetattr
+	FileSetattr
+	Listns
+	RseqSliceYield
 	// Set of IDs for 32bit syscalls which have no parallel 64bit syscall
 	Waitpid
 	Oldfstat
@@ -907,6 +930,29 @@ const (
 	Sys32landlock_restrict_self       ID = 446
 	Sys32memfd_secret                 ID = 447
 	Sys32process_mrelease             ID = 448
+	Sys32futex_waitv                  ID = 449
+	Sys32set_mempolicy_home_node      ID = 450
+	Sys32cachestat                    ID = 451
+	Sys32fchmodat2                    ID = 452
+	Sys32map_shadow_stack             ID = 453
+	Sys32futex_wake                   ID = 454
+	Sys32futex_wait                   ID = 455
+	Sys32futex_requeue                ID = 456
+	Sys32statmount                    ID = 457
+	Sys32listmount                    ID = 458
+	Sys32lsm_get_self_attr            ID = 459
+	Sys32lsm_set_self_attr            ID = 460
+	Sys32lsm_list_modules             ID = 461
+	Sys32mseal                        ID = 462
+	Sys32setxattrat                   ID = 463
+	Sys32getxattrat                   ID = 464
+	Sys32listxattrat                  ID = 465
+	Sys32removexattrat                ID = 466
+	Sys32open_tree_attr               ID = 467
+	Sys32file_getattr                 ID = 468
+	Sys32file_setattr                 ID = 469
+	Sys32listns                       ID = 470
+	Sys32rseq_slice_yield             ID = 471
 )
 
 const SyscallPrefix = "__x64_sys_"
@@ -1304,4 +1350,24 @@ var SyscallSymbolNames = map[ID][]KernelRestrictions{
 	449: {{Above: "5.16", Name: "futex_waitv"}},
 	450: {{Above: "5.17", Name: "set_mempolicy_home_node"}},
 	451: {{Above: "6.5", Name: "cachestat"}},
+	452: {{Above: "6.9", Name: "fchmodat2"}},
+	453: {{Above: "6.6", Name: "map_shadow_stack"}},
+	454: {{Above: "6.7", Name: "futex_wake"}},
+	455: {{Above: "6.7", Name: "futex_wait"}},
+	456: {{Above: "6.7", Name: "futex_requeue"}},
+	457: {{Above: "6.8", Name: "statmount"}},
+	458: {{Above: "6.8", Name: "listmount"}},
+	459: {{Above: "6.8", Name: "lsm_get_self_attr"}},
+	460: {{Above: "6.8", Name: "lsm_set_self_attr"}},
+	461: {{Above: "6.8", Name: "lsm_list_modules"}},
+	462: {{Above: "6.10", Name: "mseal"}},
+	463: {{Above: "6.13", Name: "setxattrat"}},
+	464: {{Above: "6.13", Name: "getxattrat"}},
+	465: {{Above: "6.13", Name: "listxattrat"}},
+	466: {{Above: "6.13", Name: "removexattrat"}},
+	467: {{Above: "6.13", Name: "open_tree_attr"}},
+	468: {{Above: "6.13", Name: "file_getattr"}},
+	469: {{Above: "6.13", Name: "file_setattr"}},
+	470: {{Above: "6.13", Name: "listns"}},
+	471: {{Above: "6.13", Name: "rseq_slice_yield"}},
 }
