@@ -3,28 +3,34 @@
 .TH "" "" "" "" ""
 .PP
 \[en] title: TRACEE\-LIST\-DETECTORS section: 1 header: Tracee List
-Detectors Command Manual date: 2025/01 \&...
+Detectors Command Manual date: 2026/05 \&...
 .SS NAME
-tracee \f[B]list detectors\f[R] \- List available detectors
+tracee \f[B]list detectors\f[R] \- List available detectors and shared
+lists
 .SS SYNOPSIS
 tracee \f[B]list detectors\f[R] [paths\&...]
 [\-\-json]
 .SS DESCRIPTION
 The \f[B]list detectors\f[R] command displays all available detectors
-from built\-in sources and YAML detector files.
+and shared lists from built\-in sources and YAML files.
 .PP
 Detectors analyze events and produce threat detections or derived
 events.
+.PP
+Shared lists are reusable value sets (e.g., shell binaries, sensitive
+paths) that YAML detectors can reference in CEL expressions.
 .SS ARGUMENTS
 .TP
 \f[B][paths\&...]\f[R]
-Directories or files to search for YAML detectors.
+Directories or files to search for YAML detectors and lists.
 If not specified, uses default paths (/etc/tracee/detectors).
 .SS FLAGS
 .TP
 \f[B]\-\-json\f[R], \f[B]\-j\f[R]
 Output in JSON format for scripting.
-.SS OUTPUT COLUMNS
+.SS OUTPUT
+The command displays two sections:
+.SS Detectors
 .TP
 \f[B]ID\f[R]
 Unique detector identifier (e.g., TRC\-001, DRV\-001)
@@ -40,42 +46,72 @@ Events the detector needs to receive
 .TP
 \f[B]MITRE\f[R]
 MITRE ATT&CK technique ID if applicable
+.SS Shared Lists
+.TP
+\f[B]Name\f[R]
+List variable name (uppercase snake_case, e.g., SHELL_BINARIES)
+.TP
+\f[B]Values\f[R]
+Number of values in the list
+.TP
+\f[B]Source\f[R]
+Directory the shared list was loaded from (YAML scope for that list).
+.SS JSON OUTPUT
+When using \f[CR]\-\-json\f[R], the output structure is:
+.IP
+.EX
+{
+  \[dq]detectors\[dq]: [
+    {
+      \[dq]id\[dq]: \[dq]yaml\-001\[dq],
+      \[dq]name\[dq]: \[dq]suspicious_exec\[dq],
+      \[dq]severity\[dq]: \[dq]HIGH\[dq],
+      \[dq]required_events\[dq]: [\[dq]sched_process_exec\[dq]],
+      \[dq]mitre_technique\[dq]: \[dq]T1059\[dq]
+    }
+  ],
+  \[dq]lists\[dq]: [
+    {\[dq]name\[dq]: \[dq]SHELL_BINARIES\[dq], \[dq]value_count\[dq]: 6, \[dq]source_dir\[dq]: \[dq]/etc/tracee/detectors\[dq]},
+    {\[dq]name\[dq]: \[dq]SENSITIVE_PATHS\[dq], \[dq]value_count\[dq]: 12, \[dq]source_dir\[dq]: \[dq]/etc/tracee/detectors\[dq]}
+  ]
+}
+.EE
 .SS EXAMPLES
 .IP \[bu] 2
-List all detectors from default paths:
+List all detectors and lists from default paths:
 .IP
 .EX
 tracee list detectors
 .EE
 .IP \[bu] 2
-List detectors from a custom directory:
+List detectors and lists from a custom directory:
 .IP
 .EX
 tracee list detectors ./my\-detectors
 .EE
 .IP \[bu] 2
-List detectors from multiple directories:
+List detectors and lists from multiple directories:
 .IP
 .EX
 tracee list detectors ./dir1 ./dir2
 .EE
 .IP \[bu] 2
-List a single detector file:
-.IP
-.EX
-tracee list detectors ./my\-detector.yaml
-.EE
-.IP \[bu] 2
-List detectors in JSON format:
+List detectors and lists in JSON format:
 .IP
 .EX
 tracee list detectors \-\-json
 .EE
 .IP \[bu] 2
-List detectors and filter with jq:
+Filter critical detectors with jq:
 .IP
 .EX
-tracee list detectors \-\-json | jq \[aq].[] | select(.severity == \[dq]CRITICAL\[dq])\[aq]
+tracee list detectors \-\-json | jq \[aq].detectors[] | select(.severity == \[dq]CRITICAL\[dq])\[aq]
+.EE
+.IP \[bu] 2
+List shared list names with jq:
+.IP
+.EX
+tracee list detectors \-\-json | jq \[aq].lists[].name\[aq]
 .EE
 .SS SEE ALSO
 tracee\-list(1), tracee\-list\-events(1), tracee\-list\-policies(1)
