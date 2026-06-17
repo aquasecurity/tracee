@@ -45,7 +45,7 @@ require (
 // aquasecurity modules
 //
 require (
-	github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1
+	github.com/aquasecurity/libbpfgo v0.11.0-libbpf-1.8-dev-2bbc483
 	github.com/aquasecurity/tracee/api v0.0.0
 	github.com/aquasecurity/tracee/common v0.0.0
 	github.com/aquasecurity/tracee/detectors v0.0.0
