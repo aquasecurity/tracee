@@ -405,8 +405,6 @@ github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAE
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8TVTI=
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
-github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1 h1:i/6EeKnBR3XVeLmOyMbM0Oq+kIC08n613zwkD8lix8w=
-github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1/go.mod h1:veHe4u3xEpl0TBV+wX0AFJWOsnteNPOhNklRbYf3d+k=
 github.com/aquasecurity/tracee/types v0.0.0-20251205142631-7dc44bdb801c h1:z5KtKy9rBKP6Wg8Wuok4AkfD5x86GRsw0URDor2Gxig=
 github.com/aquasecurity/tracee/types v0.0.0-20251205142631-7dc44bdb801c/go.mod h1:jnyVhf+0A1J24eD8DlmNv46yWg5I4TJkHnptkWyPOH8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -492,6 +490,8 @@ github.com/fsnotify/fsnotify v1.8.0 h1:dAwr6QBTBZIkG8roQaJjGof0pp0EeF+tNV7YBP3F/
 github.com/fsnotify/fsnotify v1.8.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/fxamacker/cbor/v2 v2.7.0 h1:iM5WgngdRBanHcxugY4JySA0nk1wZorNOpTgCMedv5E=
 github.com/fxamacker/cbor/v2 v2.7.0/go.mod h1:pxXPTn3joSm21Gbwsv0w9OSA2y1HFR9qXEeXQVeNoDQ=
+github.com/geyslan/libbpfgo v0.1.2-0.20260617155751-5e7cdf434a37 h1:g6PFYBi41ITOfkpO5xEaQuUphfrFf3UqmP76ZqRSmMo=
+github.com/geyslan/libbpfgo v0.1.2-0.20260617155751-5e7cdf434a37/go.mod h1:veHe4u3xEpl0TBV+wX0AFJWOsnteNPOhNklRbYf3d+k=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=

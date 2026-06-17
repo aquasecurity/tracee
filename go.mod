@@ -181,3 +181,5 @@ replace github.com/aquasecurity/tracee/api => ./api
 replace github.com/aquasecurity/tracee/common => ./common
 
 replace github.com/aquasecurity/tracee/detectors => ./detectors
+
+replace github.com/aquasecurity/libbpfgo => github.com/geyslan/libbpfgo v0.1.2-0.20260617155751-5e7cdf434a37
