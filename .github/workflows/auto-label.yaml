@@ -26,7 +26,9 @@ permissions: {}
 jobs:
   sync-kind-area-labels:
     name: Sync kind and area labels
-    if: github.event.action != 'closed'
+    if: >-
+      github.event.action != 'closed'
+      && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-2404-2core') }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
@@ -188,6 +190,7 @@ jobs:
     if: >-
       github.event.action == 'closed'
       && github.event.pull_request.merged == true
+      && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-2404-2core') }}
     container:
       image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
