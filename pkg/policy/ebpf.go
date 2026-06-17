@@ -66,7 +66,12 @@ func createNewInnerMapEventId(m *bpf.Module, mapName string, mapVersion uint16, 
 		return nil, "", errfmt.WrapError(err)
 	}
 
-	btfFD, err := bpf.GetBTFFDByID(info.BTFID)
+	// Use module BTF fd instead of BTF_GET_FD_BY_ID (CAP_SYS_ADMIN-gated).
+	// This assumes prototype maps are created from the same loaded module BTF.
+	// Be aware: if this map prototype migrates to another module/BTF object,
+	// type IDs won't match this fd and map creation will fail. In that case,
+	// GetBTFFDByID will be required, which implies CAP_SYS_ADMIN.
+	btfFD, err := m.BTFFD()
 	if err != nil {
 		return nil, "", errfmt.WrapError(err)
 	}
@@ -111,7 +116,12 @@ func createNewInnerMap(m *bpf.Module, mapName string, mapVersion uint16) (*bpf.B
 		return nil, errfmt.WrapError(err)
 	}
 
-	btfFD, err := bpf.GetBTFFDByID(info.BTFID)
+	// Use module BTF fd instead of BTF_GET_FD_BY_ID (CAP_SYS_ADMIN-gated).
+	// This assumes prototype maps are created from the same loaded module BTF.
+	// Be aware: if this map prototype migrates to another module/BTF object,
+	// type IDs won't match this fd and map creation will fail. In that case,
+	// GetBTFFDByID will be required, which implies CAP_SYS_ADMIN.
+	btfFD, err := m.BTFFD()
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
