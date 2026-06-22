@@ -961,6 +961,7 @@ test-common:: \
 #
 	@# Note that we must change the directory here because common is a standalone Go module.
 	@cd ./common && $(CMD_GO) test \
+		$(if $(GO_TAGS_SUBMODULE_TEST),-tags $(GO_TAGS_SUBMODULE_TEST),) \
 		-short \
 		$(GO_TEST_RACE) \
 		-shuffle on \
