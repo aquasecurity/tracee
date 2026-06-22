@@ -12,7 +12,7 @@ require (
 	github.com/aquasecurity/tracee/common v0.0.0
 	github.com/aquasecurity/tracee/detectors v0.0.0-00010101000000-000000000000
 	github.com/aquasecurity/tracee/types v0.0.0-20251205142631-7dc44bdb801c
-	github.com/containerd/containerd v1.7.32
+	github.com/containerd/containerd v1.7.33
 	github.com/google/cel-go v0.22.0
 	github.com/google/gopacket v1.1.19
 	github.com/grafana/pyroscope-go v1.2.2
