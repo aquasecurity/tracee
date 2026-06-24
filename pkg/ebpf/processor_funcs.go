@@ -225,7 +225,15 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	okSeqOps := t.policyManager.IsEventSelected(events.HookedSeqOps)
 	okProcFops := t.policyManager.IsEventSelected(events.HookedProcFops)
 	okMemDump := t.policyManager.IsEventSelected(events.PrintMemDump)
-	okFtrace := t.policyManager.IsEventSelected(events.FtraceHook)
+
+	// Unlike the events above, ftrace_hook is produced by a separate scanner
+	// goroutine that only starts when the event is emitted/submitted by a policy
+	// (MatchEventInAnyPolicy), not when it is merely a dependency.
+	//
+	// Gate on the match so the wakeup below never targets a receiver that
+	// was never started.
+	okFtrace := t.policyManager.IsEventSelected(events.FtraceHook) &&
+		t.policyManager.MatchEventInAnyPolicy(events.FtraceHook) != 0
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump && !okFtrace {
 		return nil
@@ -270,7 +278,15 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		}
 	}
 	if okFtrace {
-		events.FtraceWakeupChan <- struct{}{}
+		// Best-effort wakeup so the scanner re-checks right after a
+		// module load (it also runs on a timer).
+		//
+		// Non-blocking so it never stalls the pipeline if the scanner
+		// is momentarily busy.
+		select {
+		case events.FtraceWakeupChan <- struct{}{}:
+		default:
+		}
 	}
 
 	return nil
