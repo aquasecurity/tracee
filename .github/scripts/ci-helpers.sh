@@ -52,6 +52,15 @@ ensure_label() {
         return 0
     fi
 
+    # In restricted integration contexts (e.g., fork PRs), label creation can
+    # return 403 "Resource not accessible by integration". Do not fail the
+    # workflow in this case; label add/remove operations are already best-effort.
+    if grep -q 'Resource not accessible by integration' "${err_file}"; then
+        echo "::warning::Skipping label creation for $1 due to integration permissions." >&2
+        rm -f "${err_file}"
+        return 0
+    fi
+
     echo "::warning::Failed to ensure label $1." >&2
     if [ -s "${err_file}" ]; then
         cat "${err_file}" >&2
