@@ -257,7 +257,7 @@ func checkFtraceHooks(ctx context.Context, out chan *PipelineEvent, baseEvent *t
 			continue
 		}
 
-		if directArg && strings.HasPrefix(ftraceLine, "\tdirect-->") {
+		if directArg && isDirectContinuationLine(ftraceLine) {
 			directArg = false // Turn off flag
 			continue
 		}
@@ -522,6 +522,15 @@ func getCallback(ftraceParts []string) string {
 	}
 
 	return callback
+}
+
+// isDirectContinuationLine reports whether the raw (pre-tab-normalization) line is
+// the "direct" continuation line emitted after a D-flagged hook. It is the only
+// field the kernel prints on its own line ("\n\tdirect%s-->"); tramp/ops/subops stay
+// inline on the function line. The qualifier is empty for a plain direct call or
+// "(jmp)" in jump mode (FTRACE_OPS_FL_JMP, v6.19), so the "\tdirect" prefix matches both.
+func isDirectContinuationLine(ftraceLine string) bool {
+	return strings.HasPrefix(ftraceLine, "\tdirect")
 }
 
 // getFtraceFlags extracts the flag bitmask, advancing *index to the first token

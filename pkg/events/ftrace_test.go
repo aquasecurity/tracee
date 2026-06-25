@@ -246,6 +246,35 @@ func TestParseFtraceHook(t *testing.T) {
 	}
 }
 
+// TestIsDirectContinuationLine locks the detection of the tab-indented "direct"
+// continuation line that follows a D-flagged hook, including the jmp-mode form
+// ("\tdirect(jmp)-->") so it is skipped instead of being mis-parsed as a hook.
+func TestIsDirectContinuationLine(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		name string
+		line string
+		want bool
+	}{
+		{name: "plain direct", line: "\tdirect-->bpf_trampoline_6442559287+0x0/0xa4", want: true},
+		{name: "jmp direct", line: "\tdirect(jmp)-->bpf_trampoline_6442523382+0x0/0x114", want: true},
+		{name: "tramp line", line: "\ttramp: ftrace_regs_caller+0x0/0x61 (call_direct_funcs+0x0/0x20)", want: false},
+		{name: "hook line", line: "vfs_write (1) R   D   M  tramp: ftrace_regs_caller+0x0/0x61", want: false},
+		{name: "empty", line: "", want: false},
+	}
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			assert.Equal(t, testCase.want, isDirectContinuationLine(testCase.line))
+		})
+	}
+}
+
 // TestFtraceFlagsString locks the textual rendering of the flag bitmask: it must
 // emit characters in the kernel's fixed R,I,D,O,M order regardless of set order,
 // so the reported "flags" argument matches the original enabled_functions column.
