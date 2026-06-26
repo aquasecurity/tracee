@@ -137,6 +137,15 @@ func parseFchmodatFlag(ev *pb.EventValue, flags uint64) {
 	ev.Value = &pb.EventValue_Str{Str: fchmodatFlagArgument}
 }
 
+func parseAtPathFlag(ev *pb.EventValue, flags uint64) {
+	atPathFlagArgument, err := parsers.ParseAtPathFlag(flags)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: atPathFlagArgument}
+}
+
 func parseExecveatFlag(ev *pb.EventValue, flags uint64) {
 	execFlagArgument, err := parsers.ParseExecveatFlag(flags)
 	if err != nil {
@@ -260,4 +269,76 @@ func parseMmapFlags(ev *pb.EventValue, flags uint64) {
 func parseNamespaceType(ev *pb.EventValue, nstype uint64) {
 	namespaceTypeArgument := parsers.ParseNamespaceType(nstype)
 	ev.Value = &pb.EventValue_Str{Str: namespaceTypeArgument.String()}
+}
+
+func parseOpenTreeFlag(ev *pb.EventValue, flags uint64) {
+	openTreeFlagArgument, err := parsers.ParseOpenTreeFlag(flags)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: openTreeFlagArgument}
+}
+
+func parseMapShadowStackFlag(ev *pb.EventValue, flags uint64) {
+	mapShadowStackFlagArgument, err := parsers.ParseMapShadowStackFlag(flags)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: mapShadowStackFlagArgument}
+}
+
+func parseFutex2Flag(ev *pb.EventValue, flags uint64) {
+	futex2FlagArgument, err := parsers.ParseFutex2Flag(flags)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: futex2FlagArgument}
+}
+
+func parseStatmountFlag(ev *pb.EventValue, flags uint64) {
+	statmountFlagArgument, err := parsers.ParseStatmountFlag(flags)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: statmountFlagArgument}
+}
+
+func parseListmountFlag(ev *pb.EventValue, flags uint64) {
+	listmountFlagArgument, err := parsers.ParseListmountFlag(flags)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: listmountFlagArgument}
+}
+
+func parseLsmAttr(ev *pb.EventValue, attr uint64) {
+	lsmAttrArgument, err := parsers.ParseLsmAttr(attr)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(attr, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: lsmAttrArgument}
+}
+
+func parseLsmGetSelfAttrFlag(ev *pb.EventValue, flags uint64) {
+	lsmGetSelfAttrFlagArgument, err := parsers.ParseLsmGetSelfAttrFlag(flags)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatUint(flags, 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: lsmGetSelfAttrFlagArgument}
+}
+
+func parseClockId(ev *pb.EventValue, clockid uint64) {
+	clockIdArgument, err := parsers.ParseClockId(clockid)
+	if err != nil {
+		ev.Value = &pb.EventValue_Str{Str: strconv.FormatInt(int64(int32(clockid)), 10)}
+		return
+	}
+	ev.Value = &pb.EventValue_Str{Str: clockIdArgument}
 }

@@ -460,6 +460,29 @@ enum EventId {
     rt_sigtimedwait_time32 = 444;
     futex_time32 = 445;
     sched_rr_get_interval_time32 = 446;
+    futex_waitv = 447;
+    set_mempolicy_home_node = 448;
+    cachestat = 449;
+    fchmodat2 = 450;
+    map_shadow_stack = 451;
+    futex_wake = 452;
+    futex_wait = 453;
+    futex_requeue = 454;
+    statmount = 455;
+    listmount = 456;
+    lsm_get_self_attr = 457;
+    lsm_set_self_attr = 458;
+    lsm_list_modules = 459;
+    mseal = 460;
+    setxattrat = 461;
+    getxattrat = 462;
+    listxattrat = 463;
+    removexattrat = 464;
+    open_tree_attr = 465;
+    file_getattr = 466;
+    file_setattr = 467;
+    listns = 468;
+    rseq_slice_yield = 469;
 
     // Common events (used by all architectures).
     net_packet_base = 1000;

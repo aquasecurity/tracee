@@ -10,7 +10,7 @@ header: Tracee Event Manual
 
 ## DESCRIPTION
 
-The **chmod_common** event captures any changes to file and directory access permissions, typically triggered by the `chmod`, `fchmod`, and `fchmodat` system calls. This event provides visibility into permission modifications that could be security-relevant.
+The **chmod_common** event captures any changes to file and directory access permissions, typically triggered by the `chmod`, `fchmod`, `fchmodat`, and `fchmodat2` system calls. This event provides visibility into permission modifications that could be security-relevant.
 
 ## EVENT SETS
 
@@ -43,3 +43,4 @@ The **chmod_common** event captures any changes to file and directory access per
 - **chmod**: System call to change file permissions
 - **fchmod**: System call to change permissions using file descriptor
 - **fchmodat**: System call to change permissions relative to directory file descriptor
+- **fchmodat2**: System call to change permissions relative to directory file descriptor with flags
