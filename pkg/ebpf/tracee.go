@@ -808,8 +808,13 @@ func (t *Tracee) uninitTailCall(tailCall events.TailCall) error {
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
 func (t *Tracee) initDerivationTable() error {
+	// A derivation must run whenever its derived event is needed by ANY rule — whether a
+	// user selected it directly or it is pulled in only as a dependency (e.g. a derived event
+	// consumed by a detector, or one whose data feeds a datastore). IsEventSelected reports
+	// "has any rule" (the equivalent of main's IsEventToSubmit); ShouldEmitEvent is narrower
+	// (user-selected only) and wrongly disabled dependency-only derivations.
 	shouldSubmit := func(id events.ID) func() bool {
-		return func() bool { return t.policyManager.ShouldEmitEvent(id) }
+		return func() bool { return t.policyManager.IsEventSelected(id) }
 	}
 	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.policyManager)
 

@@ -929,6 +929,10 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 	if !ok {
 		return []uint64{}
 	}
+	derivedEventRules, ok := pm.rules[derivedEventID]
+	if !ok {
+		return []uint64{}
+	}
 
 	var derivedMatchedRules []uint64
 
@@ -944,14 +948,22 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 		}
 
 		baseRule, ok := baseEventRules.ruleIDToEventRule[ruleID]
-		if !ok || baseRule.SelectionType != SelectedByDependency {
+		if !ok || baseRule.SelectionType != SelectedByDependency || baseRule.Data == nil {
 			continue
 		}
 
-		// Check if this dependency rule is for our derived event
-		if baseRule.Data.EventID == derivedEventID {
-			// Set the bit for the derived rule using bitmap array utilities
-			bitwise.SetBitInArray(&derivedMatchedRules, baseRule.DerivedRuleID)
+		// The base event's matched dependency rule belongs to a chain identified by its
+		// shared RuleData pointer (addTransitiveDependencyRules gives every rule in a chain
+		// the same RuleData, and deepCopyEventRules preserves the pointer). Map the match to
+		// the derived event's rule on the SAME chain. That rule may be the final
+		// user-selected rule (single-level derivation, where Data.EventID == derivedEventID)
+		// or an intermediate dependency rule (multi-level chains, e.g. a detector consuming a
+		// derived event, where the dependency rules carry the top consumer's Data.EventID).
+		// Keying on Data.EventID alone would miss the intermediate levels and drop the event.
+		for _, derivedRule := range derivedEventRules.Rules {
+			if derivedRule.Data == baseRule.Data {
+				bitwise.SetBitInArray(&derivedMatchedRules, derivedRule.ID)
+			}
 		}
 	}
 
