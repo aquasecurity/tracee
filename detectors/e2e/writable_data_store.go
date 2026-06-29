@@ -80,13 +80,17 @@ func (d *E2eWritableStore) OnEvent(ctx context.Context, event *v1beta1.Event) ([
 	if event.Workload != nil && event.Workload.Process != nil && event.Workload.Process.Thread != nil {
 		comm = event.Workload.Process.Thread.Name
 	}
+	d.logger.Debugw("E2E-DS-DEBUG OnEvent entry", "detector", "WRITABLE_DATA_STORE", "comm", comm)
 	if comm != "ds_writer" {
 		return nil, nil
 	}
+	d.logger.Infow("E2E-DS-DEBUG target exit received", "detector", "WRITABLE_DATA_STORE", "comm", comm)
 	val, ok := d.store.GetValue("bruh")
+	d.logger.Infow("E2E-DS-DEBUG store GetValue", "detector", "WRITABLE_DATA_STORE", "key", "bruh", "value", val, "found", ok)
 	if !ok || val != "moment" {
 		return nil, nil
 	}
+	d.logger.Infow("E2E-DS-DEBUG emitting detection", "detector", "WRITABLE_DATA_STORE")
 	return detection.Detected(), nil
 }
 
