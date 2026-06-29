@@ -146,11 +146,20 @@ scope:
 
 ### tree
 
-Events are collected from process tree:
+Collect events only from processes within the subtree(s) of one or more process IDs
+(a process and all of its descendants). Use `=` to *include* a subtree and `!=` to
+*exclude* one; multiple PIDs may be given comma-separated. The filter is recursive
+(all descendants), dynamic (processes spawned later are included automatically), and
+already-running descendants are covered at startup.
 
 ```yaml
 scope:
-    - tree=1000
+    - tree=1000          # only PID 1000 and its descendants
+```
+
+```yaml
+scope:
+    - tree!=1000,2000    # everything except the subtrees of PIDs 1000 and 2000
 ```
 
 ### executable, exec
@@ -164,9 +173,33 @@ scope:
 
 ### follow
 
-Events collected follow process children:
+When a process matches the policy's scope, also collect events from its descendants even if
+they would not match the scope on their own. The "followed" mark is inherited by children, so
+an entire spawned subtree is traced once one of its ancestors matched.
 
 ```yaml
 scope:
-    - follow
+    - comm=bash
+    - follow            # bash and everything it spawns (recursively)
 ```
+
+## Scopes and network events
+
+Process-context scopes (`uid`, `pid`, `comm`, `mntns`, `pidns`, `tree`, `executable`, etc.)
+are evaluated for network packet and flow events (`net_packet_*`, `net_flow_*`) at the moment
+the underlying socket is tracked — i.e. against the process that owned the socket then — and the
+result is cached with the socket. They are **not** re-evaluated per packet against the task that
+happens to send or receive each packet.
+
+Two consequences follow:
+
+- A long-lived socket keeps the scope match it had when it was first tracked, even if later
+  packets are driven by a different task.
+- Because sockets are tracked by kernel inode and inode numbers are reused, a packet from an
+  unrelated process (for example background DNS from `systemd-resolved`) can occasionally be
+  attributed to a scope that matched the original owner of that inode.
+
+Note: this affects only the packet/flow network events listed above. Process-context network
+events such as `net_tcp_connect` are evaluated against the acting task and scope normally.
+If you need strict per-process attribution of network activity, prefer those process-context
+events over `net_packet_*`/`net_flow_*`.

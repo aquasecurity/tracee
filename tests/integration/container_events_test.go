@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,10 +24,13 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	testutils.AssureIsRoot(t)
+	engine := testutils.RequireContainerEngine(t)
+	// Enrichment test: needs a running engine API socket (skips with instructions if absent).
+	engineID, engineSock := testutils.RequireContainerEngineSocket(t)
 
 	containerName := "tracee-test-container"
 	cleanupContainer := func() {
-		cmd := exec.Command("docker", "rm", "-f", containerName)
+		cmd := exec.Command(engine, "rm", "-f", containerName)
 		_ = cmd.Run()
 	}
 
@@ -36,7 +40,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
 	// Start by pulling the busybox image
-	pullCmd := exec.Command("docker", "pull", busyboxImage)
+	pullCmd := exec.Command(engine, "pull", busyboxImage)
 	err := pullCmd.Run()
 	require.NoError(t, err, "Failed to pull busybox image")
 
@@ -51,9 +55,9 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		EnrichmentEnabled: true, // Enable container enrichment for this test
 	}
 
-	// Register docker socket for the test
+	// Register the container engine socket for enrichment
 	cfg.Sockets = runtime.Sockets{}
-	cfg.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
+	cfg.Sockets.Register(engineID, engineSock)
 
 	// Enable container events (derived events from cgroup operations)
 	containerEvents := []events.ID{
@@ -108,7 +112,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	}()
 
 	// Run a test container
-	runCmd := exec.Command("docker", "run", "--name", containerName, "-d", busyboxImage, "sleep", "5")
+	runCmd := exec.Command(engine, "run", "--name", containerName, "-d", busyboxImage, "sleep", "5")
 	err = runCmd.Run()
 	require.NoError(t, err, "Failed to start test container")
 
@@ -205,9 +209,12 @@ func Test_ExistingContainers(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	testutils.AssureIsRoot(t)
+	engine := testutils.RequireContainerEngine(t)
+	// Enrichment test: needs a running engine API socket (skips with instructions if absent).
+	engineID, engineSock := testutils.RequireContainerEngineSocket(t)
 
 	// Start by pulling the busybox image
-	pullCmd := exec.Command("docker", "pull", busyboxImage)
+	pullCmd := exec.Command(engine, "pull", busyboxImage)
 	err := pullCmd.Run()
 	require.NoError(t, err, "Failed to pull busybox image")
 
@@ -215,22 +222,28 @@ func Test_ExistingContainers(t *testing.T) {
 	testContainerName := "tracee-existing-container"
 
 	// Clean up any previous container with the same name
-	cleanupCmd := exec.Command("docker", "rm", "-f", testContainerName)
+	cleanupCmd := exec.Command(engine, "rm", "-f", testContainerName)
 	_ = cleanupCmd.Run()
 
 	// Start a long-running container
-	startCmd := exec.Command("docker", "run", "--name", testContainerName, "-d", busyboxImage, "sleep", "60")
+	startCmd := exec.Command(engine, "run", "--name", testContainerName, "-d", busyboxImage, "sleep", "60")
 	err = startCmd.Run()
 	require.NoError(t, err, "Failed to start existing container")
 
 	// Ensure container cleanup at the end
 	defer func() {
-		removeCmd := exec.Command("docker", "rm", "-f", testContainerName)
+		removeCmd := exec.Command(engine, "rm", "-f", testContainerName)
 		_ = removeCmd.Run()
 	}()
 
-	// Wait a bit to ensure container is fully started
-	time.Sleep(2 * time.Second)
+	// Wait until the container actually reports Running=true so its cgroup is fully
+	// established before Tracee starts and scans for existing containers. A fixed sleep
+	// races slow container/runtime startup and intermittently leaves the container
+	// undetected by the startup scan (yielding zero ExistingContainer events).
+	require.Eventually(t, func() bool {
+		out, err := exec.Command(engine, "inspect", "-f", "{{.State.Running}}", testContainerName).Output()
+		return err == nil && strings.TrimSpace(string(out)) == "true"
+	}, 15*time.Second, 200*time.Millisecond, "container did not reach Running state")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
@@ -245,9 +258,9 @@ func Test_ExistingContainers(t *testing.T) {
 		EnrichmentEnabled: true, // Enable container enrichment for this test
 	}
 
-	// Register docker socket for the test
+	// Register the container engine socket for enrichment
 	cfg.Sockets = runtime.Sockets{}
-	cfg.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
+	cfg.Sockets.Register(engineID, engineSock)
 
 	// Enable ExistingContainer event
 	existingContainerEvents := []events.ID{

@@ -407,8 +407,6 @@ github.com/antlr4-go/antlr/v4 v4.13.0 h1:lxCg3LAv+EUK6t1i0y1V6/SLeUi0eKEKdhQAlS8
 github.com/antlr4-go/antlr/v4 v4.13.0/go.mod h1:pfChB/xh/Unjila75QW7+VU4TSnWnnk9UTnmpPaOR2g=
 github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1 h1:i/6EeKnBR3XVeLmOyMbM0Oq+kIC08n613zwkD8lix8w=
 github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1/go.mod h1:veHe4u3xEpl0TBV+wX0AFJWOsnteNPOhNklRbYf3d+k=
-github.com/aquasecurity/tracee/types v0.0.0-20251205142631-7dc44bdb801c h1:z5KtKy9rBKP6Wg8Wuok4AkfD5x86GRsw0URDor2Gxig=
-github.com/aquasecurity/tracee/types v0.0.0-20251205142631-7dc44bdb801c/go.mod h1:jnyVhf+0A1J24eD8DlmNv46yWg5I4TJkHnptkWyPOH8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=

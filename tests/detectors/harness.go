@@ -36,9 +36,9 @@ type TestHarness struct {
 	Engine      *detectors.Engine
 	Context     context.Context
 	T           *testing.T
-	EventIDMap  map[string]events.ID // Event name → ID mapping
-	nextEventID events.ID            // For allocating detector event IDs
-	policyMgr   *policy.Manager      // Policy manager for enabling events
+	EventIDMap  map[string]events.ID  // Event name → ID mapping
+	nextEventID events.ID             // For allocating detector event IDs
+	policyMgr   *policy.PolicyManager // Policy manager for enabling events
 }
 
 // NewTestHarness creates a new detector testing harness

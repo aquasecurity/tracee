@@ -86,7 +86,7 @@ func (t *Tracee) engineEvents(in <-chan *events.PipelineEvent) (<-chan *events.P
 			id := event.EventID
 
 			// if the event is NOT marked as submit, it is not sent to the rules engine
-			if !t.policyManager.IsEventToSubmit(id) {
+			if !t.policyManager.IsEventSelected(id) {
 				return
 			}
 
@@ -215,7 +215,7 @@ func (t *Tracee) engineEvents(in <-chan *events.PipelineEvent) (<-chan *events.P
 
 			// Wrap finding event in PipelineEvent
 			event := events.NewPipelineEvent(traceEvent)
-			if t.matchPolicies(event) == 0 {
+			if !t.matchPolicies(event) {
 				_ = t.stats.EventsFiltered.Increment()
 				continue
 			}

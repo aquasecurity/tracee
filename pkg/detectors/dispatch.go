@@ -28,12 +28,12 @@ type dispatcher struct {
 	mu            sync.RWMutex
 	dispatchMap   map[v1beta1.EventId][]detectorSubscription // Event ID -> Detector subscriptions
 	registry      *registry
-	policyManager *policy.Manager
+	policyManager *policy.PolicyManager
 	metrics       *Metrics
 }
 
 // newDispatcher creates a new event dispatcher
-func newDispatcher(registry *registry, policyManager *policy.Manager, metrics *Metrics) *dispatcher {
+func newDispatcher(registry *registry, policyManager *policy.PolicyManager, metrics *Metrics) *dispatcher {
 	return &dispatcher{
 		dispatchMap:   make(map[v1beta1.EventId][]detectorSubscription),
 		registry:      registry,
