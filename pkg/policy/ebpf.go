@@ -3,6 +3,7 @@ package policy
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 	"strconv"
@@ -487,6 +488,9 @@ func listProcPids() ([]uint32, error) {
 
 // getPPid returns the parent host pid of pid (false if it can't be read).
 func getPPid(pid uint32) (uint32, bool) {
+	if pid > math.MaxInt32 {
+		return 0, false // cannot represent as int32 for the proc API (not a valid pid)
+	}
 	status, err := proc.NewProcStatusFields(int32(pid), []proc.StatusField{proc.PPid})
 	if err != nil {
 		return 0, false
