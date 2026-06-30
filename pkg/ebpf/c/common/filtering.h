@@ -31,10 +31,18 @@ statfunc bool rules_matched(event_data_t *);
 // get_event_filter_map returns the filter map for the given outer map, version and event id
 statfunc void *get_event_filter_map(void *outer_map, u16 version, u32 event_id)
 {
-    filter_version_key_t key = {
-        .version = version,
-        .event_id = event_id,
-    };
+    // filter_version_key_t carries 2 bytes of implicit padding between .version (u16) and
+    // .event_id (u32). The outer map is a HASH_OF_MAPS, and BPF hash-map lookups compare the
+    // ENTIRE key including padding. Userspace inserts the key with those padding bytes zeroed
+    // (Go's filterVersionKey has an explicit Pad field), but a C designated initializer is NOT
+    // guaranteed to zero padding - some clang versions leave stack garbage there, which makes the
+    // lookup miss the inner map on those builds (observed as scope filters never matching on the
+    // 6.11 CI runner while matching locally). Zero the whole key first so it always byte-matches
+    // the userspace-inserted key.
+    filter_version_key_t key;
+    __builtin_memset(&key, 0, sizeof(key));
+    key.version = version;
+    key.event_id = event_id;
 
     return bpf_map_lookup_elem(outer_map, &key);
 }
