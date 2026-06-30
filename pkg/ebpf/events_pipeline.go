@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -29,6 +30,12 @@ const maxStackDepth int = 20
 
 // Matches 'NO_SYSCALL' in eBPF code
 const noSyscall int32 = -1
+
+// traceeTestDebug, when TRACEE_TEST_DEBUG is set, makes matchPolicies log (to stderr) the
+// comm and matched policy names for every kernel event. It is a TEMPORARY diagnostic for the
+// integration-CI scope-filter failures (events not matching comm/tree/follow scopes in CI
+// while passing locally); set the env var on a single failing test to see what tracee sees.
+var traceeTestDebug = os.Getenv("TRACEE_TEST_DEBUG") != ""
 
 // handleEvents is the main pipeline of tracee. It receives events from the perf buffer
 // and passes them through a series of stages, each stage is a goroutine that performs a
@@ -430,6 +437,17 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) bool {
 
 	event.MatchedRulesBitmap = bitmap // update internal working bitmap
 	event.MatchedRulesUser = bitmap   // store filtered bitmap to be used in sink stage
+
+	// TEMPORARY scope-filter diagnostic (TRACEE_TEST_DEBUG): show the comm/uid/pid tracee
+	// actually sees for each kernel event and which user policies it matched after narrowing.
+	// For a failing scope test, grep the relevant comm (e.g. "bash"/"ls") to see whether the
+	// test policy attached (policies=[...]) or the event was kept by bootstrap only (policies=[]).
+	if traceeTestDebug {
+		fmt.Fprintf(os.Stderr, "[SCOPE-DEBUG] event=%s comm=%q uid=%d pid=%d ppid=%d policies=%v\n",
+			event.Event.EventName, event.Event.ProcessName, eventUID, eventPID,
+			uint32(event.HostParentProcessID),
+			t.policyManager.GetMatchedRulesInfo(eventID, bitmap))
+	}
 
 	return !bitwise.IsBitmapArrayEmpty(bitmap)
 }

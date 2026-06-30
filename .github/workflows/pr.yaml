@@ -363,6 +363,15 @@ jobs:
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
+      # TEMPORARY (matched-rules-port scope-filter diagnostic): scope the run to the failing
+      # scope tests and turn on the SCOPE-DEBUG stderr trace in matchPolicies, so the CI log
+      # shows the comm tracee sees and which policy attached. Remove (with the matchPolicies
+      # debug) once the 6.11 in-process scope-filter failures are root-caused.
+      # NOTE: TEST is passed unquoted into "go test -run $(TEST)", so the value must contain no
+      # shell metacharacters (no '|'); "ScopeFilter" is a plain substring regex matching both
+      # TestTreeScopeFilter and TestFollowScopeFilter.
+      TRACEE_TEST_DEBUG: "1"
+      TEST: "ScopeFilter"
     # NOTE: Container execution disabled - running directly on host AMI which has all required tooling pre-installed.
     # Re-enable container if host execution causes issues or for environment isolation.
     # container:
