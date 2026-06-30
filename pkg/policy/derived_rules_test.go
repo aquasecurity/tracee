@@ -111,7 +111,7 @@ func Test_GetDerivedEventMatchedRules_SingleLevel(t *testing.T) {
 
 // Test_DeriveGate_DependencyEventIsSelected guards the derive-table enablement predicate.
 // A derived event pulled in only as a dependency (e.g. process_execute_failed consumed by a
-// detector, or net_packet_dns feeding a datastore) MUST still be derived — so the derive gate
+// detector, or net_packet_dns feeding a datastore) MUST still be derived - so the derive gate
 // has to use IsEventSelected ("has any rule", matching main's IsEventToSubmit), NOT
 // ShouldEmitEvent (user-selected only). Using ShouldEmitEvent disabled dependency-only
 // derivations, so the events were never produced (kernel e2e: PROCESS_EXECUTE_FAILED etc.).
@@ -129,5 +129,29 @@ func Test_DeriveGate_DependencyEventIsSelected(t *testing.T) {
 		"a dependency-selected event must count as selected so its derivation runs")
 	require.False(t, pm.ShouldEmitEvent(evt),
 		"a dependency-only event is not user-emitted (ShouldEmitEvent is user-selected only) "+
-			"— this is why the derive gate must use IsEventSelected, not ShouldEmitEvent")
+			"- this is why the derive gate must use IsEventSelected, not ShouldEmitEvent")
+}
+
+// Test_GetAllRulesBitmap covers the seed used to recover a detector output whose base bitmap
+// did not carry the chain bit (direct-input detectors): every rule bit set, nothing beyond.
+func Test_GetAllRulesBitmap(t *testing.T) {
+	const evt = events.ID(60030)
+	pm := &PolicyManager{
+		rules: map[events.ID]EventRules{
+			evt: buildEventRules(
+				&EventRule{ID: 0, Data: &RuleData{EventID: evt}, SelectionType: SelectedByUser},
+				&EventRule{ID: 1, Data: &RuleData{EventID: evt}, SelectionType: SelectedByDependency},
+				&EventRule{ID: 2, Data: &RuleData{EventID: evt}, SelectionType: SelectedByDependency},
+			),
+		},
+	}
+
+	bm := pm.GetAllRulesBitmap(evt)
+	for i := uint(0); i < 3; i++ {
+		require.True(t, bitwise.HasBitInArray(bm, i), "rule bit %d must be set", i)
+	}
+	require.False(t, bitwise.HasBitInArray(bm, 3), "no bit beyond rulesCount may be set")
+
+	// Unknown event (no rules) yields an empty bitmap so matchPoliciesProto drops it.
+	require.True(t, bitwise.IsBitmapArrayEmpty(pm.GetAllRulesBitmap(events.ID(99999))))
 }

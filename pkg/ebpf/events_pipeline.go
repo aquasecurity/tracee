@@ -350,7 +350,7 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) bool {
 	// NOTE: rules with ID >= 64 (overflow) are evaluated by the caller via matchOverflowRules,
 	// for KERNEL-origin events only (the kernel's single-u64 bitmap can't represent them).
 	// Derived and finding events arrive with their bitmap already mapped from the base event,
-	// so their overflow bits must NOT be recomputed here — the loop below only narrows them.
+	// so their overflow bits must NOT be recomputed here - the loop below only narrows them.
 	bitmap := event.MatchedRulesBitmap // working copy (copied from the kernel bitmap in NewPipelineEvent)
 
 	// Drop rules disabled at runtime (DisableRule).
@@ -806,7 +806,7 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 	errc := make(chan error, 1)
 
 	// Maximum depth for detector chains (prevents infinite loops)
-	// Expected: raw event → derived event → threat event → threat event (depth 4)
+	// Expected: raw event -> derived event -> threat event -> threat event (depth 4)
 	const maxDetectorChainDepth = 5
 
 	go func() {
@@ -850,14 +850,14 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 			}
 
 			// Each detector output is a DERIVED event with its OWN rule IDs, so the base
-			// event's matched-rules bitmap can't be inherited verbatim — it is mapped onto the
+			// event's matched-rules bitmap can't be inherited verbatim - it is mapped onto the
 			// output's rule IDs with GetDerivedEventMatchedRules, then narrowed by the output's
 			// own filters (matchPoliciesProto).
 			//
 			// ALL chain levels map from the ORIGINAL base event (not the immediate parent):
 			// addTransitiveDependencyRules attaches a dependency rule for every transitive
 			// derived event onto the base, so the base's bitmap resolves any output at any
-			// depth. Mapping from the parent would fail — the parent's mapped bitmap carries
+			// depth. Mapping from the parent would fail - the parent's mapped bitmap carries
 			// only the parent's own selected bit, not its deeper dependency bits. baseEventID
 			// and matchedRulesBitmap were captured before forwarding (the base may be recycled).
 			queue := outputs
@@ -869,6 +869,18 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 
 					mapped := t.policyManager.GetDerivedEventMatchedRules(
 						outputID, baseEventID, matchedRulesBitmap)
+
+					// Direct-input detectors (consuming a non-derived event such as
+					// sched_process_exec/exit, which are bootstrap-selected and dispatched to
+					// detectors independent of policy matching) can leave the base bitmap
+					// carrying only unrelated bits (e.g. the bootstrap rule), so the mapping
+					// comes back empty. The output is itself a selected event, so seed it with
+					// its own candidate rules and let matchPoliciesProto narrow by the output's
+					// filters. Non-empty mappings (derived-event chains like
+					// process_execute_failed) are left untouched.
+					if bitwise.IsBitmapArrayEmpty(mapped) {
+						mapped = t.policyManager.GetAllRulesBitmap(outputID)
+					}
 
 					// Create proto-native PipelineEvent (similar to derive stage)
 					pipelineEvent := &events.PipelineEvent{
@@ -981,13 +993,13 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 
 			// Send the event to the streams.
 			if t.streamsManager.HasSubscribers() {
-				// Detach the slab from pool management — the stream takes ownership.
+				// Detach the slab from pool management - the stream takes ownership.
 				// This prevents the slab from being recycled while the stream still
 				// holds a reference to the proto event.
 				pbEvent = event.DetachProto()
 				// Translate event ID to external format for streams (external API boundary)
 				pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
-				// Route to streams by matched (user-selected) policy names — the rule model
+				// Route to streams by matched (user-selected) policy names - the rule model
 				// has no per-policy integer id to build a bitmap from.
 				t.streamsManager.Publish(pbEvent, matchedNames)
 			}

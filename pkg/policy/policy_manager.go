@@ -77,7 +77,7 @@ type EventRule struct {
 // (transitive) dependency of another rule's event, rather than being selected
 // directly. Dependency rules are SCOPE-ONLY: their RuleData is shared with the
 // originating (dependent/derived) rule, so its data and return-value filters are
-// specific to THAT event's schema and must not be applied to this (base) event —
+// specific to THAT event's schema and must not be applied to this (base) event -
 // doing so would wrongly drop base events and break derivations. Their data/ret
 // filters are instead applied when the dependent/derived event itself is matched.
 func (r *EventRule) IsDependency() bool {
@@ -990,7 +990,7 @@ func (pm *PolicyManager) EnableRule(policyName string, eventID events.ID) error 
 
 // DisableRule disables the named policy's rule(s) for the given event at runtime: the rule
 // stops matching (its events are no longer emitted for that policy) while the event still
-// flows for its other rules. Userland-only — the kernel still evaluates/submits the event;
+// flows for its other rules. Userland-only - the kernel still evaluates/submits the event;
 // a kernel-side submit_for_rules rebuild (to also stop kernel work) is a future optimization.
 // Lost on policy reload (runtime toggle, not persisted).
 func (pm *PolicyManager) DisableRule(policyName string, eventID events.ID) error {
@@ -1126,6 +1126,32 @@ func (pm *PolicyManager) GetRulesCount(eventID events.ID) uint {
 	}
 
 	return eventRules.rulesCount
+}
+
+// GetAllRulesBitmap returns a []uint64 bitmap with every rule bit set for the event (bits
+// 0..rulesCount-1) - the userland equivalent of the kernel's submit_for_rules. It seeds the
+// match for a detector's OUTPUT event against its own rules when the base event's bitmap did
+// not carry the output's chain bit (direct-input detectors, see detectEvents). matchPoliciesProto
+// only narrows a bitmap, so without a seed an emitted output would always be dropped.
+func (pm *PolicyManager) GetAllRulesBitmap(eventID events.ID) []uint64 {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	eventRules, ok := pm.rules[eventID]
+	if !ok || eventRules.rulesCount == 0 {
+		return nil
+	}
+
+	n := eventRules.rulesCount
+	words := (n + 63) / 64
+	bitmap := make([]uint64, words)
+	for w := range bitmap {
+		bitmap[w] = ^uint64(0)
+	}
+	if rem := n % 64; rem != 0 {
+		bitmap[words-1] = (uint64(1) << rem) - 1
+	}
+	return bitmap
 }
 
 // ShouldEmitEvent checks if an event has at least one rule that was explicitly
