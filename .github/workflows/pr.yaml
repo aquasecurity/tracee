@@ -423,6 +423,19 @@ jobs:
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
 
+      # TEMPORARY (matched-rules-port scope-filter diagnostic): the integration run dumps the
+      # versioned scope-filter maps via bpftool when TRACEE_TEST_DEBUG=1 (see runWithPolicies).
+      # Ensure a working bpftool is present; remove with the rest of the scope diagnostic.
+      - name: Ensure bpftool (scope-filter diagnostic)
+        run: |
+          if ! bpftool version > /dev/null 2>&1; then
+            apt-get update -y || true
+            apt-get install -y bpftool \
+              || apt-get install -y linux-tools-generic "linux-tools-$(uname -r)" \
+              || true
+          fi
+          bpftool version || echo "WARN: bpftool unavailable; map dump will be skipped"
+
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
 
