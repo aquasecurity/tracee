@@ -62,11 +62,9 @@ func (d *E2eDnsDataStore) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 		execPath = event.Workload.Process.Executable.Path
 	}
 
-	d.logger.Debugw("E2E-DS-DEBUG OnEvent entry", "detector", "DNS_DATA_STORE", "execPath", execPath)
 	if execPath != "/usr/bin/ping" {
 		return nil, nil // Irrelevant code path
 	}
-	d.logger.Infow("E2E-DS-DEBUG target exec received", "detector", "DNS_DATA_STORE", "execPath", execPath)
 
 	// Query DNS data store
 	dnsResponse, err := d.dnsStore.GetDNSResponse("google.com")
@@ -85,7 +83,6 @@ func (d *E2eDnsDataStore) OnEvent(ctx context.Context, event *v1beta1.Event) ([]
 		return nil, nil
 	}
 
-	d.logger.Infow("E2E-DS-DEBUG emitting detection", "detector", "DNS_DATA_STORE", "query", dnsResponse.Query, "ips", len(dnsResponse.IPs))
 	return detection.Detected(), nil
 }
 

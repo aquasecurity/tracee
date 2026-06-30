@@ -102,11 +102,9 @@ func (d *E2eProcessTreeDataStore) Init(params detection.DetectorParams) error {
 func (d *E2eProcessTreeDataStore) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
 	// Check that the event is from the tester
 	pathname, err := v1beta1.GetDataSafe[string](event, "pathname")
-	d.logger.Debugw("E2E-DS-DEBUG OnEvent entry", "detector", "PROCTREE_DATA_STORE", "pathname", pathname, "pathErr", err)
 	if err != nil || !strings.HasSuffix(pathname, proctreeTesterName) {
 		return nil, nil
 	}
-	d.logger.Infow("E2E-DS-DEBUG target exec received", "detector", "PROCTREE_DATA_STORE", "pathname", pathname)
 
 	// Get process entity ID from the event
 	var entityId uint32

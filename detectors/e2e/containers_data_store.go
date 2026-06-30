@@ -59,7 +59,6 @@ func (d *E2eContainersDataStore) Init(params detection.DetectorParams) error {
 
 func (d *E2eContainersDataStore) OnEvent(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
 	pathname, err := v1beta1.GetDataSafe[string](event, "pathname")
-	d.logger.Debugw("E2E-DS-DEBUG OnEvent entry", "detector", "CONTAINERS_DATA_STORE", "pathname", pathname, "pathErr", err)
 	if err != nil {
 		return nil, nil
 	}
@@ -67,7 +66,6 @@ func (d *E2eContainersDataStore) OnEvent(ctx context.Context, event *v1beta1.Eve
 	if pathname != "/bin/ls" {
 		return nil, nil
 	}
-	d.logger.Infow("E2E-DS-DEBUG target exec received", "detector", "CONTAINERS_DATA_STORE", "pathname", pathname)
 
 	// Get container ID from the event
 	containerID := ""
@@ -92,7 +90,6 @@ func (d *E2eContainersDataStore) OnEvent(ctx context.Context, event *v1beta1.Eve
 		return nil, nil
 	}
 
-	d.logger.Infow("E2E-DS-DEBUG emitting detection", "detector", "CONTAINERS_DATA_STORE", "container_id", containerID)
 	return detection.Detected(), nil
 }
 
