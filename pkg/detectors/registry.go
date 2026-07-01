@@ -55,14 +55,14 @@ type entry struct {
 // registry manages all registered detectors
 type registry struct {
 	mu                sync.RWMutex
-	detectors         map[string]*entry // Detector ID -> entry
-	eventNameIndex    map[string]string // Event name -> Detector ID (for collision detection)
-	policyManager     *policy.Manager   // For policy checking during registration
+	detectors         map[string]*entry     // Detector ID -> entry
+	eventNameIndex    map[string]string     // Event name -> Detector ID (for collision detection)
+	policyManager     *policy.PolicyManager // For policy checking during registration
 	enrichmentOptions *EnrichmentOptions
 }
 
 // newRegistry creates a new detector registry
-func newRegistry(policyManager *policy.Manager, enrichmentOptions *EnrichmentOptions) *registry {
+func newRegistry(policyManager *policy.PolicyManager, enrichmentOptions *EnrichmentOptions) *registry {
 	return &registry{
 		detectors:         make(map[string]*entry),
 		eventNameIndex:    make(map[string]string),

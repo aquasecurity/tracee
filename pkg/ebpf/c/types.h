@@ -33,8 +33,8 @@ typedef struct event_context {
     s32 syscall; // syscall that triggered the event
     u32 stack_id;
     u16 processor_id; // ID of the processor that processed the event
-    u16 policies_version;
-    u64 matched_policies;
+    u16 rules_version;
+    u64 matched_rules; // bitmap of matched rule IDs (0-63); IDs >= 64 resolved in userland
 } event_context_t;
 
 #define EVENT_ID_LIST_NET                                                                          \
@@ -382,14 +382,27 @@ typedef struct policy_key {
 } policy_key_t;
 
 typedef struct equality {
-    // bitmap indicating which policies have a filter that uses the '=' operator (0 means '!=')
-    u64 equals_in_policies;
-    // bitmap indicating which policies have a filter that utilize the provided key
-    u64 key_used_in_policies;
+    // bitmap indicating which rules have a filter that uses the '=' operator (0 means '!=')
+    u64 equals_in_rules;
+    // bitmap indicating which rules have a filter that utilize the provided key
+    u64 key_used_in_rules;
 } eq_t;
 
-typedef struct policies_config {
-    // bitmap indicating which policies have the filter enabled
+// filter_version_key_t keys the per-event versioned filter maps (outer map ->
+// {version, event_id} -> inner filter map). Mirrors Go policy.filterVersionKey.
+typedef struct filter_version_key {
+    u16 version;
+    u32 event_id;
+} filter_version_key_t;
+
+// scope_filters_config_t holds, PER EVENT, which of that event's RULES have each
+// scope filter enabled and the match-if-key-missing semantics. (Was the global,
+// per-policy policies_config_t.) Lives inside event_config_t. proc_tree/follow/
+// cont_started are kept for parity with the per-policy model; uid/pid global min/max
+// and the enabled bitmap are gone - ranges are evaluated in userland and the matched
+// bitmap is bounded by the event's active rules.
+typedef struct scope_filters_config {
+    // bitmap indicating which rules have the filter enabled
     u64 uid_filter_enabled;
     u64 pid_filter_enabled;
     u64 mnt_ns_filter_enabled;
@@ -418,23 +431,35 @@ typedef struct policies_config {
     u64 new_pid_filter_match_if_key_missing;
     u64 proc_tree_filter_match_if_key_missing;
     u64 bin_path_filter_match_if_key_missing;
-    // bitmap with policies that have at least one filter enabled
-    u64 enabled_policies;
+} scope_filters_config_t;
 
-    // global min max
-    u64 uid_max;
-    u64 uid_min;
-    u64 pid_max;
-    u64 pid_min;
-} policies_config_t;
+// Per-event process-tree rule table (verifier-validated design). proc_tree membership
+// is kept per-process (proc_tree_membership map: host_pid -> eq_t group bitmap, with
+// equals/key_used bits per GROUP), maintained by fork-time propagation + procfs seeding.
+// At match time this table maps that membership onto THIS event's rules, then applies
+// the generic equality formula (see match_scope_filters). follow uses the same shape but a
+// plain u64 membership (proc_info.follow_in_scopes; follow has no exclude sense).
+//
+// A "group" is a tree-filter / policy (NOT a single root pid): all of a policy's roots fold
+// into one group bit (unlimited roots; cap is 64 groups = 64 policies-using-tree, matching
+// the prior per-policy model). The =/!= sense is encoded in the membership eq_t, exactly
+// like every other equality filter, so mixed and unlimited roots behave as the old model.
+#define MAX_TREE_GROUPS_PER_EVENT 8
+typedef struct tree_group_rules {
+    u8 group; // bit position (0-63) of this group in the per-process membership bitmap
+    u8 _pad[7];
+    u64 rules; // rules on this event that belong to this group (policy/tree-filter)
+} tree_group_rules_t;
+typedef struct tree_rule_table {
+    u32 num_groups;
+    u32 _pad;
+    tree_group_rules_t groups[MAX_TREE_GROUPS_PER_EVENT];
+} tree_rule_table_t;
 
 typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
     u32 cgroup_v1_hid;
-    u16 padding; // free for further use
-    u16 policies_version;
-    policies_config_t policies_config;
 } config_entry_t;
 
 typedef struct string_filter_config {
@@ -451,11 +476,43 @@ typedef struct data_filter_config {
     // other types of filters
 } data_filter_config_t;
 
+// event_config_t is the PER-EVENT config (events_config_map: event_id -> this),
+// fetched once per event. It carries the scope filter enable bitmaps (per rule),
+// the tree rule table, the data filter config, and which rules want the event
+// submitted. Replaces the old global per-policy config + the separate per-event config.
 typedef struct event_config {
-    u64 submit_for_policies;
+    u16 rules_version;
+    u8 has_overflow; // event has rule IDs >= 64 (resolved in userland)
+    u8 _pad[5];
+    u64 submit_for_rules; // rules that want this event submitted
     u64 field_types;
+    scope_filters_config_t scope_filters;
     data_filter_config_t data_filter;
 } event_config_t;
+
+// event_tree_config_t holds the (large) tree + follow rule tables for an event. Kept in
+// a SEPARATE map (events_tree_config_map), not in event_config_t, because event_config_t
+// lives in the per-CPU event_data_t scratch which is already near the 32KB per-CPU limit.
+// Looked up only when proc_tree/follow is enabled for the event.
+typedef struct event_tree_config {
+    tree_rule_table_t tree_table;   // process-tree rule table (see tree_rule_table_t)
+    tree_rule_table_t follow_table; // follow rule table (same shape; follow has no exclude sense)
+} event_tree_config_t;
+
+// Compile-time guards: these structs are a Go<->C byte-layout contract (mirrored by
+// pkg/policy/ebpf.go treeRuleTable/eventTreeConfig and the proc_tree_membership eq_t value).
+// If any assert fires, update the corresponding Go struct (and vice-versa).
+_Static_assert(sizeof(eq_t) == 16, "eq_t layout changed; update Go ruleBitmap");
+_Static_assert(sizeof(tree_group_rules_t) == 16,
+               "tree_group_rules_t changed; update Go treeGroupRules");
+_Static_assert(sizeof(tree_rule_table_t) == 136,
+               "tree_rule_table_t changed; update Go treeRuleTable");
+_Static_assert(sizeof(event_tree_config_t) == 272,
+               "event_tree_config_t changed; update Go eventTreeConfig");
+_Static_assert(sizeof(filter_version_key_t) == 8,
+               "filter_version_key_t changed; update Go filterVersionKey (versioned filter map key)");
+_Static_assert(sizeof(event_config_t) == 288,
+               "event_config_t changed; update Go eventConfig (events_config_map value)");
 
 enum capture_options_e {
     NET_CAP_OPT_FILTERED = (1 << 0), // pcap should obey event filters
@@ -482,7 +539,6 @@ typedef struct event_data {
     args_buffer_t args_buf;
     struct task_struct *task;
     event_config_t config;
-    policies_config_t policies_config;
 } event_data_t;
 
 // A control plane signal - sent to indicate some critical event which should be processed
