@@ -409,6 +409,7 @@ struct uid_filter {
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } uid_filter SEC(".maps");
 
 typedef struct uid_filter uid_filter_t;
@@ -429,6 +430,7 @@ struct pid_filter {
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } pid_filter SEC(".maps");
 
 typedef struct pid_filter pid_filter_t;
@@ -449,6 +451,7 @@ struct mnt_ns_filter {
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } mnt_ns_filter SEC(".maps");
 
 typedef struct mnt_ns_filter mnt_ns_filter_t;
@@ -469,6 +472,7 @@ struct pid_ns_filter {
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } pid_ns_filter SEC(".maps");
 
 typedef struct pid_ns_filter pid_ns_filter_t;
@@ -489,6 +493,7 @@ struct uts_ns_filter {
     __uint(max_entries, 256);
     __type(key, string_filter_t);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } uts_ns_filter SEC(".maps");
 
 typedef struct uts_ns_filter uts_ns_filter_t;
@@ -571,6 +576,7 @@ struct comm_filter {
     __uint(max_entries, 256);
     __type(key, string_filter_t);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } comm_filter SEC(".maps");
 
 typedef struct comm_filter comm_filter_t;
@@ -591,6 +597,7 @@ struct cgroup_id_filter {
     __uint(max_entries, 256);
     __type(key, u32);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } cgroup_id_filter SEC(".maps");
 
 typedef struct cgroup_id_filter cgroup_id_filter_t;
@@ -611,6 +618,7 @@ struct binary_filter {
     __uint(max_entries, 256);
     __type(key, binary_t);
     __type(value, eq_t);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
 } binary_filter SEC(".maps");
 
 typedef struct binary_filter binary_filter_t;

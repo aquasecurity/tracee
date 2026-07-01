@@ -179,6 +179,14 @@ func (pm *PolicyManager) computeFilterMaps(
 				return nil, errfmt.WrapError(err)
 			}
 
+			// Phase 2: a detector's per-base data filter IS on this base event's own schema (unlike
+			// the shared Data.DataFilter), so seed the kernel data-filter maps from it for EVERY rule,
+			// including dependency rules. Only pathname-class filters are kernel-capable; anything else
+			// errors out of Equalities() and stays a userland-only filter (matchPolicies backstop).
+			if err = pm.processDataFilter(maps, vKey, rule.ID, rule.DetectorDataFilter, eventID); err != nil {
+				return nil, errfmt.WrapError(err)
+			}
+
 			// Dependency rules are scope-only: their shared RuleData's data filters
 			// belong to the dependent/derived event's schema, not this base event, so
 			// they must not seed this event's kernel data-filter maps (that would
@@ -187,8 +195,10 @@ func (pm *PolicyManager) computeFilterMaps(
 				continue
 			}
 
-			if err = pm.processRuleDataFilters(maps, vKey, rule, eventID); err != nil {
-				return nil, errfmt.WrapError(err)
+			if rule.Data != nil {
+				if err = pm.processDataFilter(maps, vKey, rule.ID, rule.Data.DataFilter, eventID); err != nil {
+					return nil, errfmt.WrapError(err)
+				}
 			}
 		}
 
@@ -208,22 +218,43 @@ func (pm *PolicyManager) processRuleScopeFilters(
 		return nil
 	}
 
-	// UIDFilters — uid equalities are uint32; widen to uint64 to match the
+	// UIDFilters - uid equalities are uint32; widen to uint64 to match the
 	// uniformly-uint64 numeric filter maps (the BPF writer narrows back to u32).
+	// Phase 2: fall back to the detector-declared uid scope (int64) when the policy sets none.
 	uidEqs := rule.Policy.UIDFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.uidFilters, vKey, rule.ID, widenUint32Set(uidEqs.NotEqual), widenUint32Set(uidEqs.Equal))
+	uidNotEqual, uidEqual := widenUint32Set(uidEqs.NotEqual), widenUint32Set(uidEqs.Equal)
+	if !rule.Policy.UIDFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.UID().Enabled() {
+		dsUID := rule.DetectorScopeFilter.UID().Equalities()
+		uidNotEqual, uidEqual = widenInt64Set(dsUID.NotEqual), widenInt64Set(dsUID.Equal)
+	}
+	updateRuleBitmapsForEvent(filterMaps.uidFilters, vKey, rule.ID, uidNotEqual, uidEqual)
 
-	// PIDFilters
+	// PIDFilters (Phase 2: fall back to the detector-declared host-pid scope when the policy sets none).
 	pidEqs := rule.Policy.PIDFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.pidFilters, vKey, rule.ID, widenUint32Set(pidEqs.NotEqual), widenUint32Set(pidEqs.Equal))
+	pidNotEqual, pidEqual := widenUint32Set(pidEqs.NotEqual), widenUint32Set(pidEqs.Equal)
+	if !rule.Policy.PIDFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.PID().Enabled() {
+		dsPID := rule.DetectorScopeFilter.PID().Equalities()
+		pidNotEqual, pidEqual = widenInt64Set(dsPID.NotEqual), widenInt64Set(dsPID.Equal)
+	}
+	updateRuleBitmapsForEvent(filterMaps.pidFilters, vKey, rule.ID, pidNotEqual, pidEqual)
 
-	// MntNSFilters
+	// MntNSFilters (Phase 2: fall back to the detector-declared mount-ns scope when the policy sets none).
 	mntNSEqs := rule.Policy.MntNSFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.mntNSFilters, vKey, rule.ID, mntNSEqs.NotEqual, mntNSEqs.Equal)
+	mntNSNotEqual, mntNSEqual := mntNSEqs.NotEqual, mntNSEqs.Equal
+	if !rule.Policy.MntNSFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.MntNS().Enabled() {
+		dsMntNS := rule.DetectorScopeFilter.MntNS().Equalities()
+		mntNSNotEqual, mntNSEqual = widenInt64Set(dsMntNS.NotEqual), widenInt64Set(dsMntNS.Equal)
+	}
+	updateRuleBitmapsForEvent(filterMaps.mntNSFilters, vKey, rule.ID, mntNSNotEqual, mntNSEqual)
 
-	// PidNSFilters
+	// PidNSFilters (Phase 2: fall back to the detector-declared pid-ns scope when the policy sets none).
 	pidNSEqs := rule.Policy.PidNSFilter.Equalities()
-	updateRuleBitmapsForEvent(filterMaps.pidNSFilters, vKey, rule.ID, pidNSEqs.NotEqual, pidNSEqs.Equal)
+	pidNSNotEqual, pidNSEqual := pidNSEqs.NotEqual, pidNSEqs.Equal
+	if !rule.Policy.PidNSFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.PidNS().Enabled() {
+		dsPidNS := rule.DetectorScopeFilter.PidNS().Equalities()
+		pidNSNotEqual, pidNSEqual = widenInt64Set(dsPidNS.NotEqual), widenInt64Set(dsPidNS.Equal)
+	}
+	updateRuleBitmapsForEvent(filterMaps.pidNSFilters, vKey, rule.ID, pidNSNotEqual, pidNSEqual)
 
 	// ContIDFilters requires special handling for container lookup
 	contIDEqs := rule.Policy.ContIDFilter.Equalities()
@@ -246,8 +277,13 @@ func (pm *PolicyManager) processRuleScopeFilters(
 	utsEqs := rule.Policy.UTSFilter.Equalities()
 	updateRuleBitmapsForEvent(filterMaps.utsFilters, vKey, rule.ID, utsEqs.ExactNotEqual, utsEqs.ExactEqual)
 
-	// CommFilters
-	commEqs := rule.Policy.CommFilter.Equalities()
+	// CommFilters (Phase 2: fall back to the detector-declared comm scope when the policy sets none,
+	// so a detector's per-base comm filter is pushed to the kernel for this base dependency rule).
+	commFilter := rule.Policy.CommFilter
+	if !commFilter.Enabled() && rule.DetectorScopeFilter != nil {
+		commFilter = rule.DetectorScopeFilter.Comm()
+	}
+	commEqs := commFilter.Equalities()
 	updateRuleBitmapsForEvent(filterMaps.commFilters, vKey, rule.ID, commEqs.ExactNotEqual, commEqs.ExactEqual)
 
 	// BinaryFilters
@@ -264,6 +300,16 @@ func (pm *PolicyManager) processRuleScopeFilters(
 // widenUint32Set converts a uint32 key set to uint64, so uint32 numeric filter
 // equalities (uid, pid) can feed the uniformly-uint64 rule bitmap maps.
 func widenUint32Set(in map[uint32]struct{}) map[uint64]struct{} {
+	out := make(map[uint64]struct{}, len(in))
+	for k := range in {
+		out[uint64(k)] = struct{}{}
+	}
+	return out
+}
+
+// widenInt64Set converts an int64 key set to uint64, so int64 numeric scope-filter equalities
+// (e.g. a detector's declared uid scope) can feed the uniformly-uint64 rule bitmap maps.
+func widenInt64Set(in map[int64]struct{}) map[uint64]struct{} {
 	out := make(map[uint64]struct{}, len(in))
 	for k := range in {
 		out[uint64(k)] = struct{}{}
@@ -334,19 +380,24 @@ func updateRuleBitmap(rb *ruleBitmap, bitOffset uint, eqType equalityType) {
 	}
 }
 
-func (pm *PolicyManager) processRuleDataFilters(
+// processDataFilter seeds this event's kernel data-filter maps for a single rule from one data
+// filter. Only pathname-class filters are kernel-capable: Equalities() returns the pathname sets and
+// errors for any other field, in which case the filter is skipped here and stays a userland-only
+// filter. Used for both a rule's own Data.DataFilter and a detector's per-base DetectorDataFilter.
+func (pm *PolicyManager) processDataFilter(
 	filterMaps *filterMaps,
 	vKey filterVersionKey,
-	rule *EventRule,
+	ruleID uint,
+	dataFilter *filters.DataFilter,
 	eventID events.ID,
 ) error {
-	if rule.Data == nil {
+	if dataFilter == nil {
 		return nil
 	}
 
-	equalities, err := rule.Data.DataFilter.Equalities()
+	equalities, err := dataFilter.Equalities()
 	if err != nil {
-		return nil // Skip this rule
+		return nil // not kernel-capable (e.g. non-pathname field): stays userland
 	}
 
 	// Get or create config
@@ -356,7 +407,7 @@ func (pm *PolicyManager) processRuleDataFilters(
 	}
 
 	// Process string filters
-	pm.processStringFilterRule(filterMaps, vKey, rule.ID, equalities, &config.string)
+	pm.processStringFilterRule(filterMaps, vKey, ruleID, equalities, &config.string)
 
 	// Store updated config
 	filterMaps.dataFilterConfigs[eventID] = config

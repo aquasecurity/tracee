@@ -395,6 +395,14 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) bool {
 			continue
 		}
 
+		// Phase 2: an optional detector-declared scope filter pushed onto this (base) dependency
+		// rule from the detector's Requirements.Events[]. It is workload-level like the policy scope
+		// above and is ANDed with it (nil for ordinary rules).
+		if rule.DetectorScopeFilter != nil && !rule.DetectorScopeFilter.Filter(*event.Event) {
+			bitwise.ClearBitInArray(&bitmap, rule.ID)
+			continue
+		}
+
 		// Dependency rules are scope-only (see EventRule.IsDependency): their shared
 		// RuleData's return-value and data filters belong to the dependent/derived
 		// event's schema, not this base event. Applying them here would wrongly drop
@@ -418,6 +426,14 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) bool {
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
 		if eventID != events.PrintMemDump && !rule.Data.DataFilter.Filter(event.Args) {
+			bitwise.ClearBitInArray(&bitmap, rule.ID)
+			continue
+		}
+
+		// Phase 2: a detector's per-base-event data filter (rule-local) applies to THIS base event's
+		// args, unlike Data.DataFilter which belongs to the dependent/derived event. AND it in.
+		if eventID != events.PrintMemDump && rule.DetectorDataFilter != nil &&
+			!rule.DetectorDataFilter.Filter(event.Args) {
 			bitwise.ClearBitInArray(&bitmap, rule.ID)
 			continue
 		}

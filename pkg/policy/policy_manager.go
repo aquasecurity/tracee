@@ -41,6 +41,15 @@ type PolicyManager struct {
 	fMaps           *filterMaps
 	exportedFMaps   *FilterMaps // cached read-only export of fMaps for the overflow matcher (rebuilt per updateBPF)
 	disabledAny     atomic.Bool // fast gate: set once any rule is disabled, so the hot path can skip the disabled-rules lookup
+	// detectorScopeFilters holds, per detector OUTPUT event, the scope filters the detector declared
+	// for each required base event (Requirements.Events[].ScopeFilters). Phase 2 pushes them onto the
+	// base events' dependency rules (EventRule.DetectorScopeFilter). Keyed detectorOutputID -> baseID.
+	// Set via SetDetectorScopeFilters (after detectors register); RecomputeRules then threads them in.
+	// nil = none.
+	detectorScopeFilters map[events.ID]map[events.ID]*filters.ScopeFilter
+	// detectorDataFilters is the data-filter analogue of detectorScopeFilters
+	// (Requirements.Events[].DataFilters), pushed onto EventRule.DetectorDataFilter. Same keying.
+	detectorDataFilters map[events.ID]map[events.ID]*filters.DataFilter
 }
 
 // EventRules holds information about a specific event.
@@ -72,6 +81,17 @@ type EventRule struct {
 	Policy        *Policy           // Reference to the policy where the rule was defined
 	SelectionType RuleSelectionType // How the rule was selected: by user, by dependency, or by bootstrap policy
 	DerivedRuleID uint              // For dependency rules, ID of the rule that caused the dependency
+	// DetectorScopeFilter is an optional, rule-local scope filter ANDed on top of Data.ScopeFilter.
+	// Phase 2 uses it to push a detector's per-base-event scope declaration (Requirements.Events[])
+	// onto the base event's dependency rule WITHOUT giving it its own RuleData (which would break the
+	// shared-pointer derive mapping in GetDerivedEventMatchedRules). nil for ordinary rules.
+	DetectorScopeFilter *filters.ScopeFilter
+	// DetectorDataFilter is the data-filter analogue of DetectorScopeFilter: a rule-local data filter
+	// for a detector's per-base-event data declaration. Unlike Data.DataFilter (which belongs to the
+	// dependent/derived event's schema and is not applied to a dependency rule's base event), this one
+	// IS on the base event's schema, so matchPolicies applies it to the base event's args. nil for
+	// ordinary rules.
+	DetectorDataFilter *filters.DataFilter
 }
 
 // IsDependency reports whether this rule was attached because the event is a
@@ -83,6 +103,25 @@ type EventRule struct {
 // filters are instead applied when the dependent/derived event itself is matched.
 func (r *EventRule) IsDependency() bool {
 	return r.SelectionType == SelectedByDependency
+}
+
+// SetDetectorScopeFilters installs the per-detector, per-base-event scope filters that Phase 2
+// pushes onto base events' dependency rules (EventRule.DetectorScopeFilter). Consulted by rule
+// building, so set it before RecomputeRules (as tracee does after detector registration). Keyed
+// detectorOutputID -> baseID.
+func (pm *PolicyManager) SetDetectorScopeFilters(m map[events.ID]map[events.ID]*filters.ScopeFilter) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	pm.detectorScopeFilters = m
+}
+
+// SetDetectorDataFilters installs the per-detector, per-base-event data filters that Phase 2 pushes
+// onto base events' dependency rules (EventRule.DetectorDataFilter). Consulted by rule building, so
+// set it before RecomputeRules (as tracee does after detector registration). Keyed detOut -> baseID.
+func (pm *PolicyManager) SetDetectorDataFilters(m map[events.ID]map[events.ID]*filters.DataFilter) {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	pm.detectorDataFilters = m
 }
 
 func NewManager(
@@ -337,6 +376,45 @@ func (pm *PolicyManager) AddPolicy(policy *Policy, opts ...AddPolicyOption) erro
 	return nil
 }
 
+// RecomputeRules rebuilds every event's EventRules from the current policy set. It is used at startup
+// after detectors register and SetDetectorScopeFilters is set, so the detector scope filters (unknown
+// at initial policy load) get threaded onto the base events' dependency rules by
+// addTransitiveDependencyRules. It does not change the policy set or re-select events (they are
+// already selected in the dependency manager). It is also the groundwork for future runtime policy
+// changes, which will rebuild + re-push under this same lock.
+func (pm *PolicyManager) RecomputeRules() error {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	tempPolicies := make(map[string]*Policy, len(pm.policies))
+	for k, v := range pm.policies {
+		tempPolicies[k] = v
+	}
+
+	// Collect the events selected by any policy, in a stable order for deterministic rule IDs.
+	selected := make(map[events.ID]struct{})
+	for _, p := range tempPolicies {
+		for eventID := range p.Rules {
+			selected[eventID] = struct{}{}
+		}
+	}
+	eventIDs := make([]events.ID, 0, len(selected))
+	for eventID := range selected {
+		eventIDs = append(eventIDs, eventID)
+	}
+	sort.Slice(eventIDs, func(i, j int) bool { return eventIDs[i] < eventIDs[j] })
+
+	tempRules := make(map[events.ID]EventRules)
+	for _, eventID := range eventIDs {
+		if err := pm.updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	pm.rules = tempRules
+	return nil
+}
+
 // RemovePolicy removes a policy from the PolicyManager.
 func (pm *PolicyManager) RemovePolicy(policyName string) error {
 	if pm.bootstrapPolicy != nil && policyName == pm.bootstrapPolicy.Name {
@@ -419,22 +497,26 @@ func deepCopyEventRules(original EventRules) EventRules {
 	// Deep copy Rules
 	for i, rule := range original.Rules {
 		copied.Rules[i] = &EventRule{
-			ID:            rule.ID,
-			Data:          rule.Data,   // Data pointers can be shared
-			Policy:        rule.Policy, // Policy pointers can be shared
-			SelectionType: rule.SelectionType,
-			DerivedRuleID: rule.DerivedRuleID,
+			ID:                  rule.ID,
+			Data:                rule.Data,   // Data pointers can be shared
+			Policy:              rule.Policy, // Policy pointers can be shared
+			SelectionType:       rule.SelectionType,
+			DerivedRuleID:       rule.DerivedRuleID,
+			DetectorScopeFilter: rule.DetectorScopeFilter, // shared pointer, ok
+			DetectorDataFilter:  rule.DetectorDataFilter,  // shared pointer, ok
 		}
 	}
 
 	// Deep copy UserlandRules
 	for i, rule := range original.UserlandRules {
 		copied.UserlandRules[i] = &EventRule{
-			ID:            rule.ID,
-			Data:          rule.Data,   // Data pointers can be shared
-			Policy:        rule.Policy, // Policy pointers can be shared
-			SelectionType: rule.SelectionType,
-			DerivedRuleID: rule.DerivedRuleID,
+			ID:                  rule.ID,
+			Data:                rule.Data,   // Data pointers can be shared
+			Policy:              rule.Policy, // Policy pointers can be shared
+			SelectionType:       rule.SelectionType,
+			DerivedRuleID:       rule.DerivedRuleID,
+			DetectorScopeFilter: rule.DetectorScopeFilter, // shared pointer, ok
+			DetectorDataFilter:  rule.DetectorDataFilter,  // shared pointer, ok
 		}
 	}
 
@@ -520,7 +602,7 @@ func (pm *PolicyManager) updateRulesForEvent(eventID events.ID, tempRules map[ev
 		ruleIDCounter++
 
 		// Add dependency rules for this specific rule
-		if err := pm.addTransitiveDependencyRules(eventNode, tempRules, make(map[events.ID]bool), 0, rule); err != nil {
+		if err := pm.addTransitiveDependencyRules(eventNode, tempRules, make(map[events.ID]bool), 0, rule, nil, nil); err != nil {
 			return errfmt.WrapError(err)
 		}
 
@@ -586,6 +668,8 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 	visited map[events.ID]bool,
 	depth int,
 	parentRule *EventRule,
+	inheritedDetectorScope *filters.ScopeFilter,
+	inheritedDetectorData *filters.DataFilter,
 ) error {
 	const maxDepth = 5
 
@@ -601,6 +685,23 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 	defer delete(visited, eventID)
 
 	for _, depID := range eventNode.GetDependencies().GetIDs() {
+		// Phase 2: the detector scope for this dependency edge is an explicit declaration for the
+		// (eventNode -> depID) edge (when eventNode is a detector output), else the scope inherited
+		// from an ancestor detector edge, so it propagates down to the transitive kernel base.
+		depDetectorScope := inheritedDetectorScope
+		if perBase, ok := pm.detectorScopeFilters[eventNode.GetID()]; ok {
+			if s := perBase[depID]; s != nil {
+				depDetectorScope = s
+			}
+		}
+		// Same for the detector's declared data filter on this dependency edge.
+		depDetectorData := inheritedDetectorData
+		if perBase, ok := pm.detectorDataFilters[eventNode.GetID()]; ok {
+			if d := perBase[depID]; d != nil {
+				depDetectorData = d
+			}
+		}
+
 		eventRules, ok := tempRules[depID]
 		if !ok {
 			eventRules = EventRules{
@@ -626,11 +727,13 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 			// Create dependency rule using parent's data and policy context
 			// This allows tracking which rule/policy caused this dependency
 			rule := &EventRule{
-				ID:            eventRules.rulesCount,
-				Data:          parentRule.Data,
-				Policy:        parentRule.Policy,
-				SelectionType: SelectedByDependency,
-				DerivedRuleID: parentRule.ID,
+				ID:                  eventRules.rulesCount,
+				Data:                parentRule.Data,
+				Policy:              parentRule.Policy,
+				SelectionType:       SelectedByDependency,
+				DerivedRuleID:       parentRule.ID,
+				DetectorScopeFilter: depDetectorScope,
+				DetectorDataFilter:  depDetectorData,
 			}
 
 			eventRules.Rules = append(eventRules.Rules, rule)
@@ -664,7 +767,7 @@ func (pm *PolicyManager) addTransitiveDependencyRules(
 		}
 
 		// Recursively add dependency rules for the dependencies of the dependency
-		if err := pm.addTransitiveDependencyRules(depNode, tempRules, visited, depth+1, parentRule); err != nil {
+		if err := pm.addTransitiveDependencyRules(depNode, tempRules, visited, depth+1, parentRule, depDetectorScope, depDetectorData); err != nil {
 			return err
 		}
 	}
@@ -682,6 +785,19 @@ func isRuleFilterableInUserland(rule *EventRule) bool {
 	// return-value filters belong to the dependent/derived event's schema and are not
 	// applied to this base event, so they don't make the base rule userland-filterable.
 	isDep := rule.IsDependency()
+
+	// A Phase-2 detector scope filter (rule-local, ANDed with Data.ScopeFilter) is workload-level
+	// and makes the rule userland-filterable regardless of dependency status.
+	if rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.Enabled() {
+		return true
+	}
+
+	// A Phase-2 detector data filter (rule-local) is on the base event's own schema, so it makes the
+	// rule userland-filterable regardless of dependency status (unlike Data.DataFilter, which belongs
+	// to the dependent/derived event).
+	if rule.DetectorDataFilter != nil && rule.DetectorDataFilter.Enabled() {
+		return true
+	}
 
 	// Check rule.Data and its filters
 	if rule.Data != nil {

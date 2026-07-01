@@ -638,6 +638,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	// Phase 2: push each detector's declared per-base-event scope and data filters onto the base
+	// events' dependency rules, then recompute the rule model so they are threaded in before it is
+	// pushed to the kernel. Detector filters are only known after registration (which runs after the
+	// initial policy load), so the recompute happens here rather than at policy-load time.
+	t.policyManager.SetDetectorScopeFilters(t.detectorEngine.GetDetectorBaseScopeFilters())
+	t.policyManager.SetDetectorDataFilters(t.detectorEngine.GetDetectorBaseDataFilters())
+	if err := t.policyManager.RecomputeRules(); err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// Initialize eBPF programs and maps
 
 	err = capabilities.GetInstance().EBPF(

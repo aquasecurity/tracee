@@ -310,7 +310,7 @@ func (pm *PolicyManager) computeTreeGroups() (map[string]uint8, error) {
 
 // computeTreeRuleTable builds the per-event tree rule table (mirrors C tree_rule_table_t): for
 // each of the event's rules whose policy has a process-tree filter, record the rule under
-// its policy's tree group. The =/!= sense is NOT carried here — it lives in the per-process
+// its policy's tree group. The =/!= sense is NOT carried here - it lives in the per-process
 // membership eq_t (seeded by seedProcTreeMembership) plus the per-rule
 // proc_tree_filter_match_if_key_missing bitmap, so the kernel folds membership into matched
 // rules with the generic equality formula. Exceeding maxTreeGroupsPerEvent is a hard error
@@ -669,9 +669,9 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 		return cfg
 	}
 
-	// TODO: we need to consider both policies scope filters and events scope filters.
-	// This can be done by accessing rule.Data.ScopeFilters
-	// We first need to update this in filters computation.
+	// Phase 2 folds each rule's detector-declared scope (rule.DetectorScopeFilter) into the config
+	// below (effective-filter per dimension). TODO: the policy per-rule scope (rule.Data.ScopeFilter)
+	// is still userland-only; pushing it to the kernel would need the same treatment.
 
 	// Loop through ALL rules for this event (including overflow rules)
 	for _, rule := range eventRules.Rules {
@@ -681,35 +681,63 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 
 		ruleID := rule.ID
 
+		// Phase 2: for each kernel-representable dimension, use the policy filter if set, else the
+		// detector's declared scope filter for this base dependency rule (rule.DetectorScopeFilter).
+		// Same-dimension conflicts stay in userland (matchPolicies ANDs both); distinct dimensions
+		// combine in-kernel. Only same-typed dimensions are folded here (comm/container); numeric
+		// dimensions are handled separately.
+		commFilter := rule.Policy.CommFilter
+		contFilter := rule.Policy.ContFilter
+		contStartedFilter := rule.Policy.ContStartedFilter
+		if ds := rule.DetectorScopeFilter; ds != nil {
+			if !commFilter.Enabled() {
+				commFilter = ds.Comm()
+			}
+			if !contFilter.Enabled() {
+				contFilter = ds.Container()
+			}
+			if !contStartedFilter.Enabled() {
+				contStartedFilter = ds.ContainerStarted()
+			}
+		}
+
 		// Enabled filters bitmap array
 		if rule.Policy.UIDFilter.Enabled() {
+			bitwise.SetBitInArray(&cfg.UIDFilterEnabled, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && ds.UID().Enabled() {
 			bitwise.SetBitInArray(&cfg.UIDFilterEnabled, ruleID)
 		}
 		if rule.Policy.PIDFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.PIDFilterEnabled, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && ds.PID().Enabled() {
+			bitwise.SetBitInArray(&cfg.PIDFilterEnabled, ruleID)
 		}
 		if rule.Policy.MntNSFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.MntNsFilterEnabled, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && ds.MntNS().Enabled() {
+			bitwise.SetBitInArray(&cfg.MntNsFilterEnabled, ruleID)
 		}
 		if rule.Policy.PidNSFilter.Enabled() {
+			bitwise.SetBitInArray(&cfg.PidNsFilterEnabled, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && ds.PidNS().Enabled() {
 			bitwise.SetBitInArray(&cfg.PidNsFilterEnabled, ruleID)
 		}
 		if rule.Policy.UTSFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.UtsNsFilterEnabled, ruleID)
 		}
-		if rule.Policy.CommFilter.Enabled() {
+		if commFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.CommFilterEnabled, ruleID)
 		}
 		if rule.Policy.ContIDFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.CgroupIdFilterEnabled, ruleID)
 		}
-		if rule.Policy.ContFilter.Enabled() {
+		if contFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.ContFilterEnabled, ruleID)
 		}
 		if rule.Policy.NewContFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.NewContFilterEnabled, ruleID)
 		}
-		if rule.Policy.ContStartedFilter.Enabled() {
+		if contStartedFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.ContStartedFilterEnabled, ruleID)
 		}
 		if rule.Policy.NewPidFilter.Enabled() {
@@ -728,32 +756,40 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 		// MatchIfKeyMissing filters bitmap array
 		if rule.Policy.UIDFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.UIDFilterMatchIfKeyMissing, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.UIDFilter.Enabled() && ds.UID().MatchIfKeyMissing() {
+			bitwise.SetBitInArray(&cfg.UIDFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.PIDFilter.MatchIfKeyMissing() {
+			bitwise.SetBitInArray(&cfg.PIDFilterMatchIfKeyMissing, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.PIDFilter.Enabled() && ds.PID().MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.PIDFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.MntNSFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.MntNsFilterMatchIfKeyMissing, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.MntNSFilter.Enabled() && ds.MntNS().MatchIfKeyMissing() {
+			bitwise.SetBitInArray(&cfg.MntNsFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.PidNSFilter.MatchIfKeyMissing() {
+			bitwise.SetBitInArray(&cfg.PidNsFilterMatchIfKeyMissing, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.PidNSFilter.Enabled() && ds.PidNS().MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.PidNsFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.UTSFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.UtsNsFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.CommFilter.MatchIfKeyMissing() {
+		if commFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.CommFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.ContIDFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.CgroupIdFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.ContFilter.MatchIfKeyMissing() {
+		if contFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.ContFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.NewContFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.NewContFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.ContStartedFilter.MatchIfKeyMissing() {
+		if contStartedFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.ContStartedFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.NewPidFilter.MatchIfKeyMissing() {

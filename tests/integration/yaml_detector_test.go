@@ -524,6 +524,82 @@ output:
 	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for non-matching pathname /usr/bin/false")
 }
 
+// Test_YAMLDetectorScopeFilterPushdown is the scope-filter counterpart of Test_YAMLDetectorFilters and
+// the integration counterpart of the Phase 2 scope pushdown: a detector declaring scope_filters on a
+// base event fires only for the workload matching that scope. It exercises the full scope path
+// (registry -> PolicyManager provider -> RecomputeRules -> DetectorScopeFilter -> kernel comm filter +
+// userland matchPolicies), proving the pushed-down filter narrows the base event correctly end-to-end.
+func Test_YAMLDetectorScopeFilterPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	yamlDir := t.TempDir()
+
+	// Detector subscribes to sched_process_exec with a comm scope filter (workload-level).
+	detectorYAML := `type: detector
+id: yaml-test-scope-filters
+produced_event:
+  name: test_scope_filter_match
+  version: 1.0.0
+  description: Test detector for scope filter pushdown (Phase 2)
+  tags:
+    - test
+  fields:
+    - name: matched_path
+      type: string
+
+requirements:
+  min_tracee_version: 0.0.0
+  events:
+    - name: sched_process_exec
+      dependency: required
+      scope_filters:
+        - comm=true
+
+auto_populate:
+  detected_from: true
+
+output:
+  fields:
+    - name: matched_path
+      expression: getEventData("pathname")
+`
+
+	createTempYAMLDetector(t, yamlDir, "test_scope_filters.yaml", detectorYAML)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithYAMLDetectors(ctx, t, yamlDir)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	buf.Clear()
+
+	// Matching comm (/usr/bin/true -> comm "true") must fire the detector.
+	require.NoError(t, exec.Command("/usr/bin/true").Run(), "Failed to execute /usr/bin/true")
+	time.Sleep(1 * time.Second)
+
+	matchedEvt := waitForDetectorEvent(buf, "test_scope_filter_match", 3*time.Second)
+	assert.NotNil(t, matchedEvt, "Detector should fire for a process matching scope comm=true")
+
+	// Wait for any remaining events to arrive before clearing.
+	time.Sleep(200 * time.Millisecond)
+	buf.Clear()
+
+	// Non-matching comm (/usr/bin/false -> comm "false") must NOT fire the detector.
+	_ = exec.Command("/usr/bin/false").Run() // /usr/bin/false exits 1 by design, ignore error
+	time.Sleep(1 * time.Second)
+
+	unmatchedEvt := waitForDetectorEvent(buf, "test_scope_filter_match", 2*time.Second)
+	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for a process not matching scope comm=true")
+}
+
 // Test_YAMLDetectorErrorHandling tests graceful handling of invalid YAML and missing fields
 func Test_YAMLDetectorErrorHandling(t *testing.T) {
 	testutils.AssureIsRoot(t)

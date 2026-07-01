@@ -507,6 +507,50 @@ func (r *registry) GetDetectorCount() int {
 	return len(r.detectors)
 }
 
+// GetDetectorBaseScopeFilters returns, per detector OUTPUT event id, the scope filters the detector
+// declared for each required base event (Requirements.Events[].ScopeFilters). Phase 2 pushes these
+// onto the base events' dependency rules via PolicyManager.SetDetectorScopeFilters. Detectors with
+// no declared scope filters are omitted.
+func (r *registry) GetDetectorBaseScopeFilters() map[events.ID]map[events.ID]*filters.ScopeFilter {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make(map[events.ID]map[events.ID]*filters.ScopeFilter)
+	for _, e := range r.detectors {
+		if len(e.scopeFilters) == 0 {
+			continue
+		}
+		perBase := make(map[events.ID]*filters.ScopeFilter, len(e.scopeFilters))
+		for baseID, sf := range e.scopeFilters {
+			perBase[events.ID(baseID)] = sf
+		}
+		out[events.ID(e.eventID)] = perBase
+	}
+	return out
+}
+
+// GetDetectorBaseDataFilters returns, per detector OUTPUT event id, the data filters the detector
+// declared for each required base event (Requirements.Events[].DataFilters). Phase 2 pushes these
+// onto the base events' dependency rules via PolicyManager.SetDetectorDataFilters. Detectors with no
+// declared data filters are omitted.
+func (r *registry) GetDetectorBaseDataFilters() map[events.ID]map[events.ID]*filters.DataFilter {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make(map[events.ID]map[events.ID]*filters.DataFilter)
+	for _, e := range r.detectors {
+		if len(e.dataFilters) == 0 {
+			continue
+		}
+		perBase := make(map[events.ID]*filters.DataFilter, len(e.dataFilters))
+		for baseID, df := range e.dataFilters {
+			perBase[events.ID(baseID)] = df
+		}
+		out[events.ID(e.eventID)] = perBase
+	}
+	return out
+}
+
 // UnregisterDetector removes a detector from the registry
 // Can be called at startup or runtime for dynamic detector unloading
 // This is a structural operation that removes the detector completely

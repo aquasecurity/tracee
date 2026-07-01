@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/aquasecurity/tracee/common/bitwise"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/dependencies"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -163,4 +164,281 @@ func Test_updateRulesForEvent_DeterministicRuleIDs(t *testing.T) {
 	idC := ruleIDForPolicy(t, pm, evt, "policy_c")
 	require.True(t, idA < idB && idB < idC,
 		"rule IDs must follow name-sorted policy order (a<b<c); got a=%d b=%d c=%d", idA, idB, idC)
+}
+
+// Test_isRuleFilterableInUserland_DetectorScope covers the Phase 2 rule-local scope filter: a
+// dependency rule that carries a detector-declared scope filter must be userland-filterable (so
+// matchPolicies re-checks it), even with no Data-level scope/data/ret filters.
+func Test_isRuleFilterableInUserland_DetectorScope(t *testing.T) {
+	t.Parallel()
+
+	scope := filters.NewScopeFilter()
+	require.NoError(t, scope.Parse("comm", "=bash"))
+	depRule := &EventRule{
+		Data:                &RuleData{EventID: events.SecurityFileOpen, ScopeFilter: filters.NewScopeFilter()},
+		SelectionType:       SelectedByDependency,
+		DetectorScopeFilter: scope,
+	}
+	require.True(t, isRuleFilterableInUserland(depRule),
+		"dependency rule with a detector scope filter must be userland-filterable")
+
+	depRule.DetectorScopeFilter = nil
+	require.False(t, isRuleFilterableInUserland(depRule),
+		"dependency rule with no filters must not be userland-filterable")
+}
+
+// Test_isRuleFilterableInUserland_DetectorData: a dependency rule carrying a detector data filter is
+// userland-filterable, because that filter is on the base event's own schema (unlike Data.DataFilter).
+func Test_isRuleFilterableInUserland_DetectorData(t *testing.T) {
+	t.Parallel()
+
+	df := filters.NewDetectorDataFilter()
+	require.NoError(t, df.Parse(events.SchedProcessExec, "pathname", "=/usr/bin/nc"))
+	depRule := &EventRule{
+		Data:               &RuleData{EventID: events.SchedProcessExec},
+		SelectionType:      SelectedByDependency,
+		DetectorDataFilter: df,
+	}
+	require.True(t, isRuleFilterableInUserland(depRule),
+		"dependency rule with a detector data filter must be userland-filterable")
+
+	depRule.DetectorDataFilter = nil
+	require.False(t, isRuleFilterableInUserland(depRule),
+		"dependency rule with no filters must not be userland-filterable")
+}
+
+// Test_addTransitiveDependencyRules_DetectorScopePushdown covers the Phase 2 bridge: a detector
+// scope filter declared for a (detector -> base) edge (via SetDetectorScopeFilters) is attached to
+// the base event's dependency rule when a policy selects the detector event.
+func Test_addTransitiveDependencyRules_DetectorScopePushdown(t *testing.T) {
+	t.Parallel()
+
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+	pm, err := NewManager(ManagerConfig{}, depsManager)
+	require.NoError(t, err)
+
+	// Find a real event D that depends on another event B (direct dependency).
+	var D, B events.ID
+	found := false
+	for _, def := range events.Core.GetDefinitions() {
+		if deps := def.GetDependencies().GetPrimaryDependencies().GetIDs(); len(deps) > 0 {
+			D, B = def.GetID(), deps[0]
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "need a real event with an event dependency for this test")
+
+	// Declare a detector scope filter for the (D -> B) edge, then select D.
+	scope := filters.NewScopeFilter()
+	require.NoError(t, scope.Parse("comm", "=bash"))
+	pm.SetDetectorScopeFilters(map[events.ID]map[events.ID]*filters.ScopeFilter{
+		D: {B: scope},
+	})
+
+	p := NewPolicy()
+	p.Name = "sel_detector"
+	p.Rules[D] = RuleData{EventID: D}
+	require.NoError(t, pm.AddPolicy(p))
+
+	// B's dependency rule (from D's chain) must carry the declared detector scope filter.
+	gotScope := false
+	for _, r := range pm.GetRules(B) {
+		if r.SelectionType == SelectedByDependency && r.DetectorScopeFilter == scope {
+			gotScope = true
+			break
+		}
+	}
+	require.True(t, gotScope,
+		"base event %d dependency rule must carry the detector scope filter for the %d->%d edge", B, D, B)
+}
+
+// Test_addTransitiveDependencyRules_DetectorDataPushdown is the data-filter analogue of the scope
+// bridge test: a detector data filter declared for a (detector -> base) edge is attached to the base
+// event's dependency rule when a policy selects the detector event.
+func Test_addTransitiveDependencyRules_DetectorDataPushdown(t *testing.T) {
+	t.Parallel()
+
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+	pm, err := NewManager(ManagerConfig{}, depsManager)
+	require.NoError(t, err)
+
+	const B = events.SchedProcessExec // has a "pathname" data field
+
+	// Find a real event D that directly depends on B.
+	var D events.ID
+	found := false
+	for _, def := range events.Core.GetDefinitions() {
+		for _, dep := range def.GetDependencies().GetPrimaryDependencies().GetIDs() {
+			if dep == B {
+				D, found = def.GetID(), true
+				break
+			}
+		}
+		if found {
+			break
+		}
+	}
+	require.True(t, found, "need a real event depending on sched_process_exec")
+
+	// Declare a detector data filter for the (D -> B) edge, then select D.
+	df := filters.NewDetectorDataFilter()
+	require.NoError(t, df.Parse(B, "pathname", "=/usr/bin/nc"))
+	pm.SetDetectorDataFilters(map[events.ID]map[events.ID]*filters.DataFilter{
+		D: {B: df},
+	})
+
+	p := NewPolicy()
+	p.Name = "sel_detector"
+	p.Rules[D] = RuleData{EventID: D}
+	require.NoError(t, pm.AddPolicy(p))
+
+	gotData := false
+	for _, r := range pm.GetRules(B) {
+		if r.SelectionType == SelectedByDependency && r.DetectorDataFilter == df {
+			gotData = true
+			break
+		}
+	}
+	require.True(t, gotData,
+		"base event %d dependency rule must carry the detector data filter for the %d->%d edge", B, D, B)
+}
+
+// Test_RecomputeRules_AppliesDetectorScopeAfterPolicyLoad mirrors the real init order: policies are
+// loaded (rules built) BEFORE detectors register and their scope filters are known. SetDetectorScope
+// Filters + RecomputeRules must then thread the detector scope onto the already-built base dep rules.
+func Test_RecomputeRules_AppliesDetectorScopeAfterPolicyLoad(t *testing.T) {
+	t.Parallel()
+
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+	pm, err := NewManager(ManagerConfig{}, depsManager)
+	require.NoError(t, err)
+
+	var D, B events.ID
+	found := false
+	for _, def := range events.Core.GetDefinitions() {
+		if deps := def.GetDependencies().GetPrimaryDependencies().GetIDs(); len(deps) > 0 {
+			D, B = def.GetID(), deps[0]
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "need a real event with an event dependency")
+
+	// Policy loaded BEFORE the detector scope is known (as at NewManager, before registerAllDetectors).
+	p := NewPolicy()
+	p.Name = "sel_detector"
+	p.Rules[D] = RuleData{EventID: D}
+	require.NoError(t, pm.AddPolicy(p))
+
+	for _, r := range pm.GetRules(B) {
+		require.Nil(t, r.DetectorScopeFilter, "no detector scope before SetDetectorScopeFilters + RecomputeRules")
+	}
+
+	// Detectors register later: install the filters, then recompute.
+	scope := filters.NewScopeFilter()
+	require.NoError(t, scope.Parse("comm", "=bash"))
+	pm.SetDetectorScopeFilters(map[events.ID]map[events.ID]*filters.ScopeFilter{D: {B: scope}})
+	require.NoError(t, pm.RecomputeRules())
+
+	gotScope := false
+	for _, r := range pm.GetRules(B) {
+		if r.SelectionType == SelectedByDependency && r.DetectorScopeFilter == scope {
+			gotScope = true
+			break
+		}
+	}
+	require.True(t, gotScope, "base dep rule must carry the detector scope after RecomputeRules")
+}
+
+// Test_computeScopeFiltersConfig_DetectorScopePushdown covers increment 3: a rule's detector-declared
+// scope dimensions (with no policy filter for them) must enable the matching kernel filters for that
+// rule, so the base event is filtered in-kernel.
+func Test_computeScopeFiltersConfig_DetectorScopePushdown(t *testing.T) {
+	t.Parallel()
+
+	const evt = events.SecurityFileOpen
+	scope := filters.NewScopeFilter()
+	require.NoError(t, scope.Parse("comm", "=bash"))
+	require.NoError(t, scope.Parse("uid", "=0"))
+	require.NoError(t, scope.Parse("hostPid", "=1"))
+	require.NoError(t, scope.Parse("mntns", "=100"))
+	require.NoError(t, scope.Parse("pidns", "=200"))
+
+	rule := &EventRule{
+		ID:                  0,
+		Policy:              NewPolicy(), // no policy-level scope filters
+		SelectionType:       SelectedByDependency,
+		DetectorScopeFilter: scope,
+	}
+	pm := &PolicyManager{
+		rules: map[events.ID]EventRules{
+			evt: {Rules: []*EventRule{rule}, rulesCount: 1},
+		},
+	}
+
+	// With the detector scope, each declared dimension must enable its kernel filter for the rule.
+	cfg := pm.computeScopeFiltersConfig(evt)
+	for name, enabled := range map[string][]uint64{
+		"comm":  cfg.CommFilterEnabled,
+		"uid":   cfg.UIDFilterEnabled,
+		"pid":   cfg.PIDFilterEnabled,
+		"mntns": cfg.MntNsFilterEnabled,
+		"pidns": cfg.PidNsFilterEnabled,
+	} {
+		require.True(t, bitwise.HasBitInArray(enabled, 0),
+			"detector %s scope must enable the %s filter for the rule in the kernel config", name, name)
+	}
+
+	// Without a detector scope (and no policy scope), none of them may be enabled.
+	rule.DetectorScopeFilter = nil
+	cfg = pm.computeScopeFiltersConfig(evt)
+	for name, enabled := range map[string][]uint64{
+		"comm":  cfg.CommFilterEnabled,
+		"uid":   cfg.UIDFilterEnabled,
+		"pid":   cfg.PIDFilterEnabled,
+		"mntns": cfg.MntNsFilterEnabled,
+		"pidns": cfg.PidNsFilterEnabled,
+	} {
+		require.False(t, bitwise.HasBitInArray(enabled, 0),
+			"%s filter must not be enabled when neither policy nor detector sets it", name)
+	}
+}
+
+// Test_processDataFilter_DetectorPathnamePushdown covers D3: a detector's pathname data filter seeds
+// the base event's kernel exact-match config for the rule, and a nil filter is a no-op.
+func Test_processDataFilter_DetectorPathnamePushdown(t *testing.T) {
+	t.Parallel()
+
+	const evt = events.SchedProcessExec
+	pm := &PolicyManager{}
+	fm := &filterMaps{
+		dataFilterConfigs: make(map[events.ID]dataFilterConfig),
+		dataExactFilters:  make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataPrefixFilters: make(map[filterVersionKey]map[string][]ruleBitmap),
+		dataSuffixFilters: make(map[filterVersionKey]map[string][]ruleBitmap),
+	}
+	vKey := filterVersionKey{Version: 1, EventID: uint32(evt)}
+
+	// A detector pathname data filter (exact) must seed the kernel exact-match config for the rule.
+	df := filters.NewDetectorDataFilter()
+	require.NoError(t, df.Parse(evt, "pathname", "=/usr/bin/nc"))
+	require.NoError(t, pm.processDataFilter(fm, vKey, 0, df, evt))
+
+	cfg, ok := fm.dataFilterConfigs[evt]
+	require.True(t, ok, "detector pathname filter must create a data-filter config for the event")
+	require.True(t, bitwise.HasBitInArray(cfg.string.exactEnabled, 0),
+		"detector pathname exact filter must enable exact matching for the rule in the kernel config")
+
+	// A nil detector data filter is a no-op (no panic, no config change).
+	require.NoError(t, pm.processDataFilter(fm, vKey, 1, nil, evt))
 }

@@ -82,6 +82,34 @@ func (f *ScopeFilter) Enabled() bool {
 	return f.enabled
 }
 
+// The accessors below expose the kernel-representable sub-filters so callers (e.g. the policy
+// manager's Phase 2 detector scope-filter pushdown) can fold a ScopeFilter's dimensions into the
+// per-event kernel filter config. Comm is the process comm (TASK_COMM_LEN), Container/ContainerStarted
+// are the boolean container filters.
+
+// Comm returns the process-name (comm) sub-filter.
+func (f *ScopeFilter) Comm() *StringFilter { return f.processNameFilter }
+
+// Container returns the "is container" boolean sub-filter.
+func (f *ScopeFilter) Container() *BoolFilter { return f.containerFilter }
+
+// ContainerStarted returns the "container started" boolean sub-filter.
+func (f *ScopeFilter) ContainerStarted() *BoolFilter { return f.containerStartedFilter }
+
+// UID returns the user-id sub-filter (values are int64 here; the kernel path narrows to uint32).
+func (f *ScopeFilter) UID() *NumericFilter[int64] { return f.uidFilter }
+
+// PID returns the HOST pid sub-filter, matching the kernel pid_filter (keyed by host pid). A
+// detector's namespace "pid" scope maps to a different sub-filter and is not kernel-representable, so
+// it stays a userland-only filter.
+func (f *ScopeFilter) PID() *NumericFilter[int64] { return f.hostPidFilter }
+
+// MntNS returns the mount-namespace sub-filter.
+func (f *ScopeFilter) MntNS() *NumericFilter[int64] { return f.mntNSFilter }
+
+// PidNS returns the pid-namespace sub-filter.
+func (f *ScopeFilter) PidNS() *NumericFilter[int64] { return f.pidNSFilter }
+
 func (f *ScopeFilter) Filter(evt trace.Event) bool {
 	if !f.enabled {
 		return true
