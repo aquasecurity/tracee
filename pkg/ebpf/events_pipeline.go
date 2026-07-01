@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"os"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -30,12 +29,6 @@ const maxStackDepth int = 20
 
 // Matches 'NO_SYSCALL' in eBPF code
 const noSyscall int32 = -1
-
-// traceeTestDebug, when TRACEE_TEST_DEBUG is set, makes matchPolicies log (to stderr) the
-// comm and matched policy names for every kernel event. It is a TEMPORARY diagnostic for the
-// integration-CI scope-filter failures (events not matching comm/tree/follow scopes in CI
-// while passing locally); set the env var on a single failing test to see what tracee sees.
-var traceeTestDebug = os.Getenv("TRACEE_TEST_DEBUG") != ""
 
 // handleEvents is the main pipeline of tracee. It receives events from the perf buffer
 // and passes them through a series of stages, each stage is a goroutine that performs a
@@ -360,14 +353,6 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) bool {
 	// so their overflow bits must NOT be recomputed here - the loop below only narrows them.
 	bitmap := event.MatchedRulesBitmap // working copy (copied from the kernel bitmap in NewPipelineEvent)
 
-	// TEMPORARY scope-filter diagnostic: snapshot the raw kernel bitmap before any userland
-	// narrowing, so the debug below can tell whether the kernel set a user-rule bit at all
-	// (kernel-side miss) versus userland clearing it (scope-filter re-check miss).
-	var kernelBitmap []uint64
-	if traceeTestDebug {
-		kernelBitmap = append([]uint64(nil), bitmap...)
-	}
-
 	// Drop rules disabled at runtime (DisableRule).
 	t.clearDisabledRules(eventID, bitmap)
 
@@ -445,25 +430,6 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) bool {
 
 	event.MatchedRulesBitmap = bitmap // update internal working bitmap
 	event.MatchedRulesUser = bitmap   // store filtered bitmap to be used in sink stage
-
-	// TEMPORARY scope-filter diagnostic (TRACEE_TEST_DEBUG): show the comm/uid/pid tracee
-	// actually sees for each kernel event, plus the user policies matched by the KERNEL (raw
-	// bitmap, before narrowing) versus FINAL (after userland scope re-check). For a failing
-	// scope test, grep the relevant comm (e.g. "bash"/"ls"):
-	//   kernel=[follow-bash] final=[]          -> userland ScopeFilter.Filter cleared it
-	//   kernel=[]            final=[]          -> kernel never set the bit (kernel-side miss)
-	//   kernel=[follow-bash] final=[follow-bash]-> matched (look downstream)
-	if traceeTestDebug {
-		// version is the kernel's rules_version (context.rules_version, decoded from the event).
-		// It keys the HASH_OF_MAPS scope-filter lookups; if it differs local vs CI, the kernel
-		// read the wrong version from events_config_map; if it matches but kernel=[] the miss is
-		// in the HASH_OF_MAPS lookup itself.
-		fmt.Fprintf(os.Stderr, "[SCOPE-DEBUG] event=%s comm=%q uid=%d pid=%d ppid=%d version=%d kernel=%v final=%v\n",
-			event.Event.EventName, event.Event.ProcessName, eventUID, eventPID,
-			uint32(event.HostParentProcessID), event.RulesVersion,
-			t.policyManager.GetMatchedRulesInfo(eventID, kernelBitmap),
-			t.policyManager.GetMatchedRulesInfo(eventID, bitmap))
-	}
 
 	return !bitwise.IsBitmapArrayEmpty(bitmap)
 }

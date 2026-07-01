@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -75,45 +73,9 @@ func runWithPolicies(t *testing.T, policies []*policy.Policy, settle time.Durati
 	workload(t)
 	time.Sleep(settle) // let the workload's events flow into the buffer
 
-	dumpScopeFilterMapsIfDebug(t)
-
 	cancel()
 	_ = testutils.WaitForTraceeStop(trc)
 	return buf
-}
-
-// dumpScopeFilterMapsIfDebug, when TRACEE_TEST_DEBUG is set, dumps the versioned scope-filter
-// maps via bpftool while tracee is still running. TEMPORARY diagnostic for the 6.11-only
-// scope-filter miss: it shows whether events_config_map's rules_version for an event matches the
-// filter_version_key under which the comm/uid inner maps were stored (a mismatch means the kernel
-// looks up the wrong version), and whether the outer HASH_OF_MAPS even holds an inner map for that
-// {version, event_id}. Remove together with the SCOPE-DEBUG instrumentation once root-caused.
-func dumpScopeFilterMapsIfDebug(t *testing.T) {
-	t.Helper()
-	if os.Getenv("TRACEE_TEST_DEBUG") == "" {
-		return
-	}
-	if err := exec.Command("bpftool", "version").Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "[BPFTOOL-DEBUG] bpftool unavailable (%v); skipping map dump\n", err)
-		return
-	}
-	fmt.Fprintf(os.Stderr, "[BPFTOOL-DEBUG] event ids: sched_process_exec=%d sched_process_fork=%d sched_process_exit=%d\n",
-		int(events.SchedProcessExec), int(events.SchedProcessFork), int(events.SchedProcessExit))
-	// Kernel truncates map names to BPF_OBJ_NAME_LEN-1 (15) chars; "map show" lists the real
-	// names + ids as a safety net in case a truncated name guess is off.
-	cmds := [][]string{
-		{"map", "show"},
-		{"map", "dump", "name", "events_config_m"}, // events_config_map -> per-event rules_version
-		{"map", "dump", "name", "comm_filter_ver"}, // comm_filter_version outer HASH_OF_MAPS
-		{"map", "dump", "name", "uid_filter_vers"}, // uid_filter_version outer HASH_OF_MAPS
-	}
-	for _, args := range cmds {
-		out, err := exec.Command("bpftool", args...).CombinedOutput()
-		fmt.Fprintf(os.Stderr, "[BPFTOOL-DEBUG] $ bpftool %s\n%s", strings.Join(args, " "), out)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "[BPFTOOL-DEBUG]   error: %v\n", err)
-		}
-	}
 }
 
 // hasMatchedEvent reports whether the buffer contains an event with the given name, process
