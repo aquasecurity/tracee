@@ -6,7 +6,6 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
-	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
 const (
@@ -17,13 +16,16 @@ const (
 //
 // Order of fields is important, as it is used as a value for
 // the ConfigMap BPF map.
+//
+// TODO(matched-rules/C): the per-policy PoliciesVersion/PoliciesConfig were removed
+// here because the rule model writes the rules-config map internally (PolicyManager.
+// UpdateBPF). The C config_entry_t must be reconciled to match (drop policies_version
+// and policies_config) when the eBPF side is ported, or the ConfigMap layout will
+// mismatch at runtime.
 type Config struct {
-	TraceePid       uint32
-	Options         uint32
-	CgroupV1Hid     uint32
-	_               uint16 // padding free for further use
-	PoliciesVersion uint16
-	PoliciesConfig  policy.PoliciesConfig
+	TraceePid   uint32
+	Options     uint32
+	CgroupV1Hid uint32
 }
 
 // UpdateBPF updates the ConfigMap BPF map with the current config.

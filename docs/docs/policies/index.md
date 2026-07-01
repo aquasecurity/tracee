@@ -2,7 +2,7 @@
 
 Policies allow users to specify which [events](../events/index.md) to trace in which workloads. The policy `scope` defines which workloads this policy is limited to. The policy can define multiple `rules` that specify the events to trace. Policies are used both for the [Tracee CLI](./usage/cli.md) and for the [Tracee Kubernetes](./usage/kubernetes.md) installation. This makes it easier to share policies across use cases and environments.
 
-It is possible to load up to 64 policies into Tracee.
+Tracee does not impose a fixed limit on the number of policies that can be loaded. (Note: the `tree` and `follow` scope filters are each supported across up to 64 policies; exceeding that is reported as an error at load time.)
 
 ## Policy Formats
 

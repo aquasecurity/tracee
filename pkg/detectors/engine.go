@@ -17,7 +17,7 @@ type Engine struct {
 }
 
 // NewEngine creates a new detector engine
-func NewEngine(policyManager *policy.Manager, enrichmentOptions *EnrichmentOptions) *Engine {
+func NewEngine(policyManager *policy.PolicyManager, enrichmentOptions *EnrichmentOptions) *Engine {
 	registry := newRegistry(policyManager, enrichmentOptions)
 	metrics := NewMetrics()
 	return &Engine{
