@@ -7,11 +7,6 @@ toolchain go1.26.4
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1
-	github.com/aquasecurity/tracee/api v0.0.0
-	github.com/aquasecurity/tracee/common v0.0.0
-	github.com/aquasecurity/tracee/detectors v0.0.0-00010101000000-000000000000
-	github.com/aquasecurity/tracee/types v0.0.0-20251205142631-7dc44bdb801c
 	github.com/containerd/containerd v1.7.33
 	github.com/google/cel-go v0.22.0
 	github.com/google/gopacket v1.1.19
@@ -37,6 +32,17 @@ require (
 	k8s.io/cri-api v0.32.3
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.78
 	sigs.k8s.io/controller-runtime v0.20.4
+)
+
+//
+// aquasecurity modules
+//
+require (
+	github.com/aquasecurity/libbpfgo v0.10.0-libbpf-1.5.1
+	github.com/aquasecurity/tracee/api v0.0.0
+	github.com/aquasecurity/tracee/common v0.0.0
+	github.com/aquasecurity/tracee/detectors v0.0.0
+	github.com/aquasecurity/tracee/types v0.0.0
 )
 
 require (
@@ -176,8 +182,13 @@ require (
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.78 // indirect
 )
 
+//
+// replace statements for the aquasecurity modules
+//
 replace github.com/aquasecurity/tracee/api => ./api
 
 replace github.com/aquasecurity/tracee/common => ./common
 
 replace github.com/aquasecurity/tracee/detectors => ./detectors
+
+replace github.com/aquasecurity/tracee/types => ./types
