@@ -94,6 +94,29 @@ func (ea *ElfAnalyzer) GetSymbol(symbolName string) (*ElfSymbol, error) {
 	return nil, fmt.Errorf("could not find symbol %s: %w", symbolName, ErrSymbolNotFound)
 }
 
+// FindSymbol returns a symbol for which pred returns true.
+// Map iteration order is undefined, so which match is returned is not deterministic
+// when multiple symbols satisfy pred.
+func (ea *ElfAnalyzer) FindSymbol(pred func(name string) bool) (*ElfSymbol, error) {
+	symbols, err := ea.getSymbols()
+	if err != nil {
+		return nil, errfmt.WrapError(err)
+	}
+
+	for _, symbol := range symbols {
+		if pred(symbol.Name) {
+			return symbol, nil
+		}
+	}
+
+	return nil, fmt.Errorf("symbol not found: %w", ErrSymbolNotFound)
+}
+
+// SymbolOffset returns the file offset of an already-resolved symbol.
+func (ea *ElfAnalyzer) SymbolOffset(symbol *ElfSymbol) (uint64, error) {
+	return ea.getSymbolOffset(symbol)
+}
+
 func (ea *ElfAnalyzer) getSymbols() (map[string]*ElfSymbol, error) {
 	if ea.symbols != nil {
 		return ea.symbols, nil
