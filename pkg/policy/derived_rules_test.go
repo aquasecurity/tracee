@@ -155,3 +155,44 @@ func Test_GetAllRulesBitmap(t *testing.T) {
 	// Unknown event (no rules) yields an empty bitmap so matchPoliciesProto drops it.
 	require.True(t, bitwise.IsBitmapArrayEmpty(pm.GetAllRulesBitmap(events.ID(99999))))
 }
+
+// Test_GetDerivedEventMatchedRules_AllSetBase_TwoPolicies locks in the net-event fix (a2): when a net
+// base event is seeded with GetAllRulesBitmap (all rules candidate, because its kernel socket-derived
+// bitmap is unreliable), a derived event selected by TWO separate policies inherits BOTH policies'
+// rules. The regression this guards against dropped one of two identical policies on a net event.
+func Test_GetDerivedEventMatchedRules_AllSetBase_TwoPolicies(t *testing.T) {
+	const (
+		evtDerived = events.ID(60040) // e.g. net_packet_icmp
+		evtBase    = events.ID(60041) // e.g. net_packet_icmp_base
+	)
+
+	// Two policies -> two independent chains (distinct RuleData). Each has a rule on the derived
+	// event and a shared-pointer dependency rule on the base event, as addTransitiveDependencyRules
+	// builds them.
+	dataA := &RuleData{EventID: evtDerived}
+	dataB := &RuleData{EventID: evtDerived}
+
+	pm := &PolicyManager{
+		rules: map[events.ID]EventRules{
+			evtDerived: buildEventRules(
+				&EventRule{ID: 0, Data: dataA, SelectionType: SelectedByUser},
+				&EventRule{ID: 1, Data: dataB, SelectionType: SelectedByUser},
+			),
+			evtBase: buildEventRules(
+				&EventRule{ID: 0, Data: dataA, SelectionType: SelectedByDependency, DerivedRuleID: 0},
+				&EventRule{ID: 1, Data: dataB, SelectionType: SelectedByDependency, DerivedRuleID: 1},
+			),
+		},
+	}
+
+	// The net override seeds the base with all rules as candidates (the kernel bitmap is unreliable).
+	baseBitmap := pm.GetAllRulesBitmap(evtBase)
+	require.True(t, bitwise.HasBitInArray(baseBitmap, 0))
+	require.True(t, bitwise.HasBitInArray(baseBitmap, 1))
+
+	// Both base dependency rules must map to the derived event's rules (both policies match).
+	derivedMatched := pm.GetDerivedEventMatchedRules(evtDerived, evtBase, baseBitmap)
+	require.True(t, bitwise.HasBitInArray(derivedMatched, 0), "policy A's derived rule must match")
+	require.True(t, bitwise.HasBitInArray(derivedMatched, 1),
+		"policy B's derived rule must match (regression: only one mapped)")
+}

@@ -406,6 +406,14 @@ func (pm *PolicyManager) RecomputeRules() error {
 
 	tempRules := make(map[events.ID]EventRules)
 	for _, eventID := range eventIDs {
+		// Unlike AddPolicy, RecomputeRules does not SelectEvent (that would double-count the
+		// selection). So it must tolerate an event whose dependency node was cancelled after the
+		// initial selection - e.g. an unsatisfiable ksymbol/probe/event dependency with no fallback.
+		// Such an event has no node in the dependency manager and simply gets no rules, matching the
+		// graceful-degradation the deps manager already applied; erroring here would abort Init.
+		if _, err := pm.evtsDepsManager.GetEvent(eventID); err != nil {
+			continue
+		}
 		if err := pm.updateRulesForEvent(eventID, tempRules, tempPolicies); err != nil {
 			return errfmt.WrapError(err)
 		}

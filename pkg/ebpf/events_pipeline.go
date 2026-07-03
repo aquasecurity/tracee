@@ -291,7 +291,17 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			// Set the internal working bitmap from the kernel-matched rules.
 			// The kernel emits a single u64 of rule bits (IDs 0-63); rule IDs >= 64
 			// are evaluated in userland by matchOverflowRules below.
-			evt.MatchedRulesBitmap = []uint64{eCtx.MatchedPolicies}
+			// Net base events (IDs < MaxNetID) carry a socket-derived kernel bitmap keyed by the
+			// socket-creation event's rule ids, not this event's, so it is unreliable in the
+			// per-event rule-id model and is only a coarse submit gate. Recompute in userland:
+			// start with every rule as a candidate and let matchOverflowRules + matchPolicies narrow
+			// by scope from the event's own workload; deriveEvents then remaps to the derived net
+			// events. See docs/matched-rules-net-matched-rules-fix.md.
+			if eventId >= events.NetPacketBase && eventId < events.MaxNetID {
+				evt.MatchedRulesBitmap = t.policyManager.GetAllRulesBitmap(eventId)
+			} else {
+				evt.MatchedRulesBitmap = []uint64{eCtx.MatchedPolicies}
+			}
 
 			// Evaluate scope filters for overflow rules (ID >= 64) that the kernel's
 			// single-u64 bitmap can't represent. Kernel-origin events only (this is the
