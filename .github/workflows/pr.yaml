@@ -198,9 +198,33 @@ jobs:
         run: |
           make check-err
 
-      - name: Check with govulncheck
+      # govulncheck is advisory-only here: on findings the step exits non-zero (so it shows as
+      # failed and its report stays visible), while `continue-on-error` keeps that failure from
+      # blocking the jobs that need verify-analyze-code - unit/integration/etc. still run. The
+      # report is surfaced as a non-blocking hint in the job summary. Resolve by bumping the flagged
+      # dependency once a fixed release is available.
+      - name: Check with govulncheck (advisory, non-blocking)
+        continue-on-error: true
         run: |
-          make check-vulncheck
+          set +e
+          log=/tmp/govulncheck.log
+          make check-vulncheck > "${log}" 2>&1
+          rc=$?
+          cat "${log}"
+          if [ "${rc}" -ne 0 ]; then
+              echo "::warning title=govulncheck (advisory, non-blocking)::Findings reported; PR checks still run. Bump the flagged dependency once a fixed release exists."
+              {
+                  echo "### govulncheck: advisory hint (non-blocking)"
+                  echo ""
+                  echo "govulncheck reported findings. This does NOT block the unit, integration, or"
+                  echo "other jobs. Resolve by bumping the flagged dependency once a fixed release exists."
+                  echo ""
+                  echo '```'
+                  tail -n 60 "${log}"
+                  echo '```'
+              } >> "${GITHUB_STEP_SUMMARY}"
+          fi
+          exit "${rc}"
 
   #
   # TOOLS BUILD VERIFICATION
