@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"syscall"
 	"testing"
 	"time"
 
@@ -435,4 +436,383 @@ func Test_PolicyScopeKernelPlusDataUserland(t *testing.T) {
 
 	// The comm complement was dropped in the kernel (comm scope is kernel-enforced).
 	require.Zero(t, cNone, "comm-complement exits must be dropped in the kernel")
+}
+
+// exitPolicyScopes builds a policy selecting sched_process_exit with arbitrary scope strings (e.g.
+// "comm=x", "uid=1234") and optional per-event data filters.
+func exitPolicyScopes(id int, name string, scopes []string, ruleFilters ...string) testutils.PolicyFileWithID {
+	if ruleFilters == nil {
+		ruleFilters = []string{}
+	}
+	return testutils.PolicyFileWithID{
+		Id: id,
+		PolicyFile: polv1beta1.PolicyFile{
+			Metadata: polv1beta1.Metadata{Name: name},
+			Spec: k8s.PolicySpec{
+				Scope:          scopes,
+				DefaultActions: []string{"log"},
+				Rules:          []k8s.Rule{{Event: schedProcessExitName, Filters: ruleFilters}},
+			},
+		},
+	}
+}
+
+// Test_PolicyScopeIdenticalUnionAttribution (scenario A3): two policies with the SAME comm scope on the
+// same event. The identical kernel scope collapses to comm=A, and a matching exit is attributed to BOTH
+// policies; the complement is dropped in the kernel.
+func Test_PolicyScopeIdenticalUnionAttribution(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	commA := fmt.Sprintf("trc3a%d", os.Getpid())
+	commNone := fmt.Sprintf("trc3n%d", os.Getpid())
+
+	binA := buildCommBinary(t, t.TempDir(), commA)
+	binNone := buildCommBinary(t, t.TempDir(), commNone)
+
+	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
+		exitScopePolicy(1, "pol-a1", commA),
+		exitScopePolicy(2, "pol-a2", commA),
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	const (
+		runsMatch = 15
+		runsNone  = 100
+	)
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	for i := 0; i < runsNone; i++ {
+		require.NoError(t, exec.Command(binNone).Run())
+	}
+	for i := 0; i < runsMatch; i++ {
+		require.NoError(t, exec.Command(binA).Run())
+	}
+
+	require.GreaterOrEqual(t, waitForExitComm(buf, commA, runsMatch, 10*time.Second), runsMatch)
+
+	matched, _ := exitPoliciesForComm(buf, commA)
+	require.Equal(t, []string{"pol-a1", "pol-a2"}, matched,
+		"a matching exit must be attributed to both identical-scope policies")
+
+	_, none := exitPoliciesForComm(buf, commNone)
+	require.Zero(t, none, "complement exits must be dropped in the kernel")
+
+	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline)
+}
+
+// runAsUID runs bin as the given uid/gid (root only) and waits for it to exit.
+func runAsUID(t *testing.T, bin string, uid uint32) {
+	t.Helper()
+	cmd := exec.Command(bin)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Credential: &syscall.Credential{Uid: uid, Gid: uid}}
+	_ = cmd.Run()
+}
+
+// buildAccessibleCommBinary builds a comm binary in a world-traversable dir so a non-root uid can exec it.
+func buildAccessibleCommBinary(t *testing.T, comm string) string {
+	t.Helper()
+	dir, err := os.MkdirTemp("", "trcuid")
+	require.NoError(t, err)
+	require.NoError(t, os.Chmod(dir, 0o755))
+	t.Cleanup(func() { _ = os.RemoveAll(dir) })
+	return buildCommBinaryFrom(t, dir, comm, "/usr/bin/true")
+}
+
+// Test_PolicyScopeCrossDimensionUnion (scenario A7): two policies scoping DIFFERENT dimensions of the
+// same event - P1 comm=A, P2 uid=U. The kernel submits an exit if comm==A OR uid==U; each event is
+// attributed to the matching dimension's policy, and an exit matching neither is dropped in the kernel.
+func Test_PolicyScopeCrossDimensionUnion(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	const uidU = 61234
+
+	commA := fmt.Sprintf("trc7a%d", os.Getpid())    // matches P1 (comm); runs as root (uid 0 != U)
+	commU := fmt.Sprintf("trc7u%d", os.Getpid())    // matches P2 (uid=U); comm != A
+	commNone := fmt.Sprintf("trc7n%d", os.Getpid()) // matches neither
+
+	binA := buildCommBinary(t, t.TempDir(), commA)
+	binU := buildAccessibleCommBinary(t, commU)
+	binNone := buildCommBinary(t, t.TempDir(), commNone)
+
+	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
+		exitPolicyScopes(1, "pol-comm", []string{"comm=" + commA}),
+		exitPolicyScopes(2, "pol-uid", []string{fmt.Sprintf("uid=%d", uidU)}),
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	const runs = 15
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binNone).Run()) // neither dimension (root)
+	}
+	for i := 0; i < runs; i++ {
+		runAsUID(t, binU, uidU) // uid dimension
+	}
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binA).Run()) // comm dimension
+	}
+
+	require.GreaterOrEqual(t, waitForExitComm(buf, commA, runs, 10*time.Second), runs, "comm=A exits emitted")
+	require.GreaterOrEqual(t, waitForExitComm(buf, commU, runs, 10*time.Second), runs, "uid=U exits emitted")
+
+	mA, _ := exitPoliciesForComm(buf, commA)
+	mU, _ := exitPoliciesForComm(buf, commU)
+	_, none := exitPoliciesForComm(buf, commNone)
+	require.Equal(t, []string{"pol-comm"}, mA, "comm=A exit attributed to the comm policy only")
+	require.Equal(t, []string{"pol-uid"}, mU, "uid=U exit attributed to the uid policy only")
+	require.Zero(t, none, "exit matching neither dimension must be dropped in the kernel")
+	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
+		"the OR union {comm=A, uid=U} must gate submission in the kernel (complement never reaches userland)")
+}
+
+// Test_PolicyMatchedSubsetAttribution (scenario D2): five policies split across three comm scopes. An
+// event must be attributed to EXACTLY the subset of policies whose scope it matches - not a superset
+// (leaking unrelated policies) nor a subset (dropping matching ones). Complement is dropped in the kernel.
+func Test_PolicyMatchedSubsetAttribution(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	commX := fmt.Sprintf("trcd2x%d", os.Getpid())
+	commY := fmt.Sprintf("trcd2y%d", os.Getpid())
+	commZ := fmt.Sprintf("trcd2z%d", os.Getpid())
+	commNone := fmt.Sprintf("trcd2n%d", os.Getpid())
+
+	dir := t.TempDir()
+	binX := buildCommBinary(t, dir, commX)
+	binY := buildCommBinary(t, dir, commY)
+	binZ := buildCommBinary(t, dir, commZ)
+	binNone := buildCommBinary(t, dir, commNone)
+
+	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
+		exitScopePolicy(1, "pol-x1", commX),
+		exitScopePolicy(2, "pol-x2", commX),
+		exitScopePolicy(3, "pol-y1", commY),
+		exitScopePolicy(4, "pol-y2", commY),
+		exitScopePolicy(5, "pol-z", commZ),
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	const runs = 15
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binNone).Run())
+	}
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binX).Run())
+	}
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binY).Run())
+	}
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binZ).Run())
+	}
+
+	require.GreaterOrEqual(t, waitForExitComm(buf, commZ, runs, 10*time.Second), runs)
+
+	mX, _ := exitPoliciesForComm(buf, commX)
+	mY, _ := exitPoliciesForComm(buf, commY)
+	mZ, _ := exitPoliciesForComm(buf, commZ)
+	_, none := exitPoliciesForComm(buf, commNone)
+
+	require.Equal(t, []string{"pol-x1", "pol-x2"}, mX, "X event attributed to exactly the two X policies")
+	require.Equal(t, []string{"pol-y1", "pol-y2"}, mY, "Y event attributed to exactly the two Y policies")
+	require.Equal(t, []string{"pol-z"}, mZ, "Z event attributed to exactly the one Z policy")
+	require.Zero(t, none, "complement dropped in the kernel")
+	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline)
+}
+
+// emittedCountByComm counts buffered events with the given name whose process comm matches.
+func emittedCountByComm(buf *testutils.EventBuffer, eventName, comm string) int {
+	n := 0
+	for _, e := range buf.GetCopy() {
+		if e == nil || e.Name != eventName ||
+			e.Workload == nil || e.Workload.Process == nil || e.Workload.Process.Thread == nil ||
+			e.Workload.Process.Thread.Name != comm {
+			continue
+		}
+		n++
+	}
+	return n
+}
+
+// Test_PolicyPerRuleScopeKernelPushdown proves that a PER-RULE scope filter (a scope key inside a rule's
+// `filters:` list - rule.Data.ScopeFilter) is enforced IN THE KERNEL, not just user space. openat is
+// selected with a per-rule comm filter (not a policy spec.scope). With the per-rule scope pushdown, the
+// kernel drops every non-matching openat (of which there are a huge number system-wide) before
+// submission, so EventsFiltered stays 0; matching openats still flow. Before the pushdown this filter
+// was userland-only and the counter would climb with all openat activity.
+func Test_PolicyPerRuleScopeKernelPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	commA := fmt.Sprintf("trcpr%d", os.Getpid())
+	commNone := fmt.Sprintf("trcpn%d", os.Getpid())
+	binA := buildCommBinary(t, t.TempDir(), commA)
+	binNone := buildCommBinary(t, t.TempDir(), commNone)
+
+	// openat with a PER-RULE comm filter (rule `filters:`), global policy scope.
+	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
+		{
+			Id: 1,
+			PolicyFile: polv1beta1.PolicyFile{
+				Metadata: polv1beta1.Metadata{Name: "perrule"},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules:          []k8s.Rule{{Event: "openat", Filters: []string{"comm=" + commA}}},
+				},
+			},
+		},
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	for i := 0; i < 100; i++ {
+		require.NoError(t, exec.Command(binNone).Run()) // complement openats (dropped in kernel)
+	}
+	for i := 0; i < 20; i++ {
+		require.NoError(t, exec.Command(binA).Run()) // matching openats
+	}
+
+	// Positive control: matching openats are emitted (so a 0 delta means "kernel dropped", not "idle").
+	deadline := time.Now().Add(10 * time.Second)
+	for emittedCountByComm(buf, "openat", commA) == 0 && time.Now().Before(deadline) {
+		time.Sleep(100 * time.Millisecond)
+	}
+	require.Positive(t, emittedCountByComm(buf, "openat", commA), "matching openat events must be emitted")
+
+	// The per-rule comm scope is enforced in the kernel: every non-matching openat (our complement plus
+	// all background openat activity) was dropped before submission, so none reached userland to be
+	// filtered. A non-zero value means the per-rule scope leaked to user-space filtering.
+	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
+		"EventsFiltered moved: complement openat events reached userland, so the per-rule comm scope was not kernel-enforced")
+}
+
+// Test_PolicyPerRuleScopeDerivedEvent covers per-rule scope on a DERIVED event (net_packet_icmp). The
+// per-rule comm is threaded onto the net base dependency rules and pushed to the kernel, so this guards
+// the interaction with the net-event submission path (the a2 socket-bitmap fix): the matching per-rule
+// comm must still capture the derived event (per-rule scope must not drop the base it needs), and a
+// non-matching per-rule comm must not.
+func Test_PolicyPerRuleScopeDerivedEvent(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
+		{
+			Id: 1,
+			PolicyFile: polv1beta1.PolicyFile{
+				Metadata: polv1beta1.Metadata{Name: "icmp-ping"},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules:          []k8s.Rule{{Event: "net_packet_icmp", Filters: []string{"comm=ping"}}},
+				},
+			},
+		},
+		{
+			Id: 2,
+			PolicyFile: polv1beta1.PolicyFile{
+				Metadata: polv1beta1.Metadata{Name: "icmp-other"},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules:          []k8s.Rule{{Event: "net_packet_icmp", Filters: []string{"comm=zzznotping"}}},
+				},
+			},
+		},
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	// Generate ICMP from comm=ping until the derived event is captured (or timeout).
+	deadline := time.Now().Add(20 * time.Second)
+	for !hasMatchedEvent(buf, "net_packet_icmp", "ping", "icmp-ping") && time.Now().Before(deadline) {
+		_ = exec.Command("ping", "-c1", "-W1", "0.0.0.0").Run() // outgoing echo request is captured
+		time.Sleep(300 * time.Millisecond)
+	}
+
+	// The matching per-rule comm=ping policy must capture the derived net_packet_icmp (the per-rule scope
+	// pushed onto the base must not drop it).
+	require.True(t, hasMatchedEvent(buf, "net_packet_icmp", "ping", "icmp-ping"),
+		"net_packet_icmp from ping must be captured by the per-rule comm=ping policy")
+
+	// The non-matching per-rule comm policy must not match a ping's ICMP.
+	require.False(t, hasMatchedEvent(buf, "net_packet_icmp", "ping", "icmp-other"),
+		"net_packet_icmp from ping must NOT match the per-rule comm=zzznotping policy")
 }
