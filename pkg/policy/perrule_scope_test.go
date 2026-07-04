@@ -97,3 +97,33 @@ func Test_PerRuleNumericScopePushedToKernel(t *testing.T) {
 	require.True(t, bitwise.HasBitInArray(cfg.UIDFilterEnabled, ruleID),
 		"uid must be marked enabled in the scope config for the per-rule rule")
 }
+
+// Test_PerRuleContainerScopePushedToKernel verifies that a per-rule container scope (a bool, config-only
+// dimension with no value map) is marked enabled in the kernel scope config for its rule.
+func Test_PerRuleContainerScopePushedToKernel(t *testing.T) {
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	p := NewPolicy()
+	p.Name = "perrule-container"
+	sf := filters.NewScopeFilter()
+	require.NoError(t, sf.Parse("container", "")) // is-container = true
+	p.Rules = map[events.ID]RuleData{
+		events.Openat: {
+			EventID:     events.Openat,
+			ScopeFilter: sf,
+			DataFilter:  filters.NewDataFilter(),
+			RetFilter:   filters.NewIntFilter(),
+		},
+	}
+
+	pm, err := NewManager(ManagerConfig{}, depsManager, p)
+	require.NoError(t, err)
+
+	cfg := pm.computeScopeFiltersConfig(events.Openat)
+	ruleID := pm.rules[events.Openat].Rules[0].ID
+	require.True(t, bitwise.HasBitInArray(cfg.ContFilterEnabled, ruleID),
+		"container must be marked enabled in the scope config for the per-rule rule")
+}

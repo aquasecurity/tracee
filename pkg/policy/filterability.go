@@ -8,10 +8,10 @@ import (
 )
 
 // perRuleKernelScopeDim are the scope dimensions the kernel can filter when they come from a rule's
-// `filters:` list (pushed by processRuleScopeFilters). Other dims (container, uts, tree, ...) from a
-// per-rule scope stay in user space.
+// `filters:` list (pushed by processRuleScopeFilters and, for container, by computeScopeFiltersConfig).
+// Other dims (uts, tree, ...) from a per-rule scope stay in user space.
 var perRuleKernelScopeDim = map[string]bool{
-	"comm": true, "uid": true, "pid": true, "mntns": true, "pidns": true,
+	"comm": true, "uid": true, "pid": true, "mntns": true, "pidns": true, "container": true,
 }
 
 // RuleFilterInfo is a read-only, per-rule filterability summary for `tracee list filterable`. It records

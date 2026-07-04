@@ -697,6 +697,17 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 				contStartedFilter = ds.ContainerStarted()
 			}
 		}
+		// Per-rule container scope (rule `filters:`): container/container-started are a config-only bool
+		// (no value map), so folding them here is all that is needed to push them to the kernel.
+		// matchPolicies still ANDs rule.Data.ScopeFilter as a backstop.
+		if perRule != nil {
+			if !contFilter.Enabled() && perRule.Container().Enabled() {
+				contFilter = perRule.Container()
+			}
+			if !contStartedFilter.Enabled() && perRule.ContainerStarted().Enabled() {
+				contStartedFilter = perRule.ContainerStarted()
+			}
+		}
 
 		// Enabled filters bitmap array (policy, else detector, else per-rule scope).
 		if rule.Policy.UIDFilter.Enabled() {
