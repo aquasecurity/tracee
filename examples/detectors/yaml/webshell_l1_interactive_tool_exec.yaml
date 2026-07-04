@@ -1,0 +1,43 @@
+type: detector
+id: webshell-l1-interactive-tool-exec
+produced_event:
+  name: interactive_tool_exec
+  version: 1.0.0
+  description: A shell or common network tool was executed
+  tags:
+    - execution
+  fields:
+    - name: binary_path
+      type: string
+    - name: uid
+      type: uint32
+    - name: pid
+      type: uint32
+
+# Level 1 (base): identify the execution of a shell or a network tool by its path. Because `pathname`
+# is a kernel-filterable data field, this narrowing is pushed into the kernel - only these execs are
+# ever submitted. On its own this is just "a tool ran"; the composed detector adds the "who" context.
+requirements:
+  events:
+    - name: sched_process_exec
+      dependency: required
+      data_filters:
+        - pathname=/bin/sh
+        - pathname=/bin/bash
+        - pathname=/bin/dash
+        - pathname=/usr/bin/nc
+        - pathname=/usr/bin/ncat
+        - pathname=/usr/bin/curl
+        - pathname=/usr/bin/wget
+
+auto_populate:
+  detected_from: true
+
+output:
+  fields:
+    - name: binary_path
+      expression: getEventData("pathname")
+    - name: uid
+      expression: workload.process.real_user.id
+    - name: pid
+      expression: workload.process.pid
