@@ -379,6 +379,52 @@ spec:
         - retval!=0
 ```
 
+## The filtering pipeline (where each filter runs)
+
+A selected event passes through up to three filtering stages before it reaches your output.
+Knowing where each filter runs explains both *what gets reported* and *how much work Tracee can
+push into the kernel*:
+
+```mermaid
+flowchart TD
+    E([Event occurs in the kernel]) --> K{"Kernel filter, eBPF:<br/>scope filters + pathname data filters,<br/>OR-ed across every selecting rule"}
+    K -- no selecting rule matches --> KD([Dropped in the kernel:<br/>never leaves eBPF, cheapest])
+    K -- any rule matches --> U[Submitted to user space]
+    U --> M{"matchPolicies, user space:<br/>per-rule scope / return-value / data filters,<br/>plus rules beyond the 64th"}
+    M -- no rule matches --> UD([Dropped in user space])
+    M -- one or more rules match --> A["Attribution:<br/>matchedPolicies = the policies whose rules matched"]
+    A --> OUT([Reported to the output stream])
+    A --> D{"Per-detector dispatch:<br/>each detector re-checks its own<br/>scope_filters / data_filters"}
+    D -- matches --> DET([Detector runs, produces finding / derived event])
+    D -- no match --> SK([Detector not invoked])
+```
+
+Stage 1 (kernel) is a **union across all rules** that select the event: the kernel submits an
+instance if *any* selecting rule's kernel-side filters match (detailed in the next section).
+Stages 2 and 3 are **per rule** and **per detector**, so they always narrow precisely regardless
+of what other policies do.
+
+### Where each filter is enforced
+
+| Filter | Written as | Enforced in |
+|--------|-----------|-------------|
+| Scope filters | `uid`, `pid`, `comm`, `mntns`, `pidns`, `uts`, `cgroupId`, `container`, `tree` | **Kernel** (workload-level; always pushed to eBPF) |
+| Data filter on a path field | `data.pathname=/tmp*` (exact / prefix / suffix) | **Kernel** (longest-prefix maps) |
+| Data filter on any other field | `data.flags=...`, `data.exit_code=0`, ... | **User space** |
+| Return-value filter | `retval!=0` | **User space** |
+
+A kernel-enforced filter can drop non-matching instances before they ever leave eBPF (stage 1) —
+the cheapest possible filtering. A user-space filter still narrows correctly, but only after the
+event has been submitted, so it saves downstream work rather than kernel submission.
+
+!!! note "Many rules on one event (more than 64)"
+    The kernel tracks which rules matched an event in a single 64-bit value. When one event is
+    selected by **more than 64 rules** (counting every policy and detector that selects it), the
+    kernel can no longer represent them all, so it **submits every instance of that event** and
+    lets user space match the rules beyond the 64th. Reporting stays correct, but the in-kernel
+    reduction for that event is lost. This is uncommon, but worth knowing for very large policy
+    sets.
+
 ## How filters compose across policies (performance)
 
 Tracee runs every policy against one shared kernel event stream. For a given event,

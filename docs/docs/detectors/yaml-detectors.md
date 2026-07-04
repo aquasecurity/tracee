@@ -155,6 +155,19 @@ scope_filters:
   - container=true
 ```
 
+!!! note "How detector filters are enforced"
+    A detector's `scope_filters` on a required event are pushed into the kernel just like a
+    policy's scope filters, so instances that do not match are dropped before the detector's input
+    event is even submitted — the cheapest form of filtering. `data_filters` narrow the input too:
+    path fields (`pathname`) via kernel longest-prefix maps, other fields in user space.
+
+    Because Tracee runs one shared event stream, these filters compose as a **union** with every
+    other policy or detector that selects the same base event. If another selector takes that event
+    unfiltered, the kernel must submit it anyway and the detector's own filters then narrow it in
+    user space (a detector only runs for events matching its own filters). See
+    [the policy filtering pipeline](../policies/rules.md#the-filtering-pipeline-where-each-filter-runs)
+    for the full model.
+
 ### Threat Metadata
 
 For threat detectors, define threat information:

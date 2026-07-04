@@ -2,6 +2,12 @@
 
 `scope` allows you to select the scope for tracing events by defining filters. 
 
+!!! tip "Scope filters run in the kernel"
+    Scope filters are workload-level and are pushed into eBPF, so a non-matching event is dropped
+    *before* it is submitted to user space — the cheapest way to narrow tracing. See
+    [the filtering pipeline](rules.md#the-filtering-pipeline-where-each-filter-runs) for how scope,
+    data, and return-value filters compose across policies.
+
 ## FILTER EXPRESSION
 
 Filter expressions can be defined to operate on scope options or process metadata. Only events that match all filter expressions will be traced.
