@@ -387,10 +387,10 @@ push into the kernel*:
 
 ```mermaid
 flowchart TD
-    E([Event occurs in the kernel]) --> K{"Kernel filter, eBPF:<br/>scope filters + pathname data filters,<br/>OR-ed across every selecting rule"}
+    E([Event occurs in the kernel]) --> K{"Kernel filter, eBPF:<br/>scope filters (from spec.scope OR a rule's filters)<br/>+ pathname data filters, OR-ed across every selecting rule"}
     K -- no selecting rule matches --> KD([Dropped in the kernel:<br/>never leaves eBPF, cheapest])
     K -- any rule matches --> U[Submitted to user space]
-    U --> M{"matchPolicies, user space:<br/>per-rule scope / return-value / data filters,<br/>plus rules beyond the 64th"}
+    U --> M{"User space:<br/>return-value and non-pathname data filters,<br/>plus any rule beyond the 64th"}
     M -- no rule matches --> UD([Dropped in user space])
     M -- one or more rules match --> A["Attribution:<br/>matchedPolicies = the policies whose rules matched"]
     A --> OUT([Reported to the output stream])
@@ -403,6 +403,10 @@ Stage 1 (kernel) is a **union across all rules** that select the event: the kern
 instance if *any* selecting rule's kernel-side filters match (detailed in the next section).
 Stages 2 and 3 are **per rule** and **per detector**, so they always narrow precisely regardless
 of what other policies do.
+
+Scope filters always run in the **kernel**, whether you write them at policy level (`spec.scope`)
+or inside a single rule's `filters:`. Where you write one changes *what it applies to* — the whole
+policy versus that one event — not *where it runs*.
 
 ### Where each filter is enforced
 

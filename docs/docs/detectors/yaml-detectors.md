@@ -209,7 +209,7 @@ YAML detectors support dynamic runtime conditions using Common Expression Langua
 conditions:
   - hasData("pathname")  # Check if field exists
   - getEventData("pathname").startsWith("/tmp")  # String operations
-  - workload.process.uid > 1000  # Numeric comparisons
+  - workload.process.real_user.id > 1000  # Numeric comparisons
   - workload.container.id != ""  # Check container context
 ```
 
@@ -318,7 +318,7 @@ Access process, container, and Kubernetes information directly through the `work
 conditions:
   - workload.container.id != ""
   - workload.process.pid > 1000
-  - workload.process.uid == 0
+  - workload.process.real_user.id == 0
 
 output:
   fields:
@@ -343,7 +343,7 @@ output:
 conditions:
   - hasData("pathname")                            # Check field exists
   - getEventData("pathname").startsWith("/tmp")    # Event data
-  - workload.process.uid == 0                      # Workload context
+  - workload.process.real_user.id == 0                      # Workload context
   - workload.container.id != ""                    # Container check
 
 output:
@@ -351,7 +351,7 @@ output:
     - name: binary
       expression: getEventData("pathname")
     - name: uid
-      expression: workload.process.uid
+      expression: workload.process.real_user.id
     - name: container
       expression: workload.container.id
 ```
@@ -450,6 +450,28 @@ One of the most powerful features of YAML detectors is the ability to **compose 
 ### How It Works
 
 The detector engine automatically resolves event dependencies. When a detector requires an event that's not a built-in kernel event, the engine checks if another detector produces that event. If found, it creates a subscription chain automatically.
+
+A chain flows one way — a raw kernel event feeds a base detector, whose finding feeds the next
+detector, and so on until the final threat finding:
+
+```mermaid
+flowchart TD
+    RAW([sched_process_exec<br/>happens in the kernel]) --> L1["Base detector<br/>matches suspicious binary paths"]
+    L1 --> SIG([suspicious_binary_execution<br/>— a finding event])
+    SIG --> L2["Composed detector<br/>keeps only container activity"]
+    L2 --> ALERT([Threat finding:<br/>suspicious binary in a container])
+```
+
+The important part for performance runs the *other* way. A `scope_filters` / `data_filters` you
+declare on any detector in the chain is threaded **all the way down** to the raw kernel event and
+enforced in the kernel — so the kernel only ever collects what the whole chain could need. Adding
+a composed detector on top never widens what is collected:
+
+```mermaid
+flowchart LR
+    F["Composed detector declares<br/>scope_filters: container=true"] -->|threaded down the chain| K["Enforced in the kernel<br/>on sched_process_exec"]
+    K --> DROP([Non-container execs dropped<br/>before they leave the kernel])
+```
 
 ### Example: Two-Level Chain
 
