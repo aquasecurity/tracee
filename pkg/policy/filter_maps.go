@@ -208,6 +208,35 @@ func (pm *PolicyManager) computeFilterMaps(
 	return maps, nil
 }
 
+// ruleDataScope returns a rule's per-rule scope filter (from the event rule's `filters:` list), or nil.
+// This is the workload-level scope carried in rule.Data.ScopeFilter, which processRuleScopeFilters pushes
+// to the kernel and matchPolicies backstops in user space.
+func ruleDataScope(rule *EventRule) *filters.ScopeFilter {
+	if rule.Data == nil {
+		return nil
+	}
+	return rule.Data.ScopeFilter
+}
+
+// effectiveScopeComm returns the comm scope filter the kernel should apply for a rule: the policy comm,
+// else the detector-declared comm scope, else the rule's per-rule comm. Both the map-value path
+// (processRuleScopeFilters) and the enabled-config path (computeScopeFiltersConfig) call this, so the two
+// cannot disagree about which comm source is pushed. Callers guarantee rule.Policy != nil.
+func effectiveScopeComm(rule *EventRule) *filters.StringFilter {
+	if f := rule.Policy.CommFilter; f.Enabled() {
+		return f
+	}
+	if ds := rule.DetectorScopeFilter; ds != nil && ds.Comm().Enabled() {
+		return ds.Comm()
+	}
+	if pr := ruleDataScope(rule); pr != nil && pr.Comm().Enabled() {
+		return pr.Comm()
+	}
+	// Nothing enabled: return the (disabled) policy filter; its Equalities() are empty, so nothing is
+	// pushed and no enabled bit is set.
+	return rule.Policy.CommFilter
+}
+
 func (pm *PolicyManager) processRuleScopeFilters(
 	filterMaps *filterMaps,
 	vKey filterVersionKey,
@@ -218,41 +247,67 @@ func (pm *PolicyManager) processRuleScopeFilters(
 		return nil
 	}
 
+	// The effective kernel scope for each dimension prefers the policy scope, then a detector-declared
+	// scope (Phase 2), then the rule's own per-rule scope (rule `filters:`, rule.Data.ScopeFilter). All
+	// three are workload-level; pushing the per-rule scope to the kernel drops non-matching instances
+	// before submission. matchPolicies still ANDs rule.Data.ScopeFilter in user space as a correctness
+	// backstop (and covers dimensions the kernel cannot represent, e.g. tree).
+	perRule := ruleDataScope(rule)
+
 	// UIDFilters - uid equalities are uint32; widen to uint64 to match the
 	// uniformly-uint64 numeric filter maps (the BPF writer narrows back to u32).
-	// Phase 2: fall back to the detector-declared uid scope (int64) when the policy sets none.
 	uidEqs := rule.Policy.UIDFilter.Equalities()
 	uidNotEqual, uidEqual := widenUint32Set(uidEqs.NotEqual), widenUint32Set(uidEqs.Equal)
-	if !rule.Policy.UIDFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.UID().Enabled() {
-		dsUID := rule.DetectorScopeFilter.UID().Equalities()
-		uidNotEqual, uidEqual = widenInt64Set(dsUID.NotEqual), widenInt64Set(dsUID.Equal)
+	if !rule.Policy.UIDFilter.Enabled() {
+		if ds := rule.DetectorScopeFilter; ds != nil && ds.UID().Enabled() {
+			e := ds.UID().Equalities()
+			uidNotEqual, uidEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		} else if perRule != nil && perRule.UID().Enabled() {
+			e := perRule.UID().Equalities()
+			uidNotEqual, uidEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		}
 	}
 	updateRuleBitmapsForEvent(filterMaps.uidFilters, vKey, rule.ID, uidNotEqual, uidEqual)
 
-	// PIDFilters (Phase 2: fall back to the detector-declared host-pid scope when the policy sets none).
+	// PIDFilters (host pid).
 	pidEqs := rule.Policy.PIDFilter.Equalities()
 	pidNotEqual, pidEqual := widenUint32Set(pidEqs.NotEqual), widenUint32Set(pidEqs.Equal)
-	if !rule.Policy.PIDFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.PID().Enabled() {
-		dsPID := rule.DetectorScopeFilter.PID().Equalities()
-		pidNotEqual, pidEqual = widenInt64Set(dsPID.NotEqual), widenInt64Set(dsPID.Equal)
+	if !rule.Policy.PIDFilter.Enabled() {
+		if ds := rule.DetectorScopeFilter; ds != nil && ds.PID().Enabled() {
+			e := ds.PID().Equalities()
+			pidNotEqual, pidEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		} else if perRule != nil && perRule.PID().Enabled() {
+			e := perRule.PID().Equalities()
+			pidNotEqual, pidEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		}
 	}
 	updateRuleBitmapsForEvent(filterMaps.pidFilters, vKey, rule.ID, pidNotEqual, pidEqual)
 
-	// MntNSFilters (Phase 2: fall back to the detector-declared mount-ns scope when the policy sets none).
+	// MntNSFilters.
 	mntNSEqs := rule.Policy.MntNSFilter.Equalities()
 	mntNSNotEqual, mntNSEqual := mntNSEqs.NotEqual, mntNSEqs.Equal
-	if !rule.Policy.MntNSFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.MntNS().Enabled() {
-		dsMntNS := rule.DetectorScopeFilter.MntNS().Equalities()
-		mntNSNotEqual, mntNSEqual = widenInt64Set(dsMntNS.NotEqual), widenInt64Set(dsMntNS.Equal)
+	if !rule.Policy.MntNSFilter.Enabled() {
+		if ds := rule.DetectorScopeFilter; ds != nil && ds.MntNS().Enabled() {
+			e := ds.MntNS().Equalities()
+			mntNSNotEqual, mntNSEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		} else if perRule != nil && perRule.MntNS().Enabled() {
+			e := perRule.MntNS().Equalities()
+			mntNSNotEqual, mntNSEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		}
 	}
 	updateRuleBitmapsForEvent(filterMaps.mntNSFilters, vKey, rule.ID, mntNSNotEqual, mntNSEqual)
 
-	// PidNSFilters (Phase 2: fall back to the detector-declared pid-ns scope when the policy sets none).
+	// PidNSFilters.
 	pidNSEqs := rule.Policy.PidNSFilter.Equalities()
 	pidNSNotEqual, pidNSEqual := pidNSEqs.NotEqual, pidNSEqs.Equal
-	if !rule.Policy.PidNSFilter.Enabled() && rule.DetectorScopeFilter != nil && rule.DetectorScopeFilter.PidNS().Enabled() {
-		dsPidNS := rule.DetectorScopeFilter.PidNS().Equalities()
-		pidNSNotEqual, pidNSEqual = widenInt64Set(dsPidNS.NotEqual), widenInt64Set(dsPidNS.Equal)
+	if !rule.Policy.PidNSFilter.Enabled() {
+		if ds := rule.DetectorScopeFilter; ds != nil && ds.PidNS().Enabled() {
+			e := ds.PidNS().Equalities()
+			pidNSNotEqual, pidNSEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		} else if perRule != nil && perRule.PidNS().Enabled() {
+			e := perRule.PidNS().Equalities()
+			pidNSNotEqual, pidNSEqual = widenInt64Set(e.NotEqual), widenInt64Set(e.Equal)
+		}
 	}
 	updateRuleBitmapsForEvent(filterMaps.pidNSFilters, vKey, rule.ID, pidNSNotEqual, pidNSEqual)
 
@@ -277,13 +332,8 @@ func (pm *PolicyManager) processRuleScopeFilters(
 	utsEqs := rule.Policy.UTSFilter.Equalities()
 	updateRuleBitmapsForEvent(filterMaps.utsFilters, vKey, rule.ID, utsEqs.ExactNotEqual, utsEqs.ExactEqual)
 
-	// CommFilters (Phase 2: fall back to the detector-declared comm scope when the policy sets none,
-	// so a detector's per-base comm filter is pushed to the kernel for this base dependency rule).
-	commFilter := rule.Policy.CommFilter
-	if !commFilter.Enabled() && rule.DetectorScopeFilter != nil {
-		commFilter = rule.DetectorScopeFilter.Comm()
-	}
-	commEqs := commFilter.Equalities()
+	// CommFilters: policy comm, else the detector-declared comm scope, else the rule's per-rule comm.
+	commEqs := effectiveScopeComm(rule).Equalities()
 	updateRuleBitmapsForEvent(filterMaps.commFilters, vKey, rule.ID, commEqs.ExactNotEqual, commEqs.ExactEqual)
 
 	// BinaryFilters
