@@ -388,10 +388,19 @@ func (f *DataFilter) checkKernelFilterRestrictions(val string) error {
 	return nil
 }
 
+// IsKernelFilterableDataField reports whether a data filter on fieldName is enforced in the kernel
+// (dropping non-matching instances before the event is submitted). Currently only "pathname" (via
+// longest-prefix maps); every other data field is filtered in user space. This is the single source of
+// truth used by both the kernel filter path and the `tracee list filterable` diagnostics, so keep it in
+// sync with (*DataFilter).enableKernelFilterArg below.
+func IsKernelFilterableDataField(fieldName string) bool {
+	return fieldName == "pathname"
+}
+
 // enableKernelFilterArg activates a kernel filter for the specified data field.
 // This function currently supports enabling filters for the "pathname" field only.
 func (f *DataFilter) enableKernelFilterArg(fieldName string) {
-	if fieldName != "pathname" {
+	if !IsKernelFilterableDataField(fieldName) {
 		return
 	}
 
