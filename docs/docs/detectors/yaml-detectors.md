@@ -63,7 +63,7 @@ output:
     - name: binary_path
       expression: getEventData("pathname")
     - name: binary_name
-      expression: workload.process.name
+      expression: workload.process.thread.name
 ```
 
 ## Schema Reference
@@ -270,9 +270,9 @@ output:
 | Extract directory | `dirname(getEventData("pathname"))` |
 | Split path components | `split(getEventData("pathname"), "/")` |
 | Join path components | `join(["usr", "bin", "nc"], "/")` |
-| Normalize case | `lower(workload.process.name)` |
+| Normalize case | `lower(workload.process.thread.name)` |
 | Replace substring | `replace(getEventData("pathname"), "/tmp", "/var/tmp")` |
-| Combine fields | `workload.process.name + ":" + string(workload.process.pid)` |
+| Combine fields | `workload.process.thread.name + ":" + string(workload.process.pid)` |
 
 **Field Semantics:**
 
@@ -325,16 +325,18 @@ output:
     - name: container_id
       expression: workload.container.id
     - name: pod_name
-      expression: workload.kubernetes.pod_name
+      expression: workload.k8s.pod.name
     - name: process_name
-      expression: workload.process.name
+      expression: workload.process.thread.name
 ```
 
-**Available variables:**
+**Available variables** (the `workload` object mirrors the event's protobuf schema):
 
-- `workload.process.*` - Process ID, name, uid, gid, etc.
-- `workload.container.*` - Container ID, name, image
-- `workload.kubernetes.*` - Pod name, namespace, labels
+- `workload.process.pid`, `workload.process.host_pid`, `workload.process.unique_id`
+- `workload.process.thread.name` (comm), `workload.process.executable.path` (binary path)
+- `workload.process.real_user.id` (uid)
+- `workload.container.id`, `workload.container.name`, `workload.container.image.*`
+- `workload.k8s.pod.name`, `workload.k8s.pod.uid`, `workload.k8s.namespace.name`
 - `timestamp` - Event timestamp
 
 ### Complete Example
