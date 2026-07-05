@@ -414,8 +414,10 @@ A few less common scope keys are kernel-enforced only from `spec.scope`; written
 
 - `uts` (hostName) — usually redundant with `container`/`mntns`.
 - `tree` — a "process and its descendants" scope, meaningful for a whole policy rather than one event.
-- a **specific** container id (`containerId`/`containerName`); the `container` boolean above is
-  kernel-enforced per rule.
+- a **specific** container id (`containerId`/`containerName`) — a container name/id has to be resolved
+  to a kernel identifier when the policy loads, and scoping a *whole policy* to one container is the
+  natural way to express "only this container," so per-event kernel enforcement isn't provided for it.
+  The `container` boolean above (any container) *is* kernel-enforced per rule.
 
 If you need one of these enforced in the kernel, put it in the policy's `spec.scope`.
 
