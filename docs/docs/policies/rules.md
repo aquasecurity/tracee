@@ -404,9 +404,20 @@ instance if *any* selecting rule's kernel-side filters match (detailed in the ne
 Stages 2 and 3 are **per rule** and **per detector**, so they always narrow precisely regardless
 of what other policies do.
 
-Scope filters always run in the **kernel**, whether you write them at policy level (`spec.scope`)
-or inside a single rule's `filters:`. Where you write one changes *what it applies to* — the whole
-policy versus that one event — not *where it runs*.
+Scope filters run in the **kernel** whether you write them at policy level (`spec.scope`) or inside a
+single rule's `filters:`, for the common workload dimensions: `comm`, `uid`, `pid`, `mntns`, `pidns`,
+`container`, and `executable`. Where you write one changes *what it applies to* — the whole policy
+versus that one event — not *where it runs*.
+
+A few less common scope keys are kernel-enforced only from `spec.scope`; written inside a rule's
+`filters:` they still narrow correctly but in **user space** (the event is submitted, then filtered):
+
+- `uts` (hostName) — usually redundant with `container`/`mntns`.
+- `tree` — a "process and its descendants" scope, meaningful for a whole policy rather than one event.
+- a **specific** container id (`containerId`/`containerName`); the `container` boolean above is
+  kernel-enforced per rule.
+
+If you need one of these enforced in the kernel, put it in the policy's `spec.scope`.
 
 ### Where each filter is enforced
 
