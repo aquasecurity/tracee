@@ -764,6 +764,10 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 		}
 		if rule.Policy.BinaryFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.BinPathFilterEnabled, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && ds.Binary().Enabled() {
+			bitwise.SetBitInArray(&cfg.BinPathFilterEnabled, ruleID)
+		} else if perRule != nil && perRule.Binary().Enabled() {
+			bitwise.SetBitInArray(&cfg.BinPathFilterEnabled, ruleID)
 		}
 		if rule.Policy.Follow {
 			bitwise.SetBitInArray(&cfg.FollowFilterEnabled, ruleID)
@@ -827,6 +831,11 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 			bitwise.SetBitInArray(&cfg.ProcTreeFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.BinaryFilter.MatchIfKeyMissing() {
+			bitwise.SetBitInArray(&cfg.BinPathFilterMatchIfKeyMissing, ruleID)
+		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.BinaryFilter.Enabled() && ds.Binary().MatchIfKeyMissing() {
+			bitwise.SetBitInArray(&cfg.BinPathFilterMatchIfKeyMissing, ruleID)
+		} else if perRule != nil && !rule.Policy.BinaryFilter.Enabled() &&
+			(rule.DetectorScopeFilter == nil || !rule.DetectorScopeFilter.Binary().Enabled()) && perRule.Binary().MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.BinPathFilterMatchIfKeyMissing, ruleID)
 		}
 	}

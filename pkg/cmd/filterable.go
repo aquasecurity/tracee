@@ -261,9 +261,9 @@ func PrintPolicyFilterabilityTo(w io.Writer, policyPaths []string, managerCfg po
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "kernel      = the kernel drops non-matching instances before submission (cheapest).")
 	fmt.Fprintln(w, "user-space  = the kernel submits every instance; filtering happens in user space.")
-	fmt.Fprintln(w, "Scope filters (comm/uid/pid/mntns/pidns) and pathname data filters run in the kernel,")
-	fmt.Fprintln(w, "whether written in spec.scope or a rule's `filters:`; other data fields and return-value")
-	fmt.Fprintln(w, "filters run in user space.")
+	fmt.Fprintln(w, "Scope filters (comm/uid/pid/mntns/pidns/container/executable) and pathname data filters")
+	fmt.Fprintln(w, "run in the kernel, whether written in spec.scope or a rule's `filters:`; other data fields")
+	fmt.Fprintln(w, "and return-value filters run in user space.")
 	return nil
 }
 

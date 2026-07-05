@@ -336,8 +336,18 @@ func (pm *PolicyManager) processRuleScopeFilters(
 	commEqs := effectiveScopeComm(rule).Equalities()
 	updateRuleBitmapsForEvent(filterMaps.commFilters, vKey, rule.ID, commEqs.ExactNotEqual, commEqs.ExactEqual)
 
-	// BinaryFilters
-	binEqs := rule.Policy.BinaryFilter.Equalities()
+	// BinaryFilters: policy binary, else the detector-declared binary scope, else the rule's per-rule
+	// binary (rule `filters:`). Binary is kernel-enforced only (like the policy binary filter), so this
+	// map push is the whole story - there is no user-space binary backstop.
+	binFilter := rule.Policy.BinaryFilter
+	if !binFilter.Enabled() {
+		if ds := rule.DetectorScopeFilter; ds != nil && ds.Binary().Enabled() {
+			binFilter = ds.Binary()
+		} else if perRule != nil && perRule.Binary().Enabled() {
+			binFilter = perRule.Binary()
+		}
+	}
+	binEqs := binFilter.Equalities()
 	updateRuleBitmapsForEvent(filterMaps.binaryFilters, vKey, rule.ID, binEqs.NotEqual, binEqs.Equal)
 
 	return nil

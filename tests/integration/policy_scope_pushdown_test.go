@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"syscall"
 	"testing"
@@ -815,4 +816,76 @@ func Test_PolicyPerRuleScopeDerivedEvent(t *testing.T) {
 	// The non-matching per-rule comm policy must not match a ping's ICMP.
 	require.False(t, hasMatchedEvent(buf, "net_packet_icmp", "ping", "icmp-other"),
 		"net_packet_icmp from ping must NOT match the per-rule comm=zzznotping policy")
+}
+
+// Test_PolicyPerRuleBinaryScopeKernelPushdown proves that a PER-RULE executable/binary scope (a scope key
+// inside a rule's `filters:` list) is enforced in the KERNEL: openat is selected with a per-rule
+// executable filter, so the kernel drops every openat whose process binary is not the scoped one before
+// submission (EventsFiltered stays 0), while openats from the scoped binary flow.
+func Test_PolicyPerRuleBinaryScopeKernelPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	commA := fmt.Sprintf("trbin%d", os.Getpid())
+	commNone := fmt.Sprintf("trbno%d", os.Getpid())
+	binA := buildCommBinary(t, t.TempDir(), commA)
+	binNone := buildCommBinary(t, t.TempDir(), commNone)
+
+	// The kernel binary filter matches proc_info.binary.path (the resolved exec path).
+	binAPath, err := filepath.EvalSymlinks(binA)
+	require.NoError(t, err)
+	binNonePath, err := filepath.EvalSymlinks(binNone)
+	require.NoError(t, err)
+
+	// openat with a PER-RULE executable filter (rule `filters:`), global policy scope.
+	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
+		{
+			Id: 1,
+			PolicyFile: polv1beta1.PolicyFile{
+				Metadata: polv1beta1.Metadata{Name: "perrule-bin"},
+				Spec: k8s.PolicySpec{
+					Scope:          []string{"global"},
+					DefaultActions: []string{"log"},
+					Rules:          []k8s.Rule{{Event: "openat", Filters: []string{"executable=" + binAPath}}},
+				},
+			},
+		},
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	for i := 0; i < 100; i++ {
+		_ = exec.Command(binNonePath).Run() // complement: different binary -> dropped in kernel
+	}
+	for i := 0; i < 20; i++ {
+		require.NoError(t, exec.Command(binAPath).Run()) // matching binary
+	}
+
+	// Positive control: openats from the scoped binary are emitted (comm equals the scoped binary's name).
+	deadline := time.Now().Add(10 * time.Second)
+	for emittedCountByComm(buf, "openat", commA) == 0 && time.Now().Before(deadline) {
+		time.Sleep(100 * time.Millisecond)
+	}
+	require.Positive(t, emittedCountByComm(buf, "openat", commA),
+		"openat events from the scoped binary must be emitted")
+
+	// Kernel enforcement: every openat from a non-scoped binary (our complement plus all background
+	// activity) was dropped before submission, so none reached userland to be filtered.
+	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
+		"EventsFiltered moved: openat from non-scoped binaries reached userland, so the per-rule executable scope was not kernel-enforced")
 }

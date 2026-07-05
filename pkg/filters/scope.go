@@ -34,6 +34,7 @@ type ScopeFilter struct {
 	podUIDFilter               *StringFilter
 	podSandboxFilter           *BoolFilter
 	syscallFilter              *StringFilter
+	binaryFilter               *BinaryFilter
 }
 
 // Compile-time check to ensure that ScopeFilter implements the Cloner interface
@@ -67,6 +68,7 @@ func NewScopeFilter() *ScopeFilter {
 		podUIDFilter:               NewStringFilter(nil),
 		podSandboxFilter:           NewBoolFilter(),
 		syscallFilter:              NewStringFilter(nil),
+		binaryFilter:               NewBinaryFilter(),
 	}
 }
 
@@ -109,6 +111,11 @@ func (f *ScopeFilter) MntNS() *NumericFilter[int64] { return f.mntNSFilter }
 
 // PidNS returns the pid-namespace sub-filter.
 func (f *ScopeFilter) PidNS() *NumericFilter[int64] { return f.pidNSFilter }
+
+// Binary returns the executable/binary (mount-namespace + path) sub-filter. Like the policy-level
+// binary filter, it is kernel-enforced only (there is no user-space binary evaluation in Filter), so
+// it narrows via the kernel binary_filter map.
+func (f *ScopeFilter) Binary() *BinaryFilter { return f.binaryFilter }
 
 func (f *ScopeFilter) Filter(evt trace.Event) bool {
 	if !f.enabled {
@@ -353,6 +360,8 @@ func (f *ScopeFilter) Parse(field string, operatorAndValues string) error {
 	case "syscall":
 		filter := f.syscallFilter
 		return filter.Parse(operatorAndValues)
+	case "exec", "executable", "bin", "binary":
+		return f.binaryFilter.Parse(operatorAndValues)
 	}
 	return InvalidScopeField(field)
 }
@@ -402,6 +411,7 @@ func (f *ScopeFilter) Clone() *ScopeFilter {
 	n.podUIDFilter = f.podUIDFilter.Clone()
 	n.podSandboxFilter = f.podSandboxFilter.Clone()
 	n.syscallFilter = f.syscallFilter.Clone()
+	n.binaryFilter = f.binaryFilter.Clone()
 
 	return n
 }

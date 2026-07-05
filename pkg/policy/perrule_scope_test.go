@@ -127,3 +127,45 @@ func Test_PerRuleContainerScopePushedToKernel(t *testing.T) {
 	require.True(t, bitwise.HasBitInArray(cfg.ContFilterEnabled, ruleID),
 		"container must be marked enabled in the scope config for the per-rule rule")
 }
+
+// Test_PerRuleBinaryScopePushedToKernel verifies that a per-rule executable/binary scope lands in the
+// kernel binary filter map AND is marked enabled in the config. Binary is kernel-enforced only.
+func Test_PerRuleBinaryScopePushedToKernel(t *testing.T) {
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	p := NewPolicy()
+	p.Name = "perrule-bin"
+	sf := filters.NewScopeFilter()
+	require.NoError(t, sf.Parse("executable", "=/usr/bin/nc")) // bare path -> MntNS 0 (any namespace)
+	p.Rules = map[events.ID]RuleData{
+		events.Openat: {
+			EventID:     events.Openat,
+			ScopeFilter: sf,
+			DataFilter:  filters.NewDataFilter(),
+			RetFilter:   filters.NewIntFilter(),
+		},
+	}
+
+	pm, err := NewManager(ManagerConfig{}, depsManager, p)
+	require.NoError(t, err)
+
+	maps, err := pm.computeFilterMaps(nil)
+	require.NoError(t, err)
+
+	found := false
+	want := filters.NSBinary{MntNS: 0, Path: "/usr/bin/nc"}
+	for _, byBin := range maps.binaryFilters {
+		if _, ok := byBin[want]; ok {
+			found = true
+		}
+	}
+	require.True(t, found, "per-rule executable scope value must be pushed to the kernel binary filter map")
+
+	cfg := pm.computeScopeFiltersConfig(events.Openat)
+	ruleID := pm.rules[events.Openat].Rules[0].ID
+	require.True(t, bitwise.HasBitInArray(cfg.BinPathFilterEnabled, ruleID),
+		"executable must be marked enabled in the scope config for the per-rule rule")
+}
