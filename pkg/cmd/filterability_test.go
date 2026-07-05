@@ -172,7 +172,10 @@ func TestPolicyFilterability_UnionDefeat(t *testing.T) {
 		"broad.yaml":  policyYAML("broad", "global", "openat"),
 	})
 	require.Regexp(t, `\[user-space\] openat`, out)
-	require.Contains(t, out, "kernel narrows by: comm")
+	// On a defeated event the comm filter is kernel-capable but its narrowing is defeated - the output
+	// must say so, not claim it narrows.
+	require.Contains(t, out, "kernel filters defeated here: comm")
+	require.NotContains(t, out, "kernel narrows by")
 	require.Contains(t, out, "broad (no filter)")
 }
 

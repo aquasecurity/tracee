@@ -245,11 +245,21 @@ func PrintPolicyFilterabilityTo(w io.Writer, policyPaths []string, managerCfg po
 		return enc.Encode(verdicts)
 	}
 
-	fmt.Fprintf(w, "Analyzed %d policies (with dependency expansion). Where each event is filtered:\n\n", len(policies))
+	policyNoun := "policies"
+	if len(policies) == 1 {
+		policyNoun = "policy"
+	}
+	fmt.Fprintf(w, "Analyzed %d %s (with dependency expansion). Where each event is filtered:\n\n", len(policies), policyNoun)
 	for _, v := range verdicts {
 		fmt.Fprintf(w, "[%s] %s\n", v.Status, v.Event)
 		if len(v.KernelFilter) > 0 {
-			fmt.Fprintf(w, "    kernel narrows by: %s\n", strings.Join(v.KernelFilter, ", "))
+			// On a kernel verdict these filters actually reduce submission; on a user-space/overflow
+			// verdict they are kernel-capable but their narrowing is defeated (see "submitted ..." below).
+			if v.Status == "kernel" {
+				fmt.Fprintf(w, "    kernel narrows by: %s\n", strings.Join(v.KernelFilter, ", "))
+			} else {
+				fmt.Fprintf(w, "    kernel filters defeated here: %s\n", strings.Join(v.KernelFilter, ", "))
+			}
 		}
 		if len(v.SubmittedBy) > 0 {
 			fmt.Fprintf(w, "    submitted to user space by: %s\n", strings.Join(v.SubmittedBy, "; "))
@@ -261,6 +271,7 @@ func PrintPolicyFilterabilityTo(w io.Writer, policyPaths []string, managerCfg po
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "kernel      = the kernel drops non-matching instances before submission (cheapest).")
 	fmt.Fprintln(w, "user-space  = the kernel submits every instance; filtering happens in user space.")
+	fmt.Fprintln(w, "overflow    = more than 64 rules select the event, so the kernel submits every instance.")
 	fmt.Fprintln(w, "Scope filters (comm/uid/pid/mntns/pidns/container/executable) and pathname data filters")
 	fmt.Fprintln(w, "run in the kernel, whether written in spec.scope or a rule's `filters:`; other data fields")
 	fmt.Fprintln(w, "and return-value filters run in user space.")
