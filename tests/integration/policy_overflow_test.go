@@ -152,16 +152,10 @@ func Test_PolicyOverflowCrossBoundaryMatch(t *testing.T) {
 // fix (binaryBitmaps in matchOverflowRules), that overflow rule would match every submitted exit and
 // mis-attribute events whose binary does not match.
 func Test_PolicyOverflowBinaryScope(t *testing.T) {
-	// KNOWN LIMITATION (documents why this is skipped): overflow rules (ID >= 64) scoped by executable are
-	// not narrowed in user space. matchOverflowRules runs in the decode stage, before proctree enrichment
-	// populates event.Executable.Path, so the binary path is unavailable there - a binary-scoped overflow
-	// rule therefore over-attributes (pre-existing behavior, shared with policy-level binary/tree scope).
-	// Un-skip when staged (MATCH/FAIL/PENDING) evaluation lands: a binary-scoped overflow rule is marked
-	// PENDING at decode and resolved after proctree sets Executable.Path (see the TODO in matchOverflowRules
-	// and docs/deferred-filter-evaluation.md), or if overflow evaluation moves after enrichment.
-	// See docs/matched-rules-leftover-audit.md.
-	t.Skip("overflow binary scope is not enforced: executable path is not available at the overflow stage")
-
+	// Overflow rules (ID >= 64) scoped by executable are narrowed by narrowOverflowBinaryScope in the
+	// processEvents stage, AFTER the proctree processor populates event.Executable.Path - matchOverflowRules
+	// cannot, as it runs at decode before the path is set. This test verifies that enforcement: the
+	// binary-scoped overflow rule must match only the event whose executable matches, not every submitted exit.
 	testutils.AssureIsRoot(t)
 	defer goleak.VerifyNone(t)
 
