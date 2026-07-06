@@ -318,12 +318,17 @@ func WithOverride() AddPolicyOption {
 
 // AddPolicy adds a new policy or updates an existing policy in the PolicyManager.
 func (pm *PolicyManager) AddPolicy(policy *Policy, opts ...AddPolicyOption) error {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	return pm.addPolicyLocked(policy, opts...)
+}
+
+// addPolicyLocked implements AddPolicy. The caller must hold pm.mu (write). Split out so UpdatePolicy can
+// compose it with removePolicyLocked under a single lock.
+func (pm *PolicyManager) addPolicyLocked(policy *Policy, opts ...AddPolicyOption) error {
 	if policy == nil {
 		return PolicyNilError()
 	}
-
-	pm.mu.Lock()
-	defer pm.mu.Unlock()
 
 	options := addPolicyOptions{
 		override: false, // Default behavior: no override
@@ -425,12 +430,17 @@ func (pm *PolicyManager) RecomputeRules() error {
 
 // RemovePolicy removes a policy from the PolicyManager.
 func (pm *PolicyManager) RemovePolicy(policyName string) error {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+	return pm.removePolicyLocked(policyName)
+}
+
+// removePolicyLocked implements RemovePolicy. The caller must hold pm.mu (write). Split out so UpdatePolicy
+// can compose it with addPolicyLocked under a single lock.
+func (pm *PolicyManager) removePolicyLocked(policyName string) error {
 	if pm.bootstrapPolicy != nil && policyName == pm.bootstrapPolicy.Name {
 		return errfmt.Errorf("cannot remove bootstrap policy")
 	}
-
-	pm.mu.Lock()
-	defer pm.mu.Unlock()
 
 	policyToRemove, exists := pm.policies[policyName]
 	if !exists {
@@ -485,6 +495,43 @@ func (pm *PolicyManager) RemovePolicy(policyName string) error {
 	pm.rules = tempRules
 
 	// TODO: Notify listeners (if any) about the policy removal
+
+	return nil
+}
+
+// UpdatePolicy atomically replaces an existing policy (matched by name) with a new definition. It is the
+// runtime "update" op: unlike a separate RemovePolicy + AddPolicy, the whole change happens under a single
+// lock, so concurrent readers never observe a window in which the policy is absent. It is implemented as a
+// locked remove followed by a locked add, reusing their event-selection and rule-recomputation logic; on
+// failure of the add, the policy and rule maps are restored to their pre-update values.
+//
+// Note: per-rule disable toggles (DisableRule) on the policy's events reset, because the rules are rebuilt
+// and their IDs (bitmap positions) shift - the same behavior AddPolicy already has. The event-dependency
+// manager's selections are not rolled back on a mid-update error (the same pre-existing non-transactionality
+// as AddPolicy); such errors only arise from undefined events or unsatisfiable dependencies.
+func (pm *PolicyManager) UpdatePolicy(policy *Policy) error {
+	if policy == nil {
+		return PolicyNilError()
+	}
+
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	if _, exists := pm.policies[policy.Name]; !exists {
+		return PolicyNotFoundByNameError(policy.Name)
+	}
+
+	// removePolicyLocked/addPolicyLocked replace pm.policies/pm.rules wholesale (never mutate them in
+	// place), so retaining the originals is enough to roll back a failed add.
+	origPolicies, origRules := pm.policies, pm.rules
+
+	if err := pm.removePolicyLocked(policy.Name); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pm.addPolicyLocked(policy); err != nil {
+		pm.policies, pm.rules = origPolicies, origRules
+		return errfmt.WrapError(err)
+	}
 
 	return nil
 }

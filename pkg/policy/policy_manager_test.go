@@ -180,3 +180,74 @@ func TestPolicyManagerIndependentPolicies(t *testing.T) {
 	require.True(t, p2Fetched.PIDFilter.Enabled())
 	require.Contains(t, p2Fetched.Rules, events.SchedProcessExec)
 }
+
+// TestPolicyManagerUpdatePolicy verifies UpdatePolicy atomically replaces a policy by name: its filters and
+// event set change, other policies are unaffected, dropped events lose the policy's rule, and error cases
+// (nil, unknown name) are rejected.
+func TestPolicyManagerUpdatePolicy(t *testing.T) {
+	t.Parallel()
+
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	pm, err := NewManager(ManagerConfig{}, depsManager)
+	require.NoError(t, err)
+
+	// original "p" selects sched_process_fork with uid>=1000; independent "other" selects sched_process_exec.
+	p := NewPolicy()
+	p.Name = "p"
+	require.NoError(t, p.UIDFilter.Parse(">=1000"))
+	p.Rules[events.SchedProcessFork] = RuleData{EventID: events.SchedProcessFork}
+	require.NoError(t, pm.AddPolicy(p))
+
+	other := NewPolicy()
+	other.Name = "other"
+	other.Rules[events.SchedProcessExec] = RuleData{EventID: events.SchedProcessExec}
+	require.NoError(t, pm.AddPolicy(other))
+
+	// update "p": now selects sched_process_exec with pid=1 (drops fork + uid, adds pid + exec).
+	upd := NewPolicy()
+	upd.Name = "p"
+	require.NoError(t, upd.PIDFilter.Parse("=1"))
+	upd.Rules[events.SchedProcessExec] = RuleData{EventID: events.SchedProcessExec}
+	require.NoError(t, pm.UpdatePolicy(upd))
+
+	// the policy definition is replaced
+	got, err := pm.LookupPolicyByName("p")
+	require.NoError(t, err)
+	require.True(t, got.PIDFilter.Enabled())
+	require.False(t, got.UIDFilter.Enabled())
+	require.Contains(t, got.Rules, events.SchedProcessExec)
+	require.NotContains(t, got.Rules, events.SchedProcessFork)
+
+	// the rule maps reflect the change: exec now carries a "p" rule; fork no longer does.
+	hasPolicyRule := func(eventID events.ID, name string) bool {
+		er, ok := pm.rules[eventID]
+		if !ok {
+			return false
+		}
+		for _, r := range er.Rules {
+			if r.Policy != nil && r.Policy.Name == name {
+				return true
+			}
+		}
+		return false
+	}
+	require.True(t, hasPolicyRule(events.SchedProcessExec, "p"), "updated p must now match sched_process_exec")
+	require.False(t, hasPolicyRule(events.SchedProcessFork, "p"), "updated p must no longer match sched_process_fork")
+
+	// "other" is unaffected, and still shares sched_process_exec.
+	otherGot, err := pm.LookupPolicyByName("other")
+	require.NoError(t, err)
+	require.Contains(t, otherGot.Rules, events.SchedProcessExec)
+	require.True(t, hasPolicyRule(events.SchedProcessExec, "other"), "other must still match sched_process_exec")
+
+	// error cases
+	require.Error(t, pm.UpdatePolicy(nil))
+	missing := NewPolicy()
+	missing.Name = "nope"
+	missing.Rules[events.SchedProcessExec] = RuleData{EventID: events.SchedProcessExec}
+	require.Error(t, pm.UpdatePolicy(missing))
+}
