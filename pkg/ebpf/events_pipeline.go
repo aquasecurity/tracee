@@ -523,15 +523,19 @@ func (t *Tracee) matchOverflowRules(event *events.PipelineEvent) {
 	// (a pre-existing limitation shared with policy-level binary/tree scope). See
 	// docs/matched-rules-leftover-audit.md.
 	//
-	// TODO: fix via staged (three-valued MATCH/FAIL/PENDING) rule evaluation. Instead of forcing a verdict
-	// here with an absent path, mark such a rule PENDING (its data's readiness stage is processEvents), keep
-	// the event, and resolve the rule definitively after proctree sets Executable.Path - updating
-	// MatchedRulesUser before deriveEvents reads it. The status is a USERSPACE pipeline construct (the kernel
-	// handles rules 0-63 at event time); it generalizes to every overflow rule scoped by a late dimension
-	// (executable/tree/new-container name) on any event, not just this one. A narrower alternative is to move
-	// overflow evaluation entirely after enrichment. Do NOT reintroduce a decode-time narrowing bolt-on - it
-	// forces a verdict on absent data and drops legitimate events (the reverted overflow-binary attempt; and
-	// see Test_PolicyOverflowBinaryScope, currently t.Skip'd). Design: docs/deferred-filter-evaluation.md.
+	// TODO (chosen fix): narrow the late-data scope dimensions (executable/tree, and new-container name) for
+	// overflow rules in a SECOND pass AFTER enrichment - after enrichContainerEvents and before deriveEvents,
+	// where the event now carries Executable.Path (proctree) and the container name (enrich) - updating
+	// MatchedRulesBitmap/MatchedRulesUser there (deriveEvents reads MatchedRulesUser). Keep the decode-stage
+	// narrowing above for the already-available dims (comm/uid/pid/...): an overflow rule scoped by a late dim
+	// simply keeps its (unevaluated) bit here and is resolved in that later pass; an over-kept event that
+	// narrows to empty produces nothing at derive and is dropped at the existing sink terminal drop, so no new
+	// drop point is needed. This runs at the RIGHT stage (data present), so it is NOT the decode-time bolt-on
+	// that was reverted: do NOT re-add narrowing HERE with the absent path - that forces a verdict on empty
+	// data and drops legitimate events (see Test_PolicyOverflowBinaryScope, currently t.Skip'd). This simpler
+	// pass solves the same problem as, without the machinery of, full per-rule MATCH/FAIL/PENDING staged
+	// evaluation (the general form, worthwhile only if the runtime/deferred-eval refactor lands anyway; see
+	// docs/deferred-filter-evaluation.md).
 	// (scope filters mutate bitmap in place; it was already stored on the event above)
 }
 
