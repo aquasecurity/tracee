@@ -659,6 +659,23 @@ type extendedScopeFiltersConfig struct {
 	BinPathFilterMatchIfKeyMissing     []uint64
 }
 
+// effectiveMatchIfMissing returns the "match if key missing" flag of the FIRST enabled scope source
+// (policy, else detector, else per-rule). A disabled/empty filter's MatchIfKeyMissing() is vacuously
+// true, so the flag MUST come from the source that actually enabled the dimension - otherwise a
+// detector- or per-rule-scoped rule (empty policy filter) would inherit a spurious match-if-missing and
+// match every key-missing event (e.g. a per-rule executable= or uid= rule matching the wrong binary/uid).
+func effectiveMatchIfMissing(policyEnabled, policyMIM, detEnabled, detMIM, perRuleEnabled, perRuleMIM bool) bool {
+	switch {
+	case policyEnabled:
+		return policyMIM
+	case detEnabled:
+		return detMIM
+	case perRuleEnabled:
+		return perRuleMIM
+	}
+	return false
+}
+
 // computeScopeFiltersConfig computes the per-dimension "enabled" and "match-if-key-missing" bitmaps for an
 // event's rules. This drives BOTH the kernel scope config (computeBPFScopeFiltersConfig extracts rules
 // 0-63 into events_config_map) and the userland overflow evaluation (matchOverflowRules, rules >= 64), so
@@ -682,6 +699,7 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 
 		ruleID := rule.ID
 		perRule := ruleDataScope(rule)
+		ds := rule.DetectorScopeFilter
 
 		// comm uses the shared effective-source resolver (policy/detector/per-rule) so the enabled config
 		// here cannot disagree with the map values written by processRuleScopeFilters. container is not
@@ -773,37 +791,35 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 			bitwise.SetBitInArray(&cfg.FollowFilterEnabled, ruleID)
 		}
 
-		// MatchIfKeyMissing filters bitmap array
-		if rule.Policy.UIDFilter.MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.UIDFilterMatchIfKeyMissing, ruleID)
-		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.UIDFilter.Enabled() && ds.UID().MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.UIDFilterMatchIfKeyMissing, ruleID)
-		} else if perRule != nil && !rule.Policy.UIDFilter.Enabled() &&
-			(rule.DetectorScopeFilter == nil || !rule.DetectorScopeFilter.UID().Enabled()) && perRule.UID().MatchIfKeyMissing() {
+		// MatchIfKeyMissing bitmap array. Taken from the FIRST enabled source (policy/detector/per-rule)
+		// so an empty policy filter's vacuous MatchIfKeyMissing()==true is never inherited by a detector-
+		// or per-rule-scoped rule (see effectiveMatchIfMissing).
+		if effectiveMatchIfMissing(
+			rule.Policy.UIDFilter.Enabled(), rule.Policy.UIDFilter.MatchIfKeyMissing(),
+			ds != nil && ds.UID().Enabled(), ds != nil && ds.UID().MatchIfKeyMissing(),
+			perRule != nil && perRule.UID().Enabled(), perRule != nil && perRule.UID().MatchIfKeyMissing(),
+		) {
 			bitwise.SetBitInArray(&cfg.UIDFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.PIDFilter.MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.PIDFilterMatchIfKeyMissing, ruleID)
-		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.PIDFilter.Enabled() && ds.PID().MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.PIDFilterMatchIfKeyMissing, ruleID)
-		} else if perRule != nil && !rule.Policy.PIDFilter.Enabled() &&
-			(rule.DetectorScopeFilter == nil || !rule.DetectorScopeFilter.PID().Enabled()) && perRule.PID().MatchIfKeyMissing() {
+		if effectiveMatchIfMissing(
+			rule.Policy.PIDFilter.Enabled(), rule.Policy.PIDFilter.MatchIfKeyMissing(),
+			ds != nil && ds.PID().Enabled(), ds != nil && ds.PID().MatchIfKeyMissing(),
+			perRule != nil && perRule.PID().Enabled(), perRule != nil && perRule.PID().MatchIfKeyMissing(),
+		) {
 			bitwise.SetBitInArray(&cfg.PIDFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.MntNSFilter.MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.MntNsFilterMatchIfKeyMissing, ruleID)
-		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.MntNSFilter.Enabled() && ds.MntNS().MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.MntNsFilterMatchIfKeyMissing, ruleID)
-		} else if perRule != nil && !rule.Policy.MntNSFilter.Enabled() &&
-			(rule.DetectorScopeFilter == nil || !rule.DetectorScopeFilter.MntNS().Enabled()) && perRule.MntNS().MatchIfKeyMissing() {
+		if effectiveMatchIfMissing(
+			rule.Policy.MntNSFilter.Enabled(), rule.Policy.MntNSFilter.MatchIfKeyMissing(),
+			ds != nil && ds.MntNS().Enabled(), ds != nil && ds.MntNS().MatchIfKeyMissing(),
+			perRule != nil && perRule.MntNS().Enabled(), perRule != nil && perRule.MntNS().MatchIfKeyMissing(),
+		) {
 			bitwise.SetBitInArray(&cfg.MntNsFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.PidNSFilter.MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.PidNsFilterMatchIfKeyMissing, ruleID)
-		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.PidNSFilter.Enabled() && ds.PidNS().MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.PidNsFilterMatchIfKeyMissing, ruleID)
-		} else if perRule != nil && !rule.Policy.PidNSFilter.Enabled() &&
-			(rule.DetectorScopeFilter == nil || !rule.DetectorScopeFilter.PidNS().Enabled()) && perRule.PidNS().MatchIfKeyMissing() {
+		if effectiveMatchIfMissing(
+			rule.Policy.PidNSFilter.Enabled(), rule.Policy.PidNSFilter.MatchIfKeyMissing(),
+			ds != nil && ds.PidNS().Enabled(), ds != nil && ds.PidNS().MatchIfKeyMissing(),
+			perRule != nil && perRule.PidNS().Enabled(), perRule != nil && perRule.PidNS().MatchIfKeyMissing(),
+		) {
 			bitwise.SetBitInArray(&cfg.PidNsFilterMatchIfKeyMissing, ruleID)
 		}
 		if rule.Policy.UTSFilter.MatchIfKeyMissing() {
@@ -830,12 +846,11 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 		if rule.Policy.ProcessTreeFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.ProcTreeFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.BinaryFilter.MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.BinPathFilterMatchIfKeyMissing, ruleID)
-		} else if ds := rule.DetectorScopeFilter; ds != nil && !rule.Policy.BinaryFilter.Enabled() && ds.Binary().MatchIfKeyMissing() {
-			bitwise.SetBitInArray(&cfg.BinPathFilterMatchIfKeyMissing, ruleID)
-		} else if perRule != nil && !rule.Policy.BinaryFilter.Enabled() &&
-			(rule.DetectorScopeFilter == nil || !rule.DetectorScopeFilter.Binary().Enabled()) && perRule.Binary().MatchIfKeyMissing() {
+		if effectiveMatchIfMissing(
+			rule.Policy.BinaryFilter.Enabled(), rule.Policy.BinaryFilter.MatchIfKeyMissing(),
+			ds != nil && ds.Binary().Enabled(), ds != nil && ds.Binary().MatchIfKeyMissing(),
+			perRule != nil && perRule.Binary().Enabled(), perRule != nil && perRule.Binary().MatchIfKeyMissing(),
+		) {
 			bitwise.SetBitInArray(&cfg.BinPathFilterMatchIfKeyMissing, ruleID)
 		}
 	}

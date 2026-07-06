@@ -96,6 +96,10 @@ func Test_PerRuleNumericScopePushedToKernel(t *testing.T) {
 	ruleID := pm.rules[events.Openat].Rules[0].ID
 	require.True(t, bitwise.HasBitInArray(cfg.UIDFilterEnabled, ruleID),
 		"uid must be marked enabled in the scope config for the per-rule rule")
+	// An equal per-rule uid filter must NOT set match-if-key-missing: an empty policy filter reports
+	// MatchIfKeyMissing()==true vacuously, and inheriting it would make the complement match (a leak).
+	require.False(t, bitwise.HasBitInArray(cfg.UIDFilterMatchIfKeyMissing, ruleID),
+		"an equal per-rule uid filter must NOT set match-if-key-missing")
 }
 
 // Test_PerRuleContainerScopePushedToKernel verifies that a per-rule container scope (a bool, config-only
@@ -168,4 +172,8 @@ func Test_PerRuleBinaryScopePushedToKernel(t *testing.T) {
 	ruleID := pm.rules[events.Openat].Rules[0].ID
 	require.True(t, bitwise.HasBitInArray(cfg.BinPathFilterEnabled, ruleID),
 		"executable must be marked enabled in the scope config for the per-rule rule")
+	// An equal per-rule executable filter must NOT set match-if-key-missing (else the wrong-binary
+	// complement matches - this is the bug the overflow-binary test caught).
+	require.False(t, bitwise.HasBitInArray(cfg.BinPathFilterMatchIfKeyMissing, ruleID),
+		"an equal per-rule executable filter must NOT set match-if-key-missing")
 }
