@@ -156,7 +156,9 @@ func Test_PolicyOverflowBinaryScope(t *testing.T) {
 	// not narrowed in user space. matchOverflowRules runs in the decode stage, before proctree enrichment
 	// populates event.Executable.Path, so the binary path is unavailable there - a binary-scoped overflow
 	// rule therefore over-attributes (pre-existing behavior, shared with policy-level binary/tree scope).
-	// Un-skip if overflow evaluation moves after enrichment, or reads the binary from the process tree.
+	// Un-skip when staged (MATCH/FAIL/PENDING) evaluation lands: a binary-scoped overflow rule is marked
+	// PENDING at decode and resolved after proctree sets Executable.Path (see the TODO in matchOverflowRules
+	// and docs/deferred-filter-evaluation.md), or if overflow evaluation moves after enrichment.
 	// See docs/matched-rules-leftover-audit.md.
 	t.Skip("overflow binary scope is not enforced: executable path is not available at the overflow stage")
 

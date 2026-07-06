@@ -520,9 +520,18 @@ func (t *Tracee) matchOverflowRules(event *events.PipelineEvent) {
 	// in the decode stage, before the proctree enrichment populates event.Executable.Path (see
 	// processor_proctree.go), so the binary path is not yet available. As a result an overflow rule
 	// (ID >= 64) scoped by executable/tree is not narrowed in user space and may over-attribute the event
-	// (a pre-existing limitation shared with policy-level binary/tree scope). Enforcing it would require
-	// moving overflow evaluation after enrichment or reading the binary from the process tree here. See
+	// (a pre-existing limitation shared with policy-level binary/tree scope). See
 	// docs/matched-rules-leftover-audit.md.
+	//
+	// TODO: fix via staged (three-valued MATCH/FAIL/PENDING) rule evaluation. Instead of forcing a verdict
+	// here with an absent path, mark such a rule PENDING (its data's readiness stage is processEvents), keep
+	// the event, and resolve the rule definitively after proctree sets Executable.Path - updating
+	// MatchedRulesUser before deriveEvents reads it. The status is a USERSPACE pipeline construct (the kernel
+	// handles rules 0-63 at event time); it generalizes to every overflow rule scoped by a late dimension
+	// (executable/tree/new-container name) on any event, not just this one. A narrower alternative is to move
+	// overflow evaluation entirely after enrichment. Do NOT reintroduce a decode-time narrowing bolt-on - it
+	// forces a verdict on absent data and drops legitimate events (the reverted overflow-binary attempt; and
+	// see Test_PolicyOverflowBinaryScope, currently t.Skip'd). Design: docs/deferred-filter-evaluation.md.
 	// (scope filters mutate bitmap in place; it was already stored on the event above)
 }
 
