@@ -112,10 +112,7 @@ type FilterMaps struct {
 	UTSFilters       map[FilterVersionKey]map[string][]RuleBitmap
 	CommFilters      map[FilterVersionKey]map[string][]RuleBitmap
 	ContainerFilters map[FilterVersionKey]map[string][]RuleBitmap
-	// BinaryFilters is exported so the userland pipeline can narrow executable/binary scope for OVERFLOW
-	// rules (ID >= 64) AFTER proctree enrichment sets the event's binary path (the kernel enforces rules
-	// 0-63 at event time; matchOverflowRules cannot, as it runs before the path is populated).
-	BinaryFilters              map[FilterVersionKey]map[filters.NSBinary][]RuleBitmap
+	// (BinaryFilters was exported for a reverted overflow-binary narrowing; see the NOTE in matchOverflowRules.)
 	ExtendedScopeFilterConfigs map[events.ID]ExtendedScopeFiltersConfig
 }
 
