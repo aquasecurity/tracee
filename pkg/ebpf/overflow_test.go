@@ -5,7 +5,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
@@ -93,53 +92,4 @@ func TestOverflowBitmapLookups(t *testing.T) {
 	s := map[string][]policy.RuleBitmap{"a": {{KeyUsedInRules: 2}}}
 	assert.Nil(t, strBitmaps(s, "b"))
 	assert.NotNil(t, strBitmaps(s, "a"))
-}
-
-// TestBinaryBitmaps verifies the binary lookup mirrors the kernel's double lookup: the path-only key
-// ({MntNS: 0, Path}, "any namespace") is tried first, and only when it is absent does the namespaced
-// {MntNS, Path} key apply.
-func TestBinaryBitmaps(t *testing.T) {
-	t.Parallel()
-
-	assert.Nil(t, binaryBitmaps(nil, "/bin/sh", 42))
-
-	// path-only key wins even when a namespaced key also exists
-	anyNS := []policy.RuleBitmap{{}, {EqualsInRules: 0b1}}
-	nsSpecific := []policy.RuleBitmap{{}, {EqualsInRules: 0b10}}
-	m := map[filters.NSBinary][]policy.RuleBitmap{
-		{MntNS: 0, Path: "/bin/sh"}:  anyNS,
-		{MntNS: 42, Path: "/bin/sh"}: nsSpecific,
-	}
-	assert.Equal(t, anyNS, binaryBitmaps(m, "/bin/sh", 42), "path-only (any-ns) key must win")
-
-	// with no path-only key, fall back to the namespaced key; a different mnt-ns misses
-	m2 := map[filters.NSBinary][]policy.RuleBitmap{{MntNS: 42, Path: "/bin/sh"}: nsSpecific}
-	assert.Equal(t, nsSpecific, binaryBitmaps(m2, "/bin/sh", 42))
-	assert.Nil(t, binaryBitmaps(m2, "/bin/sh", 7), "different mnt-ns must miss")
-	assert.Nil(t, binaryBitmaps(m2, "/other", 42), "different path must miss")
-}
-
-// TestOverflowBinaryNarrowing checks the end-to-end bitmap effect of narrowing an overflow rule by an
-// executable filter: an overflow rule (bit in word 1) scoped by "=/bin/sh" survives when the event's binary
-// is /bin/sh and is cleared when it is not.
-func TestOverflowBinaryNarrowing(t *testing.T) {
-	t.Parallel()
-
-	// rule 64 (word 1, bit 0) has an equal executable filter; it "uses the key" and equals for /bin/sh.
-	binMap := map[filters.NSBinary][]policy.RuleBitmap{
-		{MntNS: 0, Path: "/bin/sh"}: {{}, {EqualsInRules: 0b1, KeyUsedInRules: 0b1}},
-	}
-	// equal filter => match-if-key-missing is 0; the rule is enabled in word 1.
-	enabled := []uint64{0, 0b1}
-	missing := []uint64{0, 0}
-
-	// matching binary: bit stays set
-	bm := []uint64{0, 0b1}
-	applyOverflowScopeFilter(bm, binaryBitmaps(binMap, "/bin/sh", 0), enabled, missing)
-	assert.Equal(t, uint64(0b1), bm[1], "matching /bin/sh must keep the overflow bit")
-
-	// non-matching binary (key missing => equal filter fails): bit cleared
-	bm = []uint64{0, 0b1}
-	applyOverflowScopeFilter(bm, binaryBitmaps(binMap, "/usr/bin/evil", 0), enabled, missing)
-	assert.Equal(t, uint64(0), bm[1], "non-matching binary must clear the overflow bit")
 }

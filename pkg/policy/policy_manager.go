@@ -1065,7 +1065,6 @@ func buildExportedFilterMaps(fMaps *filterMaps) *FilterMaps {
 		UTSFilters:                 make(map[FilterVersionKey]map[string][]RuleBitmap),
 		CommFilters:                make(map[FilterVersionKey]map[string][]RuleBitmap),
 		ContainerFilters:           make(map[FilterVersionKey]map[string][]RuleBitmap),
-		BinaryFilters:              make(map[FilterVersionKey]map[filters.NSBinary][]RuleBitmap),
 		ExtendedScopeFilterConfigs: make(map[events.ID]ExtendedScopeFiltersConfig),
 	}
 
@@ -1109,11 +1108,6 @@ func buildExportedFilterMaps(fMaps *filterMaps) *FilterMaps {
 		exported.ContainerFilters[FilterVersionKey(k)] = convertStringRuleBitmaps(v)
 	}
 
-	// Convert Binary filters (consumed by the userland post-proctree overflow narrowing)
-	for k, v := range fMaps.binaryFilters {
-		exported.BinaryFilters[FilterVersionKey(k)] = convertBinaryRuleBitmaps(v)
-	}
-
 	// Convert Extended Scope Filter Configs
 	for eventID, cfg := range fMaps.extendedScopeFilterConfigs {
 		exported.ExtendedScopeFilterConfigs[eventID] = ExtendedScopeFiltersConfig(cfg)
@@ -1134,14 +1128,6 @@ func convertUint64RuleBitmaps(input map[uint64][]ruleBitmap) map[uint64][]RuleBi
 // Helper function to convert string rule bitmaps
 func convertStringRuleBitmaps(input map[string][]ruleBitmap) map[string][]RuleBitmap {
 	output := make(map[string][]RuleBitmap)
-	for k, v := range input {
-		output[k] = convertRuleBitmapSlice(v)
-	}
-	return output
-}
-
-func convertBinaryRuleBitmaps(input map[filters.NSBinary][]ruleBitmap) map[filters.NSBinary][]RuleBitmap {
-	output := make(map[filters.NSBinary][]RuleBitmap)
 	for k, v := range input {
 		output[k] = convertRuleBitmapSlice(v)
 	}
