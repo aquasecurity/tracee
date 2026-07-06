@@ -354,6 +354,16 @@ func (pm *PolicyManager) addPolicyLocked(policy *Policy, opts ...AddPolicyOption
 	for k, v := range pm.policies {
 		tempPolicies[k] = v
 	}
+	// TODO (scoped apply, deferred): this deep-copies EVERY event's rules on every add/remove/update, but only
+	// the policy's events and their transitive dependencies actually change. The deep copy is load-bearing for
+	// correctness today - updateRulesForEvent mutates reused dependency rules' IDs in place (depRule.ID = ...)
+	// and addTransitiveDependencyRules modifies dependency events - so it cannot just become a shallow copy. A
+	// scoped version would shallow-copy the map and copy-on-write each EventRules only right before it is
+	// touched (updateRulesForEvent's existingDepRules reuse + addTransitiveDependencyRules' recursion). This is
+	// init + runtime shared machinery, but the win is architectural, not perf: the path is never per-event
+	// (init is one-time; runtime policy changes are operator-rare), so the deep copy is negligible. Fold it into
+	// the runtime write-path build-out (kernel re-push + versioned snapshot retention), where the apply path's
+	// blast radius is already being reasoned about. See docs/runtime-policy-change.md.
 	tempRules := make(map[events.ID]EventRules)
 	for k, v := range pm.rules {
 		tempRules[k] = deepCopyEventRules(v)
@@ -465,6 +475,8 @@ func (pm *PolicyManager) removePolicyLocked(policyName string) error {
 	for k, v := range pm.policies {
 		tempPolicies[k] = v
 	}
+	// TODO (scoped apply, deferred): deep-copies every event's rules; only the removed policy's events + their
+	// transitive deps change. See the fuller note in addPolicyLocked and docs/runtime-policy-change.md.
 	tempRules := make(map[events.ID]EventRules)
 	for k, v := range pm.rules {
 		tempRules[k] = deepCopyEventRules(v)
@@ -522,6 +534,14 @@ func (pm *PolicyManager) removePolicyLocked(policyName string) error {
 // and their IDs (bitmap positions) shift - the same behavior AddPolicy already has. The event-dependency
 // manager's selections are not rolled back on a mid-update error (the same pre-existing non-transactionality
 // as AddPolicy); such errors only arise from undefined events or unsatisfiable dependencies.
+//
+// TODO (runtime write path, deferred): this only updates the USERLAND rules + snapshot. The kernel filter
+// maps (comm/uid/binary/..., submit_for_rules, event config) still hold the old policy until UpdateBPF
+// re-pushes them, so a complete runtime change is UpdatePolicy followed by UpdateBPF(bpfModule, cts, fields).
+// Both exist; what is missing is the control-plane trigger that orchestrates them - extend the existing gRPC
+// TraceeService (api/v1beta1/tracee.proto) with ApplyPolicy(upsert)/RemovePolicy/List over its unix socket
+// and replace the k8s reconciler's restartDaemonSet with a hot ApplyPolicy call. (Blocked here: protoc is not
+// available to regenerate the stubs.) See docs/runtime-policy-change.md.
 func (pm *PolicyManager) UpdatePolicy(policy *Policy) error {
 	if policy == nil {
 		return PolicyNilError()
@@ -557,6 +577,16 @@ func (pm *PolicyManager) UpdatePolicy(policy *Policy) error {
 // mutation. The rules map is a fresh copy per publish, so later in-place map writes (toggles, delete) cannot
 // mutate a published snapshot; the EventRules and their slices are replaced-not-mutated by writers (see the
 // copy-on-write in setRuleEnabled and updateRulesForEvent), so sharing them is safe for lock-free readers.
+//
+// TODO (runtime-swap correctness, deferred to the write-path build-out):
+//   - Per-event single Load: today each accessor Loads snap independently, so the 8+ reads for one event
+//     could straddle a mid-event publish (each Load is atomic, but the set is not). Expose a Snapshot() handle
+//     the pipeline Loads once per event and threads through the matchers, so an event reads one consistent
+//     version. (Rare today - writers are init/operator-driven - but a real gap once runtime swaps happen.)
+//   - Versioned retention: an in-flight event was tagged by the kernel with its rules_version; its
+//     MatchedRules positions refer to that version's rule IDs. Keep version->snapshot and read by the event's
+//     RulesVersion, retaining old versions until in-flight events of that version drain. Only matters once the
+//     write path swaps versions at runtime; see docs/runtime-policy-change.md.
 type policySnapshot struct {
 	rules         map[events.ID]EventRules
 	exportedFMaps *FilterMaps
