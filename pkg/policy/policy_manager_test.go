@@ -251,3 +251,84 @@ func TestPolicyManagerUpdatePolicy(t *testing.T) {
 	missing.Rules[events.SchedProcessExec] = RuleData{EventID: events.SchedProcessExec}
 	require.Error(t, pm.UpdatePolicy(missing))
 }
+
+// TestPolicyManagerSnapshotConcurrentReadWrite hammers the lock-free read accessors from many goroutines
+// while a writer churns policies (add/update/remove) and event toggles. Its purpose is to be run under
+// -race: the atomically-published immutable snapshot must let readers proceed without locking and without
+// ever observing a torn update (a concurrent map read/write, or half-applied rules).
+func TestPolicyManagerSnapshotConcurrentReadWrite(t *testing.T) {
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	pm, err := NewManager(ManagerConfig{}, depsManager)
+	require.NoError(t, err)
+
+	// A permanent policy so a known event is always selected.
+	base := NewPolicy()
+	base.Name = "base"
+	base.Rules[events.Openat] = RuleData{EventID: events.Openat}
+	require.NoError(t, pm.AddPolicy(base))
+
+	const (
+		readers = 8
+		iters   = 400
+	)
+	probe := []events.ID{events.Openat, events.SchedProcessExec, events.Close}
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+
+	for i := 0; i < readers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				for _, id := range probe {
+					_ = pm.GetUserlandRules(id)
+					_ = pm.GetAllRulesBitmap(id)
+					_ = pm.HasOverflowRules(id)
+					_ = pm.GetRulesCount(id)
+					_ = pm.GetContainerFilteredRulesBitmap(id)
+					_ = pm.GetDisabledRules(id)
+					_ = pm.IsEventSelected(id)
+					_ = pm.ShouldEmitEvent(id)
+					_ = pm.GetFilterMaps()
+					_ = pm.GetMatchedRulesInfo(id, []uint64{0b1})
+				}
+			}
+		}()
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer close(stop)
+		for n := 0; n < iters; n++ {
+			p := NewPolicy()
+			p.Name = "churn"
+			p.Rules[events.SchedProcessExec] = RuleData{EventID: events.SchedProcessExec}
+			_ = pm.AddPolicy(p)
+
+			upd := NewPolicy()
+			upd.Name = "churn"
+			upd.Rules[events.Close] = RuleData{EventID: events.Close}
+			_ = pm.UpdatePolicy(upd)
+
+			pm.DisableEvent(events.Openat)
+			pm.EnableEvent(events.Openat)
+			_ = pm.RemovePolicy("churn")
+		}
+	}()
+
+	wg.Wait()
+
+	// The permanent policy's event is still consistently selected after all the churn.
+	require.True(t, pm.IsEventSelected(events.Openat))
+}

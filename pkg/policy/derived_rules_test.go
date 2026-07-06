@@ -63,6 +63,7 @@ func Test_GetDerivedEventMatchedRules_MultiLevelChain(t *testing.T) {
 			}),
 		},
 	}
+	pm.publishSnapshot() // built pm.rules directly; publish for the lock-free read accessors
 
 	// base matched (rule 0) -> intermediate derived event: the previously-broken step.
 	midMatched := pm.GetDerivedEventMatchedRules(evtMid, evtBase, []uint64{0b1})
@@ -79,6 +80,7 @@ func Test_GetDerivedEventMatchedRules_MultiLevelChain(t *testing.T) {
 	pm.rules[evtBase] = buildEventRules(&EventRule{
 		ID: 0, Data: otherData, SelectionType: SelectedByDependency, DerivedRuleID: 0,
 	})
+	pm.publishSnapshot() // re-publish after mutating pm.rules mid-test
 	noMatch := pm.GetDerivedEventMatchedRules(evtMid, evtBase, []uint64{0b1})
 	require.False(t, bitwise.HasBitInArray(noMatch, 0),
 		"a base rule from a different chain must not propagate to the derived event")
@@ -103,6 +105,7 @@ func Test_GetDerivedEventMatchedRules_SingleLevel(t *testing.T) {
 			}),
 		},
 	}
+	pm.publishSnapshot() // built pm.rules directly; publish for the lock-free read accessors
 
 	matched := pm.GetDerivedEventMatchedRules(evtDerived, evtBase, []uint64{0b1})
 	require.True(t, bitwise.HasBitInArray(matched, 0),
@@ -124,6 +127,7 @@ func Test_DeriveGate_DependencyEventIsSelected(t *testing.T) {
 			}),
 		},
 	}
+	pm.publishSnapshot() // built pm.rules directly; publish for the lock-free read accessors
 
 	require.True(t, pm.IsEventSelected(evt),
 		"a dependency-selected event must count as selected so its derivation runs")
@@ -145,6 +149,7 @@ func Test_GetAllRulesBitmap(t *testing.T) {
 			),
 		},
 	}
+	pm.publishSnapshot() // built pm.rules directly; publish for the lock-free read accessors
 
 	bm := pm.GetAllRulesBitmap(evt)
 	for i := uint(0); i < 3; i++ {
@@ -184,6 +189,7 @@ func Test_GetDerivedEventMatchedRules_AllSetBase_TwoPolicies(t *testing.T) {
 			),
 		},
 	}
+	pm.publishSnapshot() // built pm.rules directly; publish for the lock-free read accessors
 
 	// The net override seeds the base with all rules as candidates (the kernel bitmap is unreliable).
 	baseBitmap := pm.GetAllRulesBitmap(evtBase)

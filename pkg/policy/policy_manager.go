@@ -41,6 +41,10 @@ type PolicyManager struct {
 	fMaps           *filterMaps
 	exportedFMaps   *FilterMaps // cached read-only export of fMaps for the overflow matcher (rebuilt per updateBPF)
 	disabledAny     atomic.Bool // fast gate: set once any rule is disabled, so the hot path can skip the disabled-rules lookup
+	// snap is the immutable, atomically-published view of the per-event read state (rules + exported filter
+	// maps). The event hot path Loads it once and reads without taking pm.mu; writers rebuild and Store it
+	// under pm.mu after every mutation (see publishSnapshot). Never nil after NewManager.
+	snap atomic.Pointer[policySnapshot]
 	// detectorScopeFilters holds, per detector OUTPUT event, the scope filters the detector declared
 	// for each required base event (Requirements.Events[].ScopeFilters). Phase 2 pushes them onto the
 	// base events' dependency rules (EventRule.DetectorScopeFilter). Keyed detectorOutputID -> baseID.
@@ -320,7 +324,11 @@ func WithOverride() AddPolicyOption {
 func (pm *PolicyManager) AddPolicy(policy *Policy, opts ...AddPolicyOption) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	return pm.addPolicyLocked(policy, opts...)
+	if err := pm.addPolicyLocked(policy, opts...); err != nil {
+		return err
+	}
+	pm.publishSnapshot()
+	return nil
 }
 
 // addPolicyLocked implements AddPolicy. The caller must hold pm.mu (write). Split out so UpdatePolicy can
@@ -425,6 +433,7 @@ func (pm *PolicyManager) RecomputeRules() error {
 	}
 
 	pm.rules = tempRules
+	pm.publishSnapshot()
 	return nil
 }
 
@@ -432,7 +441,11 @@ func (pm *PolicyManager) RecomputeRules() error {
 func (pm *PolicyManager) RemovePolicy(policyName string) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	return pm.removePolicyLocked(policyName)
+	if err := pm.removePolicyLocked(policyName); err != nil {
+		return err
+	}
+	pm.publishSnapshot()
+	return nil
 }
 
 // removePolicyLocked implements RemovePolicy. The caller must hold pm.mu (write). Split out so UpdatePolicy
@@ -530,10 +543,45 @@ func (pm *PolicyManager) UpdatePolicy(policy *Policy) error {
 	}
 	if err := pm.addPolicyLocked(policy); err != nil {
 		pm.policies, pm.rules = origPolicies, origRules
+		pm.publishSnapshot() // restore the snapshot to the pre-update state
 		return errfmt.WrapError(err)
 	}
 
+	// Single publish for the whole update, so readers never observe the intermediate remove.
+	pm.publishSnapshot()
 	return nil
+}
+
+// policySnapshot is an immutable, atomically-published view of the per-event read state. Readers Load it
+// once and read without locking; writers rebuild and Store it (publishSnapshot) under pm.mu after every
+// mutation. The rules map is a fresh copy per publish, so later in-place map writes (toggles, delete) cannot
+// mutate a published snapshot; the EventRules and their slices are replaced-not-mutated by writers (see the
+// copy-on-write in setRuleEnabled and updateRulesForEvent), so sharing them is safe for lock-free readers.
+type policySnapshot struct {
+	rules         map[events.ID]EventRules
+	exportedFMaps *FilterMaps
+}
+
+// publishSnapshot rebuilds the read snapshot from the current rules + exported filter maps and atomically
+// stores it. The caller must hold pm.mu (write). Call it from the public mutation entry points AFTER the
+// mutation completes - not from the *Locked helpers - so a compound op like UpdatePolicy publishes exactly
+// once and readers never observe its intermediate state.
+func (pm *PolicyManager) publishSnapshot() {
+	rules := make(map[events.ID]EventRules, len(pm.rules))
+	for k, v := range pm.rules {
+		rules[k] = v
+	}
+	pm.snap.Store(&policySnapshot{rules: rules, exportedFMaps: pm.exportedFMaps})
+}
+
+// eventRulesSnap returns the event's EventRules from the current lock-free snapshot.
+func (pm *PolicyManager) eventRulesSnap(eventID events.ID) (EventRules, bool) {
+	s := pm.snap.Load()
+	if s == nil {
+		return EventRules{}, false
+	}
+	er, ok := s.rules[eventID]
+	return er, ok
 }
 
 // deepCopyEventRules creates a deep copy of an EventRules struct.
@@ -909,10 +957,7 @@ func (pm *PolicyManager) LookupPolicyByName(name string) (*Policy, error) {
 // the slice to remain unchanged across calls to AddPolicy, RemovePolicy, or
 // any other function that might update the PolicyManager's rules.
 func (pm *PolicyManager) GetRules(eventID events.ID) []*EventRule {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return nil // Or return an empty slice: []*EventRule{}
 	}
@@ -931,10 +976,7 @@ func (pm *PolicyManager) GetRules(eventID events.ID) []*EventRule {
 // the slice to remain unchanged across calls to AddPolicy, RemovePolicy, or
 // any other function that might update the PolicyManager's rules.
 func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return nil // Or return an empty slice: []*EventRule{}
 	}
@@ -947,9 +989,10 @@ func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
 // not per call, because it is read on the event hot path. The returned value is immutable
 // (replaced, never mutated), so callers may read it without holding the lock.
 func (pm *PolicyManager) GetFilterMaps() *FilterMaps {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-	return pm.exportedFMaps
+	if s := pm.snap.Load(); s != nil {
+		return s.exportedFMaps
+	}
+	return nil
 }
 
 // buildExportedFilterMaps converts the internal filterMaps into the exported, read-only
@@ -1068,10 +1111,7 @@ func convertRuleBitmapSlice(input []ruleBitmap) []RuleBitmap {
 // for the given event ID, and the bit is set if the corresponding rule has
 // container filtering enabled.
 func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) []uint64 {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return []uint64{0} // No rules for this event, return an empty bitmap
 	}
@@ -1083,12 +1123,9 @@ func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) []ui
 // a list of policy names corresponding to the matched rules that have the Emit flag set.
 // Supports rules with ID > 64 through bitmap arrays.
 func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap []uint64) []string {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
 	var matchedPolicyNames []string
 
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return matchedPolicyNames
 	}
@@ -1124,14 +1161,15 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 	baseEventID events.ID,
 	baseMatchedRulesBitmap []uint64,
 ) []uint64 {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	baseEventRules, ok := pm.rules[baseEventID]
+	s := pm.snap.Load()
+	if s == nil {
+		return []uint64{}
+	}
+	baseEventRules, ok := s.rules[baseEventID]
 	if !ok {
 		return []uint64{}
 	}
-	derivedEventRules, ok := pm.rules[derivedEventID]
+	derivedEventRules, ok := s.rules[derivedEventID]
 	if !ok {
 		return []uint64{}
 	}
@@ -1174,10 +1212,7 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 
 // IsEventEnabled checks if an event is currently enabled.
 func (pm *PolicyManager) IsEventEnabled(eventID events.ID) bool {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return false // Event not found, consider it disabled
 	}
@@ -1235,6 +1270,7 @@ func (pm *PolicyManager) setRuleEnabled(policyName string, eventID events.ID, en
 	if !enable {
 		pm.disabledAny.Store(true) // open the hot-path gate (stays open; re-enabling is rare)
 	}
+	pm.publishSnapshot()
 	return nil
 }
 
@@ -1248,10 +1284,7 @@ func (pm *PolicyManager) AnyRulesDisabled() bool {
 // none). The returned slice is immutable (replaced, never mutated in place), so callers may
 // read it without holding the lock.
 func (pm *PolicyManager) GetDisabledRules(eventID events.ID) []uint64 {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return nil
 	}
@@ -1267,6 +1300,7 @@ func (pm *PolicyManager) EnableEvent(eventID events.ID) {
 	eventRules := pm.rules[eventID]
 	eventRules.enabled = true
 	pm.rules[eventID] = eventRules
+	pm.publishSnapshot()
 }
 
 // DisableEvent disables a specific event in the PolicyManager.
@@ -1278,16 +1312,18 @@ func (pm *PolicyManager) DisableEvent(eventID events.ID) {
 	eventRules := pm.rules[eventID]
 	eventRules.enabled = false
 	pm.rules[eventID] = eventRules
+	pm.publishSnapshot()
 }
 
 // GetSelectedEvents returns a slice of all the event IDs that are currently selected
 // either directly by a policy or as a dependency.
 func (pm *PolicyManager) GetSelectedEvents() []events.ID {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	selectedEvents := make([]events.ID, 0, len(pm.rules))
-	for evt := range pm.rules {
+	s := pm.snap.Load()
+	if s == nil {
+		return nil
+	}
+	selectedEvents := make([]events.ID, 0, len(s.rules))
+	for evt := range s.rules {
 		selectedEvents = append(selectedEvents, evt)
 	}
 
@@ -1296,19 +1332,13 @@ func (pm *PolicyManager) GetSelectedEvents() []events.ID {
 
 // IsEventSelected checks if an event is selected by any policy, either directly or as a dependency.
 func (pm *PolicyManager) IsEventSelected(eventID events.ID) bool {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	_, ok := pm.rules[eventID]
+	_, ok := pm.eventRulesSnap(eventID)
 	return ok
 }
 
 // HasOverflowRules checks if the specified event has more than 64 rules
 func (pm *PolicyManager) HasOverflowRules(eventID events.ID) bool {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return false // Event not found, no overflow
 	}
@@ -1319,10 +1349,7 @@ func (pm *PolicyManager) HasOverflowRules(eventID events.ID) bool {
 // GetRulesCount returns the total number of rules for the event (0 if none). Used by the
 // userland overflow matcher to mask off bit positions beyond the real rules.
 func (pm *PolicyManager) GetRulesCount(eventID events.ID) uint {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return 0
 	}
@@ -1336,10 +1363,7 @@ func (pm *PolicyManager) GetRulesCount(eventID events.ID) uint {
 // not carry the output's chain bit (direct-input detectors, see detectEvents). matchPoliciesProto
 // only narrows a bitmap, so without a seed an emitted output would always be dropped.
 func (pm *PolicyManager) GetAllRulesBitmap(eventID events.ID) []uint64 {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok || eventRules.rulesCount == 0 {
 		return nil
 	}
@@ -1360,10 +1384,7 @@ func (pm *PolicyManager) GetAllRulesBitmap(eventID events.ID) []uint64 {
 // selected by a user (not a dependency or bootstrap rule), indicating that the event
 // should be emitted.
 func (pm *PolicyManager) ShouldEmitEvent(eventID events.ID) bool {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return false // Event not found or no rules defined, not emitted
 	}
@@ -1381,10 +1402,7 @@ func (pm *PolicyManager) ShouldEmitEvent(eventID events.ID) bool {
 // rules for the given event ID are set, indicating that all rules are considered
 // matched. Supports overflow rules (ID > 64).
 func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) []uint64 {
-	pm.mu.RLock()
-	defer pm.mu.RUnlock()
-
-	eventRules, ok := pm.rules[eventID]
+	eventRules, ok := pm.eventRulesSnap(eventID)
 	if !ok {
 		return []uint64{} // No rules for this event, return an empty bitmap array
 	}
@@ -1405,5 +1423,9 @@ func (pm *PolicyManager) UpdateBPF(
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
 
-	return pm.updateBPF(bpfModule, cts, eventsFields)
+	if err := pm.updateBPF(bpfModule, cts, eventsFields); err != nil {
+		return err
+	}
+	pm.publishSnapshot() // exportedFMaps was rebuilt; refresh the read snapshot
+	return nil
 }
