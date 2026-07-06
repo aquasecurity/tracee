@@ -2309,6 +2309,11 @@ func (t *Tracee) Unsubscribe(s *streams.Stream) {
 	t.streamsManager.Unsubscribe(s)
 }
 
+// ListPolicies returns the names of the currently-loaded user-facing policies.
+func (t *Tracee) ListPolicies() []string {
+	return t.policyManager.ListPolicyNames()
+}
+
 func (t *Tracee) EnableEvent(eventName string) error {
 	id, found := events.Core.GetDefinitionIDByName(eventName)
 	if !found {

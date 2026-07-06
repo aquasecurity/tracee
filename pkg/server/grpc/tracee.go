@@ -77,6 +77,10 @@ func (s *TraceeService) DisableEvent(ctx context.Context, in *pb.DisableEventReq
 	return &pb.DisableEventResponse{}, nil
 }
 
+func (s *TraceeService) ListPolicies(ctx context.Context, in *pb.ListPoliciesRequest) (*pb.ListPoliciesResponse, error) {
+	return &pb.ListPoliciesResponse{PolicyNames: s.tracee.ListPolicies()}, nil
+}
+
 func (s *TraceeService) GetEventDefinitions(ctx context.Context, in *pb.GetEventDefinitionsRequest) (*pb.GetEventDefinitionsResponse, error) {
 	definitions, err := getDefinitions(in)
 	if err != nil {

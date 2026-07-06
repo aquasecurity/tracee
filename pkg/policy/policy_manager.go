@@ -976,6 +976,23 @@ func (pm *PolicyManager) LookupPolicyByName(name string) (*Policy, error) {
 	return nil, PolicyNotFoundByNameError(name)
 }
 
+// ListPolicyNames returns the names of all user-facing policies (excluding the internal bootstrap policy),
+// sorted. Reads pm.policies under the read lock (policies are not part of the lock-free event snapshot).
+func (pm *PolicyManager) ListPolicyNames() []string {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+
+	names := make([]string, 0, len(pm.policies))
+	for name := range pm.policies {
+		if pm.bootstrapPolicy != nil && name == pm.bootstrapPolicy.Name {
+			continue
+		}
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
 // GetRules returns the Rules slice for a given event ID.
 //
 // Warning: This function returns a direct reference to the internal Rules slice.

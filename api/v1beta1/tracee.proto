@@ -49,12 +49,21 @@ message StreamEventsResponse {
     Event event = 1;
 }
 
+message ListPoliciesRequest {
+}
+
+message ListPoliciesResponse {
+    repeated string policy_names = 1;
+}
+
 service TraceeService {
     rpc GetEventDefinitions(GetEventDefinitionsRequest) returns (GetEventDefinitionsResponse);
     rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse);
 
     rpc EnableEvent(EnableEventRequest) returns (EnableEventResponse);
     rpc DisableEvent(DisableEventRequest) returns (DisableEventResponse);
+
+    rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
 
     rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
 }

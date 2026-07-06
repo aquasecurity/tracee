@@ -332,3 +332,33 @@ func TestPolicyManagerSnapshotConcurrentReadWrite(t *testing.T) {
 	// The permanent policy's event is still consistently selected after all the churn.
 	require.True(t, pm.IsEventSelected(events.Openat))
 }
+
+// TestPolicyManagerListPolicyNames verifies ListPolicyNames returns user policies sorted, excluding the
+// internal bootstrap policy, and reflects add/remove.
+func TestPolicyManagerListPolicyNames(t *testing.T) {
+	t.Parallel()
+
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	pm, err := NewManager(ManagerConfig{}, depsManager)
+	require.NoError(t, err)
+
+	require.Empty(t, pm.ListPolicyNames(), "only the bootstrap policy exists, which is excluded")
+
+	a := NewPolicy()
+	a.Name = "aaa"
+	a.Rules[events.Openat] = RuleData{EventID: events.Openat}
+	b := NewPolicy()
+	b.Name = "bbb"
+	b.Rules[events.Close] = RuleData{EventID: events.Close}
+	require.NoError(t, pm.AddPolicy(b))
+	require.NoError(t, pm.AddPolicy(a))
+
+	require.Equal(t, []string{"aaa", "bbb"}, pm.ListPolicyNames(), "sorted, bootstrap excluded")
+
+	require.NoError(t, pm.RemovePolicy("aaa"))
+	require.Equal(t, []string{"bbb"}, pm.ListPolicyNames())
+}
