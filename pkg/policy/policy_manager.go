@@ -185,6 +185,12 @@ func NewManager(
 func (pm *PolicyManager) removeEventFromRules(evtID events.ID) {
 	logger.Debugw("Remove event from rules", "event", events.Core.GetDefinitionByID(evtID).GetName())
 	delete(pm.rules, evtID)
+	// Publish so the lock-free read snapshot reflects the removal. This is the deps-manager SubscribeRemove
+	// callback: it fires under AddPolicy's write lock (runtime) or single-threaded at init (attachProbes,
+	// which runs after the last publish and removes events whose probe failed to attach). Without this, a
+	// removed event stays in the snapshot and keeps matching - e.g. a failed_attach event still emitted.
+	// publishSnapshot does not take pm.mu, so it is safe in both call contexts (no deadlock, no new race).
+	pm.publishSnapshot()
 }
 
 // createBootstrapPolicy creates the bootstrap policy with rules based on the provided configuration.
