@@ -130,6 +130,61 @@ func waitForExitComm(buf *testutils.EventBuffer, comm string, want int, timeout 
 	}
 }
 
+const schedProcessExecName = "sched_process_exec"
+
+// execScopePolicy is the sched_process_exec analogue of exitScopePolicy. Unlike exit, an exec event carries
+// the (live) process's executable path, so userland binary-scope narrowing can be verified against it.
+func execScopePolicy(id int, name, comm string, ruleFilters ...string) testutils.PolicyFileWithID {
+	scope := []string{}
+	if comm != "" {
+		scope = append(scope, "comm="+comm)
+	}
+	if ruleFilters == nil {
+		ruleFilters = []string{}
+	}
+	return testutils.PolicyFileWithID{
+		Id: id,
+		PolicyFile: polv1beta1.PolicyFile{
+			Metadata: polv1beta1.Metadata{Name: name},
+			Spec: k8s.PolicySpec{
+				Scope:          scope,
+				DefaultActions: []string{"log"},
+				Rules:          []k8s.Rule{{Event: schedProcessExecName, Filters: ruleFilters}},
+			},
+		},
+	}
+}
+
+// execPoliciesForComm is the sched_process_exec analogue of exitPoliciesForComm.
+func execPoliciesForComm(buf *testutils.EventBuffer, comm string) (matched []string, count int) {
+	for _, e := range buf.GetCopy() {
+		if e == nil || e.Name != schedProcessExecName {
+			continue
+		}
+		if e.Workload == nil || e.Workload.Process == nil || e.Workload.Process.Thread == nil ||
+			e.Workload.Process.Thread.Name != comm {
+			continue
+		}
+		count++
+		if matched == nil && e.Policies != nil {
+			matched = append([]string(nil), e.Policies.Matched...)
+			sort.Strings(matched)
+		}
+	}
+	return matched, count
+}
+
+// waitForExecComm is the sched_process_exec analogue of waitForExitComm.
+func waitForExecComm(buf *testutils.EventBuffer, comm string, want int, timeout time.Duration) int {
+	deadline := time.Now().Add(timeout)
+	for {
+		if _, n := execPoliciesForComm(buf, comm); n >= want || time.Now().After(deadline) {
+			return n
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
 // Test_PolicyScopeSingleKernelPushdown (scenario A2): one policy scoping sched_process_exit to a unique
 // comm. Matching exits are emitted attributed to that policy; the complement is dropped in the kernel
 // (never emitted, EventsFiltered stays 0).
