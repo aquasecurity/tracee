@@ -119,6 +119,42 @@ func (f *DataFilter) GetFieldFilters() map[string]Filter[*StringFilter] {
 	return f.filters
 }
 
+// dataFieldToString renders a data-field value as the string the (string-based) data filters compare
+// against, avoiding fmt.Sprint's reflection for the common scalar/string cases - this runs per event for
+// every user-space data-filtered field. Only types whose strconv rendering is byte-for-byte identical to
+// fmt.Sprint are fast-pathed (integers in base 10, bool, string); everything else (e.g. []byte, floats)
+// falls back to fmt.Sprint so filter behavior is unchanged.
+func dataFieldToString(v interface{}) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case bool:
+		return strconv.FormatBool(t)
+	case int:
+		return strconv.FormatInt(int64(t), 10)
+	case int8:
+		return strconv.FormatInt(int64(t), 10)
+	case int16:
+		return strconv.FormatInt(int64(t), 10)
+	case int32:
+		return strconv.FormatInt(int64(t), 10)
+	case int64:
+		return strconv.FormatInt(t, 10)
+	case uint:
+		return strconv.FormatUint(uint64(t), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(t), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(t), 10)
+	case uint32:
+		return strconv.FormatUint(uint64(t), 10)
+	case uint64:
+		return strconv.FormatUint(t, 10)
+	default:
+		return fmt.Sprint(v)
+	}
+}
+
 func (f *DataFilter) Filter(data []trace.Argument) bool {
 	if !f.Enabled() {
 		return true
@@ -148,8 +184,7 @@ func (f *DataFilter) Filter(data []trace.Argument) bool {
 			return false
 		}
 
-		// TODO: use type assertion instead of string conversion
-		fieldVal = fmt.Sprint(fieldVal)
+		fieldVal = dataFieldToString(fieldVal)
 
 		res := filter.Filter(fieldVal)
 		if !res {
@@ -208,7 +243,7 @@ func (f *DataFilter) FilterProto(data []*v1beta1.EventValue) bool {
 			continue
 		}
 
-		fieldVal = fmt.Sprint(fieldVal)
+		fieldVal = dataFieldToString(fieldVal)
 		if !filter.Filter(fieldVal) {
 			return false
 		}
