@@ -24,6 +24,8 @@ const (
 	TraceeService_EnableEvent_FullMethodName         = "/tracee.v1beta1.TraceeService/EnableEvent"
 	TraceeService_DisableEvent_FullMethodName        = "/tracee.v1beta1.TraceeService/DisableEvent"
 	TraceeService_ListPolicies_FullMethodName        = "/tracee.v1beta1.TraceeService/ListPolicies"
+	TraceeService_ApplyPolicy_FullMethodName         = "/tracee.v1beta1.TraceeService/ApplyPolicy"
+	TraceeService_RemovePolicy_FullMethodName        = "/tracee.v1beta1.TraceeService/RemovePolicy"
 	TraceeService_GetVersion_FullMethodName          = "/tracee.v1beta1.TraceeService/GetVersion"
 )
 
@@ -36,6 +38,8 @@ type TraceeServiceClient interface {
 	EnableEvent(ctx context.Context, in *EnableEventRequest, opts ...grpc.CallOption) (*EnableEventResponse, error)
 	DisableEvent(ctx context.Context, in *DisableEventRequest, opts ...grpc.CallOption) (*DisableEventResponse, error)
 	ListPolicies(ctx context.Context, in *ListPoliciesRequest, opts ...grpc.CallOption) (*ListPoliciesResponse, error)
+	ApplyPolicy(ctx context.Context, in *ApplyPolicyRequest, opts ...grpc.CallOption) (*ApplyPolicyResponse, error)
+	RemovePolicy(ctx context.Context, in *RemovePolicyRequest, opts ...grpc.CallOption) (*RemovePolicyResponse, error)
 	GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error)
 }
 
@@ -106,6 +110,26 @@ func (c *traceeServiceClient) ListPolicies(ctx context.Context, in *ListPolicies
 	return out, nil
 }
 
+func (c *traceeServiceClient) ApplyPolicy(ctx context.Context, in *ApplyPolicyRequest, opts ...grpc.CallOption) (*ApplyPolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApplyPolicyResponse)
+	err := c.cc.Invoke(ctx, TraceeService_ApplyPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceeServiceClient) RemovePolicy(ctx context.Context, in *RemovePolicyRequest, opts ...grpc.CallOption) (*RemovePolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemovePolicyResponse)
+	err := c.cc.Invoke(ctx, TraceeService_RemovePolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequest, opts ...grpc.CallOption) (*GetVersionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetVersionResponse)
@@ -125,6 +149,8 @@ type TraceeServiceServer interface {
 	EnableEvent(context.Context, *EnableEventRequest) (*EnableEventResponse, error)
 	DisableEvent(context.Context, *DisableEventRequest) (*DisableEventResponse, error)
 	ListPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error)
+	ApplyPolicy(context.Context, *ApplyPolicyRequest) (*ApplyPolicyResponse, error)
+	RemovePolicy(context.Context, *RemovePolicyRequest) (*RemovePolicyResponse, error)
 	GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error)
 	mustEmbedUnimplementedTraceeServiceServer()
 }
@@ -150,6 +176,12 @@ func (UnimplementedTraceeServiceServer) DisableEvent(context.Context, *DisableEv
 }
 func (UnimplementedTraceeServiceServer) ListPolicies(context.Context, *ListPoliciesRequest) (*ListPoliciesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPolicies not implemented")
+}
+func (UnimplementedTraceeServiceServer) ApplyPolicy(context.Context, *ApplyPolicyRequest) (*ApplyPolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApplyPolicy not implemented")
+}
+func (UnimplementedTraceeServiceServer) RemovePolicy(context.Context, *RemovePolicyRequest) (*RemovePolicyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemovePolicy not implemented")
 }
 func (UnimplementedTraceeServiceServer) GetVersion(context.Context, *GetVersionRequest) (*GetVersionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetVersion not implemented")
@@ -258,6 +290,42 @@ func _TraceeService_ListPolicies_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TraceeService_ApplyPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApplyPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).ApplyPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceeService_ApplyPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).ApplyPolicy(ctx, req.(*ApplyPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceeService_RemovePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemovePolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).RemovePolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceeService_RemovePolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).RemovePolicy(ctx, req.(*RemovePolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _TraceeService_GetVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetVersionRequest)
 	if err := dec(in); err != nil {
@@ -298,6 +366,14 @@ var TraceeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPolicies",
 			Handler:    _TraceeService_ListPolicies_Handler,
+		},
+		{
+			MethodName: "ApplyPolicy",
+			Handler:    _TraceeService_ApplyPolicy_Handler,
+		},
+		{
+			MethodName: "RemovePolicy",
+			Handler:    _TraceeService_RemovePolicy_Handler,
 		},
 		{
 			MethodName: "GetVersion",

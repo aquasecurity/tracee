@@ -2314,6 +2314,45 @@ func (t *Tracee) ListPolicies() []string {
 	return t.policyManager.ListPolicyNames()
 }
 
+// ApplyPolicy adds a policy at runtime, or replaces it if one with the same name already exists (upsert),
+// then re-pushes the kernel filter maps so the change takes effect in kernel space (not just user space).
+// The caller is responsible for parsing/validating the policy (the YAML->*Policy parse lives in the cmd
+// layer, above this package). Returns the policy name.
+//
+// NOTE (runtime, needs integration verification): populateFilterMaps rewrites the kernel maps while events
+// flow; there is a brief window where the kernel still filters by the previous maps. This is the versioned-
+// snapshot concern tracked in docs/runtime-policy-change.md; acceptable for a rare operator-driven change.
+func (t *Tracee) ApplyPolicy(p *policy.Policy) (string, error) {
+	if p == nil {
+		return "", errfmt.Errorf("nil policy")
+	}
+	if _, err := t.policyManager.LookupPolicyByName(p.Name); err == nil {
+		if err := t.policyManager.UpdatePolicy(p); err != nil {
+			return "", errfmt.WrapError(err)
+		}
+	} else {
+		if err := t.policyManager.AddPolicy(p); err != nil {
+			return "", errfmt.WrapError(err)
+		}
+	}
+	if err := t.populateFilterMaps(); err != nil {
+		return "", errfmt.WrapError(err)
+	}
+	return p.Name, nil
+}
+
+// RemovePolicy removes a policy by name at runtime and re-pushes the kernel filter maps so the removal
+// takes effect in kernel space. See the ApplyPolicy note on the re-push window.
+func (t *Tracee) RemovePolicy(name string) error {
+	if err := t.policyManager.RemovePolicy(name); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := t.populateFilterMaps(); err != nil {
+		return errfmt.WrapError(err)
+	}
+	return nil
+}
+
 func (t *Tracee) EnableEvent(eventName string) error {
 	id, found := events.Core.GetDefinitionIDByName(eventName)
 	if !found {
