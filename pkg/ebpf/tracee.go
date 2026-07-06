@@ -817,6 +817,13 @@ func (t *Tracee) uninitTailCall(tailCall events.TailCall) error {
 // initDerivationTable initializes tracee's events.DerivationTable. For each
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
+//
+// INVARIANT (relied on by the decode-stage drop in events_pipeline.go): every derived event MUST declare
+// its derive-from event as a DEPENDENCY (see the derived events' DependencyStrategy in pkg/events/core.go).
+// Selecting a derived event then pulls its base in as a dependency rule, so the pipeline keeps the base via
+// matchPolicies (scope-aware) rather than a coarse "can this type derive anything?" check. A derivation
+// added WITHOUT that dependency edge would have its base event wrongly dropped at decode before it can be
+// derived.
 func (t *Tracee) initDerivationTable() error {
 	// A derivation must run whenever its derived event is needed by ANY rule - whether a
 	// user selected it directly or it is pulled in only as a dependency (e.g. a derived event
@@ -2449,7 +2456,9 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 	return nil
 }
 
-// RegisterEventDerivations allows additional event derivations to be registered
+// RegisterEventDerivations allows additional event derivations to be registered.
+// NOTE: the derived event MUST also declare its derive-from as a dependency (see initDerivationTable's
+// INVARIANT), otherwise the base event is dropped at decode before it can be derived.
 func (t *Tracee) RegisterEventDerivations(eventDerivations derive.Table) {
 	if t.eventDerivations == nil {
 		t.eventDerivations = make(derive.Table)

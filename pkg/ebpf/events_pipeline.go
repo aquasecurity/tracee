@@ -308,18 +308,18 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			// decode stage); derived/finding events keep their mapped bitmap.
 			t.matchOverflowRules(evt)
 
-			// Apply userland rule filtering. If no rule matches, the event may still be
-			// needed to derive another event a policy wants, so keep it when it has a
-			// derivation. (Base events required by signatures now carry dependency rules,
-			// so the old requiredBySignature special-case is gone.)
+			// Apply userland rule filtering. A base event needed to derive an event a policy wants
+			// carries a scope-filtered DEPENDENCY rule: every derived event declares its derive-from as
+			// a dependency (pkg/events/core.go), and every derivation is gated on the derived event being
+			// selected (initDerivationTable Enabled = IsEventSelected), so matchPolicies already keeps
+			// exactly those bases - and only when the workload scope matches. If nothing (user or
+			// dependency rule) matched, the event feeds nothing wanted, so drop it here. (The old coarse
+			// per-event-type eventDerivations keep - and before it requiredBySignature - are both gone.)
 			if !t.matchPolicies(evt) {
-				_, hasDerivation := t.eventDerivations[eventId]
-				if !hasDerivation {
-					_ = t.stats.EventsFiltered.Increment()
-					t.eventsPool.Put(evt)
-					decoderPool.Put(ebpfMsgDecoder)
-					continue
-				}
+				_ = t.stats.EventsFiltered.Increment()
+				t.eventsPool.Put(evt)
+				decoderPool.Put(ebpfMsgDecoder)
+				continue
 			}
 
 			out <- evt
@@ -516,6 +516,13 @@ func (t *Tracee) matchOverflowRules(event *events.PipelineEvent) {
 	// FindContainerCgroupID32LSB), so truncate to u32 before the lookup.
 	applyOverflowScopeFilter(bitmap, u64Bitmaps(fMaps.CgroupFilters[vKey], uint64(uint32(event.CgroupID))), cfg.CgroupIdFilterEnabled, cfg.CgroupIdFilterMatchIfKeyMissing)
 	applyOverflowScopeFilter(bitmap, strBitmaps(fMaps.ContainerFilters[vKey], event.ContainerID), cfg.ContFilterEnabled, cfg.ContFilterMatchIfKeyMissing)
+	// NOTE: binary/executable and tree scope are intentionally NOT narrowed here. matchOverflowRules runs
+	// in the decode stage, before the proctree enrichment populates event.Executable.Path (see
+	// processor_proctree.go), so the binary path is not yet available. As a result an overflow rule
+	// (ID >= 64) scoped by executable/tree is not narrowed in user space and may over-attribute the event
+	// (a pre-existing limitation shared with policy-level binary/tree scope). Enforcing it would require
+	// moving overflow evaluation after enrichment or reading the binary from the process tree here. See
+	// docs/matched-rules-leftover-audit.md.
 	// (scope filters mutate bitmap in place; it was already stored on the event above)
 }
 
