@@ -15,6 +15,7 @@ import (
 	"go.uber.org/goleak"
 
 	"github.com/aquasecurity/tracee/pkg/config"
+	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy"
@@ -60,12 +61,17 @@ func exitScopePolicy(id int, name, comm string, ruleFilters ...string) testutils
 
 // startTraceeWithPolicies starts Tracee with the given policies (no detectors), subscribes, and returns
 // the running instance, an event buffer, and the stream.
-func startTraceeWithPolicies(ctx context.Context, t *testing.T, policies []*policy.Policy) (*tracee.Tracee, *testutils.EventBuffer, *streams.Stream) {
+func startTraceeWithPolicies(ctx context.Context, t *testing.T, policies []*policy.Policy, opts ...func(*config.Config)) (*tracee.Tracee, *testutils.EventBuffer, *streams.Stream) {
 	t.Helper()
 
 	cfg := config.Config{
 		Capabilities:      &config.CapabilitiesConfig{BypassCaps: true},
 		EnrichmentEnabled: false,
+	}
+	// opts let a test tweak the config (e.g. enable the userland process data store, which is off by
+	// default here - it drives event.Executable.Path, needed by userland executable-scope narrowing).
+	for _, o := range opts {
+		o(&cfg)
 	}
 	initial := make([]interface{}, 0, len(policies))
 	for _, p := range policies {
@@ -127,6 +133,74 @@ func waitForExitComm(buf *testutils.EventBuffer, comm string, want int, timeout 
 			return n
 		}
 		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+const schedProcessExecName = "sched_process_exec"
+
+// execScopePolicy is the sched_process_exec analogue of exitScopePolicy. Unlike exit, an exec event carries
+// the (live) process's executable path, so userland binary-scope narrowing can be verified against it.
+func execScopePolicy(id int, name, comm string, ruleFilters ...string) testutils.PolicyFileWithID {
+	scope := []string{}
+	if comm != "" {
+		scope = append(scope, "comm="+comm)
+	}
+	if ruleFilters == nil {
+		ruleFilters = []string{}
+	}
+	return testutils.PolicyFileWithID{
+		Id: id,
+		PolicyFile: polv1beta1.PolicyFile{
+			Metadata: polv1beta1.Metadata{Name: name},
+			Spec: k8s.PolicySpec{
+				Scope:          scope,
+				DefaultActions: []string{"log"},
+				Rules:          []k8s.Rule{{Event: schedProcessExecName, Filters: ruleFilters}},
+			},
+		},
+	}
+}
+
+// execPoliciesForComm is the sched_process_exec analogue of exitPoliciesForComm.
+func execPoliciesForComm(buf *testutils.EventBuffer, comm string) (matched []string, count int) {
+	for _, e := range buf.GetCopy() {
+		if e == nil || e.Name != schedProcessExecName {
+			continue
+		}
+		if e.Workload == nil || e.Workload.Process == nil || e.Workload.Process.Thread == nil ||
+			e.Workload.Process.Thread.Name != comm {
+			continue
+		}
+		count++
+		if matched == nil && e.Policies != nil {
+			matched = append([]string(nil), e.Policies.Matched...)
+			sort.Strings(matched)
+		}
+	}
+	return matched, count
+}
+
+// waitForExecComm is the sched_process_exec analogue of waitForExitComm.
+func waitForExecComm(buf *testutils.EventBuffer, comm string, want int, timeout time.Duration) int {
+	deadline := time.Now().Add(timeout)
+	for {
+		if _, n := execPoliciesForComm(buf, comm); n >= want || time.Now().After(deadline) {
+			return n
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// withProcessDataStore enables the userland process tree DATA STORE (distinct from the kernel-side tree-scope
+// filter). It is off by default in these tests, but it feeds event.Executable.Path from exec/fork events -
+// which userland executable-scope narrowing needs. Production enables it by default. This is the first
+// integration test to depend on it.
+func withProcessDataStore(c *config.Config) {
+	c.ProcessStore = process.ProcTreeConfig{
+		Enabled:          true,
+		Source:           process.SourceBoth,
+		ProcessCacheSize: process.DefaultProcessCacheSize,
+		ThreadCacheSize:  process.DefaultThreadCacheSize,
 	}
 }
 

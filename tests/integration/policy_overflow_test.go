@@ -152,15 +152,11 @@ func Test_PolicyOverflowCrossBoundaryMatch(t *testing.T) {
 // fix (binaryBitmaps in matchOverflowRules), that overflow rule would match every submitted exit and
 // mis-attribute events whose binary does not match.
 func Test_PolicyOverflowBinaryScope(t *testing.T) {
-	// KNOWN LIMITATION (documents why this is skipped): overflow rules (ID >= 64) scoped by executable are
-	// NOT narrowed in user space. matchOverflowRules runs at decode before the binary path is available. A
-	// post-proctree narrowing pass was tried and reverted: for sched_process_exit the exiting process is
-	// already gone from the process tree, so event.Executable.Path is empty at that stage and the equal filter
-	// drops the legitimate event (the failure this test caught). Correct enforcement needs the binary from the
-	// kernel event context (available at the exit probe) or the staged MATCH/FAIL/PENDING model - see
-	// docs/deferred-filter-evaluation.md. Un-skip when one of those lands.
-	t.Skip("overflow binary scope is not enforced in user space: executable path is unavailable for exiting processes")
-
+	// Overflow rules (ID >= 64) scoped by executable are narrowed by narrowOverflowBinaryScope in the
+	// processEvents stage, AFTER the proctree processor populates event.Executable.Path. This uses
+	// sched_process_exec (not exit): the exec'ing process is alive and its binary is in the process tree, so
+	// the path is resolvable and enforcement is exact. (For exit the process is already gone from the tree and
+	// the narrowing safely skips - over-attributing rather than dropping; that case is not enforced here.)
 	testutils.AssureIsRoot(t)
 	defer goleak.VerifyNone(t)
 
@@ -179,10 +175,10 @@ func Test_PolicyOverflowBinaryScope(t *testing.T) {
 	commNames := make([]string, commCount)
 	for k := 0; k < commCount; k++ {
 		commNames[k] = fmt.Sprintf("pol-%02d", k)
-		pfs = append(pfs, exitScopePolicy(k+1, commNames[k], commAll))
+		pfs = append(pfs, execScopePolicy(k+1, commNames[k], commAll))
 	}
 	execName := fmt.Sprintf("zzz-exec-%d", os.Getpid())
-	pfs = append(pfs, exitScopePolicy(overflowPolicyCount, execName, "", "executable="+binExecPath))
+	pfs = append(pfs, execScopePolicy(overflowPolicyCount, execName, "", "executable="+binExecPath))
 	sort.Strings(commNames)
 
 	policies := testutils.NewPolicies(pfs)
@@ -190,7 +186,10 @@ func Test_PolicyOverflowBinaryScope(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 
-	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
+	// Enable the userland process data store so event.Executable.Path is populated (via the exec-event feed);
+	// executable-scope narrowing for overflow rules reads it. Without it the path is empty and the narrowing
+	// safely skips (over-attributes). This is the first integration test to exercise the data store.
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies, withProcessDataStore)
 	defer func() {
 		trc.Unsubscribe(stream)
 		cancel()
@@ -207,18 +206,18 @@ func Test_PolicyOverflowBinaryScope(t *testing.T) {
 		require.NoError(t, exec.Command(binExecPath).Run()) // binary == binExecPath, comm=commExec
 	}
 
-	// Positive control: the binary-scoped overflow rule matches its OWN binary.
-	require.GreaterOrEqual(t, waitForExitComm(buf, commExec, 1, 15*time.Second), 1,
-		"the binary-scoped exit must be emitted")
+	// Positive control: the binary-scoped overflow rule matches its OWN binary's exec.
+	require.GreaterOrEqual(t, waitForExecComm(buf, commExec, 1, 15*time.Second), 1,
+		"the binary-scoped exec must be emitted")
 	time.Sleep(500 * time.Millisecond)
-	mExec, _ := exitPoliciesForComm(buf, commExec)
+	mExec, _ := execPoliciesForComm(buf, commExec)
 	require.Equal(t, []string{execName}, mExec,
 		"the binary-scoped overflow rule must match its own binary (and only it)")
 
 	// The fix: binAll's binary is NOT the scoped one, so the executable overflow rule must NOT match it.
 	// A leak here (execName present) means the overflow rule matched regardless of binary.
-	mAll, cAll := exitPoliciesForComm(buf, commAll)
-	require.Positive(t, cAll, "the comm exit must be emitted")
+	mAll, cAll := execPoliciesForComm(buf, commAll)
+	require.Positive(t, cAll, "the comm exec must be emitted")
 	require.Equal(t, commNames, mAll,
 		"binAll must be attributed to the comm policies only - the binary-scoped overflow rule must not leak")
 }

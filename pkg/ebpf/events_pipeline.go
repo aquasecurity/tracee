@@ -19,6 +19,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -516,16 +517,16 @@ func (t *Tracee) matchOverflowRules(event *events.PipelineEvent) {
 	// FindContainerCgroupID32LSB), so truncate to u32 before the lookup.
 	applyOverflowScopeFilter(bitmap, u64Bitmaps(fMaps.CgroupFilters[vKey], uint64(uint32(event.CgroupID))), cfg.CgroupIdFilterEnabled, cfg.CgroupIdFilterMatchIfKeyMissing)
 	applyOverflowScopeFilter(bitmap, strBitmaps(fMaps.ContainerFilters[vKey], event.ContainerID), cfg.ContFilterEnabled, cfg.ContFilterMatchIfKeyMissing)
-	// NOTE: binary/executable and tree scope are intentionally NOT narrowed for overflow rules (ID >= 64).
-	// matchOverflowRules runs at decode, before the binary path is available, so it cannot narrow here. A
-	// post-proctree pass in processEvents was tried and REVERTED: for sched_process_exit (a common overflow
-	// scope target) the exiting process is already gone from the process tree, so procTreeAddBinInfo leaves
-	// event.Executable.Path empty -> the equal filter treats it as key-missing and drops the legitimate event
-	// (Test_PolicyOverflowBinaryScope, t.Skip'd). Correct enforcement needs the binary from the kernel event
-	// context (available at the exit probe), or the staged MATCH/FAIL/PENDING model - see
-	// docs/deferred-filter-evaluation.md and docs/matched-rules-leftover-audit.md. Tree/follow are 0-63 only,
-	// so they never overflow. Result: an overflow rule scoped by executable may over-attribute (pre-existing
-	// limitation shared with policy-level binary/tree scope).
+	// NOTE: binary/executable scope is intentionally NOT narrowed here. matchOverflowRules runs in the decode
+	// stage, before the proctree processor populates event.Executable.Path (see processor_proctree.go), so the
+	// binary path is not yet available. An overflow rule (ID >= 64) scoped by executable therefore keeps its
+	// (unevaluated) bit here and is narrowed later by narrowOverflowBinaryScope, in the processEvents stage,
+	// once the path is set and before deriveEvents reads the matched set. That pass SKIPS narrowing when the
+	// path is unresolvable (e.g. exiting processes) - over-attributing rather than dropping - so enforcement is
+	// exact for live-process events (exec, security_file_open, ...) and degrades safely otherwise. Do NOT
+	// narrow binary HERE with the absent path: it would force a verdict on empty data and drop legitimate
+	// events. Tree/follow are 0-63 only, so they never overflow. Full exit-event enforcement would need the
+	// binary from the kernel event context or the staged model (docs/deferred-filter-evaluation.md).
 	// (scope filters mutate bitmap in place; it was already stored on the event above)
 }
 
@@ -580,6 +581,59 @@ func strBitmaps(m map[string][]policy.RuleBitmap, key string) []policy.RuleBitma
 		return nil
 	}
 	return m[key]
+}
+
+// binaryBitmaps looks up the per-word rule bitmaps for an event's binary, mirroring the kernel's
+// binary_filter_matches double lookup: the path-only key (any mount namespace, stored as {MntNS: 0, Path})
+// is tried first, then the namespace-specific {MntNS, Path}. Returns nil when the map or key is absent.
+func binaryBitmaps(m map[filters.NSBinary][]policy.RuleBitmap, path string, mntNS uint32) []policy.RuleBitmap {
+	if m == nil {
+		return nil
+	}
+	if bm, ok := m[filters.NSBinary{MntNS: 0, Path: path}]; ok {
+		return bm
+	}
+	return m[filters.NSBinary{MntNS: mntNS, Path: path}]
+}
+
+// narrowOverflowBinaryScope enforces executable/binary scope for OVERFLOW rules (ID >= 64) that
+// matchOverflowRules deliberately left un-narrowed at decode, because the binary path is only populated
+// later by the proctree processor. It runs in the processEvents stage AFTER that processor and BEFORE
+// deriveEvents (which reads MatchedRulesUser), so the matched set is final before anything consumes it.
+// It only ever clears overflow bits; an event narrowed to no matching rule is dropped at the sink terminal
+// drop, so no new drop point is needed. Rules 0-63 are enforced in the kernel and are untouched here.
+//
+// SAFETY: if the binary is unresolvable (event.Executable.Path == ""), we SKIP narrowing rather than treat
+// the empty path as a key-miss. An equal executable filter on a missing key would clear the bit and DROP a
+// legitimate event. This happens for post-mortem events like sched_process_exit, where the process is already
+// gone from the process tree so procTreeAddBinInfo cannot fill the path. Skipping leaves the overflow bit set
+// -> over-attribution (the pre-existing binary/tree limitation), which is correct-but-imprecise, never a drop.
+// Live-process events (sched_process_exec, security_file_open, ...) do carry the path and are enforced exactly.
+func (t *Tracee) narrowOverflowBinaryScope(event *events.PipelineEvent) {
+	eventID := event.EventID
+	if !t.policyManager.HasOverflowRules(eventID) {
+		return
+	}
+	if event.Executable.Path == "" {
+		return // binary unresolvable (e.g. exiting process): over-attribute rather than drop
+	}
+	fMaps := t.policyManager.GetFilterMaps()
+	if fMaps == nil {
+		return
+	}
+	cfg, ok := fMaps.ExtendedScopeFilterConfigs[eventID]
+	if !ok {
+		return
+	}
+
+	vKey := policy.FilterVersionKey{Version: event.RulesVersion, EventID: uint32(eventID)}
+	binBitmaps := binaryBitmaps(fMaps.BinaryFilters[vKey], event.Executable.Path, uint32(event.MountNS))
+
+	// MatchedRulesBitmap and MatchedRulesUser alias the same slice after decode, but narrow both defensively
+	// (the operation only clears bits and is idempotent). MatchedRulesKernel holds word 0 only, which the
+	// overflow narrowing (words 1+) never touches.
+	applyOverflowScopeFilter(event.MatchedRulesBitmap, binBitmaps, cfg.BinPathFilterEnabled, cfg.BinPathFilterMatchIfKeyMissing)
+	applyOverflowScopeFilter(event.MatchedRulesUser, binBitmaps, cfg.BinPathFilterEnabled, cfg.BinPathFilterMatchIfKeyMissing)
 }
 
 // matchPoliciesProto does userland filtering for proto-native events (detector outputs).
@@ -739,6 +793,10 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 			}
 
 		sendEvent:
+			// Enforce executable/binary scope for overflow rules now that the proctree processor
+			// (above) has populated event.Executable.Path - matchOverflowRules could not at decode.
+			t.narrowOverflowBinaryScope(event)
+
 			// NOTE: We do NOT check ctx.Done() here - we continue sending events
 			// until the input channel is closed. This ensures graceful drain.
 			out <- event
