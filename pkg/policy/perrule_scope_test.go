@@ -177,3 +177,46 @@ func Test_PerRuleBinaryScopePushedToKernel(t *testing.T) {
 	require.False(t, bitwise.HasBitInArray(cfg.BinPathFilterMatchIfKeyMissing, ruleID),
 		"an equal per-rule executable filter must NOT set match-if-key-missing")
 }
+
+// Test_PerRuleUTSScopePushedToKernel verifies a per-rule uts (hostName) scope lands in the kernel uts map
+// AND is marked enabled in the config, and that an equal filter does not set match-if-key-missing.
+func Test_PerRuleUTSScopePushedToKernel(t *testing.T) {
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	p := NewPolicy()
+	p.Name = "perrule-uts"
+	sf := filters.NewScopeFilter()
+	require.NoError(t, sf.Parse("hostName", "=web01"))
+	p.Rules = map[events.ID]RuleData{
+		events.Openat: {
+			EventID:     events.Openat,
+			ScopeFilter: sf,
+			DataFilter:  filters.NewDataFilter(),
+			RetFilter:   filters.NewIntFilter(),
+		},
+	}
+
+	pm, err := NewManager(ManagerConfig{}, depsManager, p)
+	require.NoError(t, err)
+
+	maps, err := pm.computeFilterMaps(nil)
+	require.NoError(t, err)
+
+	found := false
+	for _, byUTS := range maps.utsFilters {
+		if _, ok := byUTS["web01"]; ok {
+			found = true
+		}
+	}
+	require.True(t, found, "per-rule uts scope value must be pushed to the kernel uts filter map")
+
+	cfg := pm.computeScopeFiltersConfig(events.Openat)
+	ruleID := pm.rules[events.Openat].Rules[0].ID
+	require.True(t, bitwise.HasBitInArray(cfg.UtsNsFilterEnabled, ruleID),
+		"uts must be marked enabled in the scope config for the per-rule rule")
+	require.False(t, bitwise.HasBitInArray(cfg.UtsNsFilterMatchIfKeyMissing, ruleID),
+		"an equal per-rule uts filter must NOT set match-if-key-missing")
+}

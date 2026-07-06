@@ -112,6 +112,9 @@ func (f *ScopeFilter) MntNS() *NumericFilter[int64] { return f.mntNSFilter }
 // PidNS returns the pid-namespace sub-filter.
 func (f *ScopeFilter) PidNS() *NumericFilter[int64] { return f.pidNSFilter }
 
+// UTS returns the uts-namespace host-name sub-filter.
+func (f *ScopeFilter) UTS() *StringFilter { return f.hostNameFilter }
+
 // Binary returns the executable/binary (mount-namespace + path) sub-filter. Like the policy-level
 // binary filter, it is kernel-enforced only (there is no user-space binary evaluation in Filter), so
 // it narrows via the kernel binary_filter map.

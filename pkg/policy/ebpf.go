@@ -705,6 +705,7 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 		// here cannot disagree with the map values written by processRuleScopeFilters. container is not
 		// pushed per-rule (see processRuleScopeFilters), so it only falls back to the detector scope.
 		commFilter := effectiveScopeComm(rule)
+		utsFilter := effectiveScopeUTS(rule)
 		contFilter := rule.Policy.ContFilter
 		contStartedFilter := rule.Policy.ContStartedFilter
 		if ds := rule.DetectorScopeFilter; ds != nil {
@@ -756,7 +757,7 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 		} else if perRule != nil && perRule.PidNS().Enabled() {
 			bitwise.SetBitInArray(&cfg.PidNsFilterEnabled, ruleID)
 		}
-		if rule.Policy.UTSFilter.Enabled() {
+		if utsFilter.Enabled() {
 			bitwise.SetBitInArray(&cfg.UtsNsFilterEnabled, ruleID)
 		}
 		if commFilter.Enabled() {
@@ -822,7 +823,7 @@ func (pm *PolicyManager) computeScopeFiltersConfig(eventID events.ID) extendedSc
 		) {
 			bitwise.SetBitInArray(&cfg.PidNsFilterMatchIfKeyMissing, ruleID)
 		}
-		if rule.Policy.UTSFilter.MatchIfKeyMissing() {
+		if utsFilter.MatchIfKeyMissing() {
 			bitwise.SetBitInArray(&cfg.UtsNsFilterMatchIfKeyMissing, ruleID)
 		}
 		if commFilter.MatchIfKeyMissing() {

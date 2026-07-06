@@ -8,10 +8,10 @@ import (
 )
 
 // perRuleKernelScopeDim are the scope dimensions the kernel can filter when they come from a rule's
-// `filters:` list (comm/uid/pid/mntns/pidns/executable via processRuleScopeFilters map writes, container
-// via computeScopeFiltersConfig). Other dims (uts, tree, ...) from a per-rule scope stay in user space.
+// `filters:` list (comm/uid/pid/mntns/pidns/uts/executable via processRuleScopeFilters map writes, container
+// via computeScopeFiltersConfig). Other dims (tree, ...) from a per-rule scope stay in user space.
 var perRuleKernelScopeDim = map[string]bool{
-	"comm": true, "uid": true, "pid": true, "mntns": true, "pidns": true, "container": true, "executable": true,
+	"comm": true, "uid": true, "pid": true, "mntns": true, "pidns": true, "uts": true, "container": true, "executable": true,
 }
 
 // RuleFilterInfo is a read-only, per-rule filterability summary for `tracee list filterable`. It records
@@ -101,6 +101,7 @@ func scopeFilterDims(sf *filters.ScopeFilter) []string {
 		enabledDim{sf.PID().Enabled(), "pid"},
 		enabledDim{sf.MntNS().Enabled(), "mntns"},
 		enabledDim{sf.PidNS().Enabled(), "pidns"},
+		enabledDim{sf.UTS().Enabled(), "uts"},
 		enabledDim{sf.Container().Enabled(), "container"},
 		enabledDim{sf.Binary().Enabled(), "executable"},
 	)

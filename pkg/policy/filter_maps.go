@@ -241,6 +241,22 @@ func effectiveScopeComm(rule *EventRule) *filters.StringFilter {
 	return rule.Policy.CommFilter
 }
 
+// effectiveScopeUTS returns the uts (host-name) scope filter the kernel should apply for a rule: the policy
+// uts, else the detector-declared uts scope, else the rule's per-rule uts. Mirrors effectiveScopeComm so the
+// map-value and enabled-config paths agree. Callers guarantee rule.Policy != nil.
+func effectiveScopeUTS(rule *EventRule) *filters.StringFilter {
+	if f := rule.Policy.UTSFilter; f.Enabled() {
+		return f
+	}
+	if ds := rule.DetectorScopeFilter; ds != nil && ds.UTS().Enabled() {
+		return ds.UTS()
+	}
+	if pr := ruleDataScope(rule); pr != nil && pr.UTS().Enabled() {
+		return pr.UTS()
+	}
+	return rule.Policy.UTSFilter
+}
+
 func (pm *PolicyManager) processRuleScopeFilters(
 	filterMaps *filterMaps,
 	vKey filterVersionKey,
@@ -332,8 +348,8 @@ func (pm *PolicyManager) processRuleScopeFilters(
 		updateRuleBitmapForKey(filterMaps.cgroupIdFilters, vKey, uint64(cgroupIDs[0]), rule.ID, equal)
 	}
 
-	// UTSFilters
-	utsEqs := rule.Policy.UTSFilter.Equalities()
+	// UTSFilters: policy uts, else the detector-declared uts scope, else the rule's per-rule uts.
+	utsEqs := effectiveScopeUTS(rule).Equalities()
 	updateRuleBitmapsForEvent(filterMaps.utsFilters, vKey, rule.ID, utsEqs.ExactNotEqual, utsEqs.ExactEqual)
 
 	// CommFilters: policy comm, else the detector-declared comm scope, else the rule's per-rule comm.
