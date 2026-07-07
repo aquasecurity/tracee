@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
+	"sync"
 	"testing"
 	"time"
 
@@ -390,4 +392,97 @@ func Test_RuntimeApplyPolicyAttachesSyscallProbe(t *testing.T) {
 	}
 	require.GreaterOrEqual(t, waitEventComm(buf, "openat", commSys, 1, 10*time.Second), 1,
 		"applying a syscall-event policy at runtime must attach the dispatcher and emit the event")
+}
+
+// Test_RuntimeConcurrentPolicyChurn is the soundness stress test for per-event snapshot retention: it runs a
+// stable workload while a goroutine rapidly applies and removes another policy ON THE SAME EVENT. The churn
+// policy is named "aaa-churn" so it sorts BEFORE "base"; toggling it flips base's sched_process_exit rule ID
+// (0<->1) on every swap. An in-flight stable event therefore has its matched-rules bit set under one rule-ID
+// layout and read at the sink possibly after a swap - without per-event snapshot threading the bit would be
+// interpreted against the wrong version, mis-attributing or (bit points at a now-absent rule) dropping the
+// event. The assertion: every emitted stable exit is attributed to exactly {base}, and they keep flowing.
+// Run under -race (integration default) so any torn read in the threading is caught too.
+func Test_RuntimeConcurrentPolicyChurn(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	dir := t.TempDir()
+	commStable := fmt.Sprintf("rccS%d", os.Getpid()%100000)
+	commChurn := fmt.Sprintf("rccC%d", os.Getpid()%100000)
+	binStable := buildCommBinary(t, dir, commStable)
+
+	base := testutils.NewPolicies([]testutils.PolicyFileWithID{exitScopePolicy(1, "base", commStable)})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, base)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	// Churn goroutine: apply/remove "aaa-churn" (same event, different comm) in a tight loop.
+	stop := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		churn := testutils.NewPolicies([]testutils.PolicyFileWithID{exitScopePolicy(2, "aaa-churn", commChurn)})[0]
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			if _, err := trc.ApplyPolicy(churn); err != nil {
+				t.Errorf("apply churn policy: %v", err)
+				return
+			}
+			if err := trc.RemovePolicy("aaa-churn"); err != nil {
+				t.Errorf("remove churn policy: %v", err)
+				return
+			}
+			time.Sleep(3 * time.Millisecond)
+		}
+	}()
+
+	// Fire the stable workload continuously during the churn.
+	const runs = 200
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binStable).Run())
+	}
+
+	close(stop)
+	wg.Wait()
+	_ = trc.RemovePolicy("aaa-churn") // ensure it is gone regardless of loop timing
+	time.Sleep(1 * time.Second)       // let stragglers drain
+
+	// Every emitted stable exit must attribute to exactly {base}: never mis-attributed to the churn policy,
+	// never dropped due to a bitmap bit read against a version where base's rule ID had shifted.
+	n := 0
+	for _, e := range buf.GetCopy() {
+		if e == nil || e.Name != schedProcessExitName {
+			continue
+		}
+		if e.Workload == nil || e.Workload.Process == nil || e.Workload.Process.Thread == nil ||
+			e.Workload.Process.Thread.Name != commStable {
+			continue
+		}
+		n++
+		var got []string
+		if e.Policies != nil {
+			got = append([]string(nil), e.Policies.Matched...)
+			sort.Strings(got)
+		}
+		require.Equal(t, []string{"base"}, got,
+			"stable exit attributed to %v under concurrent churn - snapshot version leaked across the swap", got)
+	}
+	require.Positive(t, n, "stable workload must keep emitting under churn")
+	require.GreaterOrEqual(t, n, runs/2, "too many stable exits went missing under churn (possible drops)")
 }
