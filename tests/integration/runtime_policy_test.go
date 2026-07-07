@@ -263,3 +263,75 @@ func Test_RuntimeApplyPolicyAttachesProbe(t *testing.T) {
 	require.GreaterOrEqual(t, waitEventComm(buf, schedProcessExecName, commProbe, 1, 10*time.Second), 1,
 		"applying a policy for a new event must attach its probe at runtime")
 }
+
+// Test_RuntimeRemovePolicyDetachesProbe is the mirror of Test_RuntimeApplyPolicyAttachesProbe: removing the
+// only policy that selected an event must make that event STOP reaching userland. It asserts the observable
+// guarantee (not the internal probe state): after removal the event is no longer emitted AND it does not move
+// EventsFiltered - i.e. the deselected event is dropped at/before submission, not flooding userland to be
+// filtered there. That property is the prerequisite for migrating probe-churning cases (e.g. openat) onto the
+// shared-tracee foundation: a leftover selection would pollute sibling cases' EventsFiltered deltas.
+func Test_RuntimeRemovePolicyDetachesProbe(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	dir := t.TempDir()
+	commBase := fmt.Sprintf("rtdA%d", os.Getpid()%100000)
+	commExec := fmt.Sprintf("rtdE%d", os.Getpid()%100000)
+	binBase := buildCommBinary(t, dir, commBase)
+	binExec := buildCommBinary(t, dir, commExec)
+
+	// Base selects only sched_process_exit; the sched_process_exec probe is attached solely by the exec
+	// policy applied below, so removing that policy deselects the exec probe entirely.
+	base := testutils.NewPolicies([]testutils.PolicyFileWithID{exitScopePolicy(1, "base", commBase)})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, base)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	// Apply an exec policy -> the exec probe attaches and sched_process_exec for commExec fires.
+	execPol := testutils.NewPolicies([]testutils.PolicyFileWithID{execScopePolicy(2, "exec-p", commExec)})[0]
+	_, err := trc.ApplyPolicy(execPol)
+	require.NoError(t, err)
+
+	time.Sleep(500 * time.Millisecond)
+	buf.Clear()
+	for i := 0; i < 5; i++ {
+		require.NoError(t, exec.Command(binExec).Run())
+	}
+	require.GreaterOrEqual(t, waitEventComm(buf, schedProcessExecName, commExec, 1, 10*time.Second), 1,
+		"exec policy must select and emit sched_process_exec while applied")
+
+	// Remove it -> sched_process_exec must stop reaching userland.
+	require.NoError(t, trc.RemovePolicy("exec-p"))
+	require.NotContains(t, trc.ListPolicies(), "exec-p", "removed policy must not be listed")
+
+	time.Sleep(500 * time.Millisecond)
+	buf.Clear()
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	// The base still runs, so exec heavily: every one of these would emit if the exec probe were still
+	// selecting/submitting after removal.
+	for i := 0; i < 20; i++ {
+		require.NoError(t, exec.Command(binExec).Run())
+	}
+	require.NoError(t, exec.Command(binBase).Run()) // base exit still works (proves tracee is live)
+	require.GreaterOrEqual(t, waitForExitComm(buf, commBase, 1, 10*time.Second), 1, "base exit policy must still emit")
+
+	time.Sleep(1 * time.Second) // allow any straggler exec events to arrive before asserting absence
+
+	require.Zero(t, countEventComm(buf, schedProcessExecName, commExec),
+		"after removal, sched_process_exec must no longer reach userland (event deselected on RemovePolicy)")
+	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
+		"EventsFiltered moved after removal: a deselected event is still reaching userland, which would pollute sibling cases")
+}
