@@ -64,8 +64,11 @@ type Config struct {
 	// otherwise autoloaded only when a dependent event is selected at init - currently the syscall dispatchers
 	// (SyscallEnter__Internal/SyscallExit__Internal), which every syscall event depends on - are loaded up
 	// front, so a runtime ApplyPolicy selecting such an event can attach them (autoload is a load-time
-	// decision; it cannot be enabled after the object is loaded). Off by default: an always-loaded, attached
-	// syscall dispatcher adds per-syscall overhead. See docs/runtime-syscall-selection-gap.md.
+	// decision; it cannot be enabled after the object is loaded). Off by default, but the idle cost is small:
+	// this only LOADS the dispatchers. Loading and attaching are separate - they are ATTACHED (and add
+	// per-syscall cost) only once a syscall event is actually selected, via the normal dependency-driven
+	// attach path. So with the capability on and no syscall selected, the cost is just two loaded-but-
+	// unattached programs. See docs/runtime-syscall-selection-gap.md.
 	RuntimePolicyChanges bool
 }
 
