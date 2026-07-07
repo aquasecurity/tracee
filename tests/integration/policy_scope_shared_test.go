@@ -124,4 +124,209 @@ func Test_PolicyScopeShared(t *testing.T) {
 				"EventsFiltered moved: the union comm filter {%s,%s} did not cleanly gate submission", commA, commB)
 		})
 	})
+
+	// A5 (was Test_PolicyScopeUnionDefeatKernelPushdown): scoped comm=A plus a BROAD (unscoped) policy. The
+	// broad rule defeats the kernel filter - the complement is submitted and emitted - yet attribution stays
+	// exact and EventsFiltered stays 0 (every submitted event matches at least the broad rule).
+	t.Run("union defeat", func(t *testing.T) {
+		commA := fmt.Sprintf("trc5a%d", os.Getpid())
+		commNone := fmt.Sprintf("trc5n%d", os.Getpid())
+		binA := buildCommBinary(t, binDir, commA)
+		binNone := buildCommBinary(t, binDir, commNone)
+
+		pfs := []testutils.PolicyFileWithID{
+			exitScopePolicy(20, "pol-a", commA),
+			exitScopePolicy(21, "pol-broad", ""), // no scope -> matches every workload
+		}
+		withPolicies(t, trc, buf, pfs, func(t *testing.T) {
+			baseline := trc.Stats().EventsFiltered.Get()
+
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binNone).Run())
+			}
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binA).Run())
+			}
+
+			require.GreaterOrEqual(t, waitForExitComm(buf, commA, 15, 10*time.Second), 15)
+			require.GreaterOrEqual(t, waitForExitComm(buf, commNone, 15, 10*time.Second), 15,
+				"broad policy must cause the complement to be submitted (kernel filter defeated)")
+
+			matchedA, _ := exitPoliciesForComm(buf, commA)
+			matchedNone, _ := exitPoliciesForComm(buf, commNone)
+			require.Equal(t, []string{"pol-a", "pol-broad"}, matchedA, "A-exit matches both the scoped and broad policy")
+			require.Equal(t, []string{"pol-broad"}, matchedNone, "complement exit matches only the broad policy")
+
+			require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
+				"EventsFiltered moved unexpectedly: with a broad rule present every event should match a rule")
+		})
+	})
+
+	// Was Test_PolicyScopeIdenticalUnionAttribution: two policies with the SAME comm scope; a matching exit is
+	// attributed to both, complement kernel-dropped.
+	t.Run("identical union attribution", func(t *testing.T) {
+		commA := fmt.Sprintf("trc3a%d", os.Getpid())
+		commNone := fmt.Sprintf("trc3n%d", os.Getpid())
+		binA := buildCommBinary(t, binDir, commA)
+		binNone := buildCommBinary(t, binDir, commNone)
+
+		pfs := []testutils.PolicyFileWithID{
+			exitScopePolicy(22, "pol-a1", commA),
+			exitScopePolicy(23, "pol-a2", commA),
+		}
+		withPolicies(t, trc, buf, pfs, func(t *testing.T) {
+			baseline := trc.Stats().EventsFiltered.Get()
+
+			for i := 0; i < 100; i++ {
+				require.NoError(t, exec.Command(binNone).Run())
+			}
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binA).Run())
+			}
+
+			require.GreaterOrEqual(t, waitForExitComm(buf, commA, 15, 10*time.Second), 15)
+
+			matched, _ := exitPoliciesForComm(buf, commA)
+			require.Equal(t, []string{"pol-a1", "pol-a2"}, matched,
+				"a matching exit must be attributed to both identical-scope policies")
+
+			_, none := exitPoliciesForComm(buf, commNone)
+			require.Zero(t, none, "complement exits must be dropped in the kernel")
+
+			require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline)
+		})
+	})
+
+	// A7 (was Test_PolicyScopeCrossDimensionUnion): OR union across DIMENSIONS (comm vs uid). Each matches its
+	// own policy; the complement (neither dimension) is kernel-dropped.
+	t.Run("cross dimension union", func(t *testing.T) {
+		const uidU = 61234
+		commA := fmt.Sprintf("trc7a%d", os.Getpid())
+		commU := fmt.Sprintf("trc7u%d", os.Getpid())
+		commNone := fmt.Sprintf("trc7n%d", os.Getpid())
+		binA := buildCommBinary(t, binDir, commA)
+		binU := buildAccessibleCommBinary(t, commU)
+		binNone := buildCommBinary(t, binDir, commNone)
+
+		pfs := []testutils.PolicyFileWithID{
+			exitPolicyScopes(24, "pol-comm", []string{"comm=" + commA}),
+			exitPolicyScopes(25, "pol-uid", []string{fmt.Sprintf("uid=%d", uidU)}),
+		}
+		withPolicies(t, trc, buf, pfs, func(t *testing.T) {
+			baseline := trc.Stats().EventsFiltered.Get()
+
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binNone).Run()) // neither dimension (root)
+			}
+			for i := 0; i < 15; i++ {
+				runAsUID(t, binU, uidU) // uid dimension
+			}
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binA).Run()) // comm dimension
+			}
+
+			require.GreaterOrEqual(t, waitForExitComm(buf, commA, 15, 10*time.Second), 15, "comm=A exits emitted")
+			require.GreaterOrEqual(t, waitForExitComm(buf, commU, 15, 10*time.Second), 15, "uid=U exits emitted")
+
+			mA, _ := exitPoliciesForComm(buf, commA)
+			mU, _ := exitPoliciesForComm(buf, commU)
+			_, none := exitPoliciesForComm(buf, commNone)
+			require.Equal(t, []string{"pol-comm"}, mA, "comm=A exit attributed to the comm policy only")
+			require.Equal(t, []string{"pol-uid"}, mU, "uid=U exit attributed to the uid policy only")
+			require.Zero(t, none, "exit matching neither dimension must be dropped in the kernel")
+			require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
+				"the OR union {comm=A, uid=U} must gate submission in the kernel (complement never reaches userland)")
+		})
+	})
+
+	// D2 (was Test_PolicyMatchedSubsetAttribution): five policies over three comm scopes; each event is
+	// attributed to EXACTLY its matching subset, complement kernel-dropped.
+	t.Run("matched subset attribution", func(t *testing.T) {
+		commX := fmt.Sprintf("trcd2x%d", os.Getpid())
+		commY := fmt.Sprintf("trcd2y%d", os.Getpid())
+		commZ := fmt.Sprintf("trcd2z%d", os.Getpid())
+		commNone := fmt.Sprintf("trcd2n%d", os.Getpid())
+		binX := buildCommBinary(t, binDir, commX)
+		binY := buildCommBinary(t, binDir, commY)
+		binZ := buildCommBinary(t, binDir, commZ)
+		binNone := buildCommBinary(t, binDir, commNone)
+
+		pfs := []testutils.PolicyFileWithID{
+			exitScopePolicy(26, "pol-x1", commX),
+			exitScopePolicy(27, "pol-x2", commX),
+			exitScopePolicy(28, "pol-y1", commY),
+			exitScopePolicy(29, "pol-y2", commY),
+			exitScopePolicy(30, "pol-z", commZ),
+		}
+		withPolicies(t, trc, buf, pfs, func(t *testing.T) {
+			baseline := trc.Stats().EventsFiltered.Get()
+
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binNone).Run())
+			}
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binX).Run())
+			}
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binY).Run())
+			}
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binZ).Run())
+			}
+
+			require.GreaterOrEqual(t, waitForExitComm(buf, commZ, 15, 10*time.Second), 15)
+
+			mX, _ := exitPoliciesForComm(buf, commX)
+			mY, _ := exitPoliciesForComm(buf, commY)
+			mZ, _ := exitPoliciesForComm(buf, commZ)
+			_, none := exitPoliciesForComm(buf, commNone)
+
+			require.Equal(t, []string{"pol-x1", "pol-x2"}, mX, "X event attributed to exactly the two X policies")
+			require.Equal(t, []string{"pol-y1", "pol-y2"}, mY, "Y event attributed to exactly the two Y policies")
+			require.Equal(t, []string{"pol-z"}, mZ, "Z event attributed to exactly the one Z policy")
+			require.Zero(t, none, "complement dropped in the kernel")
+			require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline)
+		})
+	})
+
+	// A6 (was Test_PolicyScopeKernelPlusDataUserland): kernel comm scope + a USERLAND data filter (exit_code).
+	// exit-0 matches both policies; exit-1 is kernel-submitted (comm passed) but excluded from pol-data by the
+	// userland exit_code filter, kept by pol-nodata; the comm-complement is kernel-dropped.
+	t.Run("kernel plus data userland", func(t *testing.T) {
+		commA := fmt.Sprintf("trc6a%d", os.Getpid())
+		commNone := fmt.Sprintf("trc6n%d", os.Getpid())
+		binExit0 := buildCommBinaryFrom(t, t.TempDir(), commA, "/usr/bin/true")   // comm=A, exit 0
+		binExit1 := buildCommBinaryFrom(t, t.TempDir(), commA, "/usr/bin/false")  // comm=A, exit 1
+		binNone := buildCommBinaryFrom(t, t.TempDir(), commNone, "/usr/bin/true") // comm complement
+
+		pfs := []testutils.PolicyFileWithID{
+			exitScopePolicy(31, "pol-data", commA, "data.exit_code=0"),
+			exitScopePolicy(32, "pol-nodata", commA),
+		}
+		withPolicies(t, trc, buf, pfs, func(t *testing.T) {
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binNone).Run()) // comm complement -> kernel drop
+			}
+			for i := 0; i < 15; i++ {
+				_ = exec.Command(binExit1).Run() // comm=A exit 1
+			}
+			for i := 0; i < 15; i++ {
+				require.NoError(t, exec.Command(binExit0).Run()) // comm=A exit 0
+			}
+
+			require.GreaterOrEqual(t, waitForExitCode(buf, commA, 0, 15, 10*time.Second), 15,
+				"exit-0 events must be emitted")
+
+			m0, c0 := exitEventsByCode(buf, commA, 0)
+			m1, c1 := exitEventsByCode(buf, commA, 1)
+			_, cNone := exitPoliciesForComm(buf, commNone)
+			t.Logf("A6 diagnostic: emitted commA exit0=%d%v exit1=%d%v; comm-complement emitted=%d", c0, m0, c1, m1, cNone)
+
+			require.Equal(t, []string{"pol-data", "pol-nodata"}, m0, "exit-0 events must match both policies")
+			require.Positive(t, c1, "exit-1 events must be emitted via pol-nodata (proves the kernel submitted them)")
+			require.Equal(t, []string{"pol-nodata"}, m1,
+				"exit-1 events must be excluded from pol-data by the userland exit_code filter, kept by pol-nodata")
+			require.Zero(t, cNone, "comm-complement exits must be dropped in the kernel")
+		})
+	})
 }
