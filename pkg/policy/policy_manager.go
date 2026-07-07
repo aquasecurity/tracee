@@ -54,6 +54,111 @@ type PolicyManager struct {
 	// detectorDataFilters is the data-filter analogue of detectorScopeFilters
 	// (Requirements.Events[].DataFilters), pushed onto EventRule.DetectorDataFilter. Same keying.
 	detectorDataFilters map[events.ID]map[events.ID]*filters.DataFilter
+	// ruleIDAlloc gives each rule a STABLE per-event ID that persists across runtime add/remove, so an event's
+	// kernel-computed matched-rules bitmap (using the layout at generation) still resolves correctly when
+	// userland reads it after a concurrent policy change. Without it, RecomputeRules renumbered rule IDs by
+	// name-sort on every change. Keyed per event; survives RecomputeRules. See stable-rule-IDs design.
+	ruleIDAlloc map[events.ID]*ruleIDAllocator
+}
+
+// ruleKey is the stable identity of a rule within an event, used to keep its ID constant across recomputes. A
+// user rule is identified by its policy name; a dependency rule by its (policy, top-consumer event) chain -
+// both captured by (policy name, RuleData.EventID), since a user rule's RuleData.EventID is the event itself
+// while a dependency rule's is the consumer that pulled it in.
+type ruleKey struct {
+	policy  string
+	chainID events.ID
+}
+
+// ruleIDAllocator hands out stable per-event rule IDs. A known key keeps its ID across recomputes; a retired
+// key's ID is reused (smallest-first) to keep IDs dense - so IDs stay < 64 whenever the active count is, and
+// the kernel's single-u64 fast path is preserved. Not safe for concurrent use; callers hold pm.mu.
+type ruleIDAllocator struct {
+	byKey map[ruleKey]uint
+	used  map[uint]bool
+}
+
+func newRuleIDAllocator() *ruleIDAllocator {
+	return &ruleIDAllocator{byKey: make(map[ruleKey]uint), used: make(map[uint]bool)}
+}
+
+// getOrAssign returns the key's existing ID, or assigns it the smallest free ID (reusing retired IDs).
+func (a *ruleIDAllocator) getOrAssign(k ruleKey) uint {
+	if id, ok := a.byKey[k]; ok {
+		return id
+	}
+	id := uint(0)
+	for a.used[id] {
+		id++
+	}
+	a.byKey[k] = id
+	a.used[id] = true
+	return id
+}
+
+// retirePolicy frees the IDs of all rules belonging to the named policy (called when the policy is removed),
+// so a later rule can reuse them.
+func (a *ruleIDAllocator) retirePolicy(policyName string) {
+	for k, id := range a.byKey {
+		if k.policy == policyName {
+			delete(a.byKey, k)
+			delete(a.used, id)
+		}
+	}
+}
+
+// assignStableRuleIDs rewrites every rule's ID from the persistent per-event allocator (so IDs stay constant
+// across runtime add/remove) and rebuilds the per-event fields derived from IDs: ruleIDToEventRule, rulesCount,
+// hasOverflow and containerFilteredRules. Called at the end of every rules rebuild, under pm.mu. Rules are
+// visited in their existing order (name-sorted user rules, then dependency rules), so a fresh manager still
+// hands out 0,1,2… exactly as before - only runtime add/remove now preserves existing IDs. A key is
+// (policy name, RuleData.EventID): a user rule's EventID is the event itself, a dependency rule's is the
+// consumer that pulled it in, so both are stable across recomputes.
+func (pm *PolicyManager) assignStableRuleIDs(rules map[events.ID]EventRules) {
+	for eventID, er := range rules {
+		alloc := pm.ruleIDAlloc[eventID]
+		if alloc == nil {
+			alloc = newRuleIDAllocator()
+			pm.ruleIDAlloc[eventID] = alloc
+		}
+		er.ruleIDToEventRule = make(map[uint]*EventRule, len(er.Rules))
+		er.containerFilteredRules = nil
+		var maxID uint
+		haveRule := false
+		for _, rule := range er.Rules {
+			if rule == nil || rule.Policy == nil || rule.Data == nil {
+				continue
+			}
+			id := alloc.getOrAssign(ruleKey{policy: rule.Policy.Name, chainID: rule.Data.EventID})
+			rule.ID = id
+			er.ruleIDToEventRule[id] = rule
+			if !haveRule || id > maxID {
+				maxID, haveRule = id, true
+			}
+			if rule.Policy.ContainerFilterEnabled() {
+				idx := int(id / 64)
+				for len(er.containerFilteredRules) <= idx {
+					er.containerFilteredRules = append(er.containerFilteredRules, 0)
+				}
+				bitwise.SetBit(&er.containerFilteredRules[idx], uint(id%64))
+			}
+		}
+		if haveRule {
+			er.rulesCount = maxID + 1 // sized to cover the highest ID; retired IDs may leave gaps (gap bits carry no rule)
+		} else {
+			er.rulesCount = 0
+		}
+		er.hasOverflow = er.rulesCount > 64
+		rules[eventID] = er
+	}
+}
+
+// retireRuleIDs frees every rule ID assigned to the named policy across all events (called when the policy is
+// removed), so the IDs become available for reuse.
+func (pm *PolicyManager) retireRuleIDs(policyName string) {
+	for _, alloc := range pm.ruleIDAlloc {
+		alloc.retirePolicy(policyName)
+	}
 }
 
 // EventRules holds information about a specific event.
@@ -144,6 +249,7 @@ func NewManager(
 		bpfInnerMaps:    make(map[string]*bpf.BPFMapLow),
 		mu:              sync.RWMutex{},
 		cfg:             cfg,
+		ruleIDAlloc:     make(map[events.ID]*ruleIDAllocator),
 	}
 
 	// Subscribe to event removals to clean up policy rules when events become unavailable
@@ -168,7 +274,14 @@ func NewManager(
 		return nil, errfmt.Errorf("failed to add bootstrap policy: %s", err)
 	}
 
-	for _, p := range initialPolicies {
+	// Add initial policies in name-sorted order. Rule IDs are now assignment-order-stable (they no longer
+	// renumber on add/remove), so sorting the initial load makes a fresh config produce name-sorted,
+	// load-order-independent rule IDs - preserving reproducibility/log-correlation for the common case.
+	// Runtime AddPolicy/RemovePolicy after this keep existing IDs and hand new rules the smallest free ID.
+	sortedInitial := make([]*Policy, len(initialPolicies))
+	copy(sortedInitial, initialPolicies)
+	sort.Slice(sortedInitial, func(i, j int) bool { return sortedInitial[i].Name < sortedInitial[j].Name })
+	for _, p := range sortedInitial {
 		if err := pm.AddPolicy(p); err != nil {
 			logger.Errorw("failed to add initial policy", "error", err)
 		}
@@ -397,6 +510,7 @@ func (pm *PolicyManager) addPolicyLocked(policy *Policy, opts ...AddPolicyOption
 	}
 
 	// If all operations are successful, commit the changes to the actual PolicyManager
+	pm.assignStableRuleIDs(tempRules) // keep rule IDs constant across add/remove (runtime-safe attribution)
 	pm.policies = tempPolicies
 	pm.rules = tempRules
 
@@ -448,6 +562,7 @@ func (pm *PolicyManager) RecomputeRules() error {
 		}
 	}
 
+	pm.assignStableRuleIDs(tempRules) // keep rule IDs constant across add/remove (runtime-safe attribution)
 	pm.rules = tempRules
 	pm.publishSnapshot()
 	return nil
@@ -521,7 +636,11 @@ func (pm *PolicyManager) removePolicyLocked(policyName string) error {
 		}
 	}
 
-	// Commit the changes to the actual PolicyManager
+	// Commit the changes to the actual PolicyManager. Retire the removed policy's rule IDs first (freeing them
+	// for reuse), then re-stamp the survivors' stable IDs. Both run only after the rebuild succeeded, so a
+	// mid-rebuild failure (which rolls back) never leaves the allocator inconsistent with pm.rules.
+	pm.retireRuleIDs(policyName)
+	pm.assignStableRuleIDs(tempRules)
 	pm.policies = tempPolicies
 	pm.rules = tempRules
 
@@ -1485,14 +1604,12 @@ func (s *Snapshot) GetAllRulesBitmap(eventID events.ID) []uint64 {
 		return nil
 	}
 
-	n := eventRules.rulesCount
-	words := (n + 63) / 64
-	bitmap := make([]uint64, words)
-	for w := range bitmap {
-		bitmap[w] = ^uint64(0)
-	}
-	if rem := n % 64; rem != 0 {
-		bitmap[words-1] = (uint64(1) << rem) - 1
+	// Set a bit for each real rule ID. With stable IDs a retired ID can leave a gap below rulesCount, so we
+	// iterate the actual rules rather than 0..rulesCount-1 (a gap bit carries no rule and would be flagged as
+	// an inconsistency downstream).
+	var bitmap []uint64
+	for id := range eventRules.ruleIDToEventRule {
+		bitwise.SetBitInArray(&bitmap, id)
 	}
 	return bitmap
 }
@@ -1534,9 +1651,10 @@ func (s *Snapshot) GetAllMatchedRulesBitmap(eventID events.ID) []uint64 {
 		return []uint64{} // No rules for this event, return an empty bitmap array
 	}
 
+	// Iterate the actual rules (not 0..rulesCount-1): stable IDs can leave gaps that carry no rule.
 	var allRulesBitmap []uint64
-	for ruleID := uint(0); ruleID < eventRules.rulesCount; ruleID++ {
-		bitwise.SetBitInArray(&allRulesBitmap, ruleID)
+	for id := range eventRules.ruleIDToEventRule {
+		bitwise.SetBitInArray(&allRulesBitmap, id)
 	}
 
 	return allRulesBitmap

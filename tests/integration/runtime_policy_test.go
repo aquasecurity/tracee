@@ -403,18 +403,11 @@ func Test_RuntimeApplyPolicyAttachesSyscallProbe(t *testing.T) {
 // event. The assertion: every emitted stable exit is attributed to exactly {base}, and they keep flowing.
 // Run under -race (integration default) so any torn read in the threading is caught too.
 func Test_RuntimeConcurrentPolicyChurn(t *testing.T) {
-	// KNOWN GAP (documents what per-event snapshot threading does NOT yet fix): this catches a
-	// kernel-generation <-> userland-decode version skew. The kernel computes the matched-rules bitmap at event
-	// GENERATION using its rule-ID layout then; the event then waits in the perf buffer until userland DECODE.
-	// Rule IDs are name-sorted, so applying "aaa-churn" (sorts before "base") RENUMBERS base's exit rule ID
-	// 0<->1. If that happens between generation and decode, the kernel bit is interpreted against the wrong
-	// layout -> mis-attribution (observed: a stable exit attributed to aaa-churn). Per-event snapshot threading
-	// only makes userland stages agree (it captures the DECODE-time snapshot); it cannot fix a skew that
-	// predates decode. The real fix is version-keyed retention using a kernel-stamped version - but that
-	// machinery is currently unwired (pm.version() returns 1, event context rules_version is never bumped) - OR
-	// stable rule IDs (never renumber existing rules on add/remove). Un-skip when one lands.
-	t.Skip("kernel-generation<->decode matched-rules version skew under rule-ID renumbering; needs version-keyed retention or stable rule IDs")
-
+	// Guards the kernel-generation <-> userland-decode skew that STABLE RULE IDs close: the kernel computes the
+	// matched-rules bitmap at event GENERATION and the event waits in the perf buffer until userland DECODE.
+	// "aaa-churn" sorts before "base", but rule IDs no longer renumber on add/remove (base keeps its ID, the
+	// churn policy keeps its own), so the kernel's bit always resolves to the same policy regardless of when
+	// userland reads it. Previously this mis-attributed a stable exit to aaa-churn; it must not now.
 	testutils.AssureIsRoot(t)
 	defer goleak.VerifyNone(t)
 

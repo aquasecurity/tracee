@@ -138,10 +138,41 @@ func Test_updateRulesForEvent_OverflowBoundary(t *testing.T) {
 	}
 }
 
-// Test_updateRulesForEvent_DeterministicRuleIDs verifies that rule IDs (bitmap positions) are
-// assigned in a stable, name-sorted policy order rather than Go's randomized map-iteration order,
-// so IDs are reproducible across runs. Policies are added out of name order on purpose.
+// Test_updateRulesForEvent_DeterministicRuleIDs verifies that a fresh manager assigns rule IDs (bitmap
+// positions) in name-sorted policy order regardless of the initial-policy slice order, so IDs are reproducible
+// across runs. (Rule IDs are now assignment-order-stable - they no longer renumber on add/remove - so the
+// fresh load is sorted to keep this property; runtime add/remove keeps existing IDs, see Test_StableRuleIDs.)
 func Test_updateRulesForEvent_DeterministicRuleIDs(t *testing.T) {
+	t.Parallel()
+
+	depsManager := dependencies.NewDependenciesManager(
+		func(id events.ID) events.DependencyStrategy {
+			return events.Core.GetDefinitionByID(id).GetDependencies()
+		})
+
+	const evt = events.SecurityFileOpen
+	// Provided out of name order on purpose; a fresh manager sorts the initial load.
+	var initial []*Policy
+	for _, name := range []string{"policy_c", "policy_a", "policy_b"} {
+		p := NewPolicy()
+		p.Name = name
+		p.Rules[evt] = RuleData{EventID: evt}
+		initial = append(initial, p)
+	}
+	pm, err := NewManager(ManagerConfig{}, depsManager, initial...)
+	require.NoError(t, err)
+
+	idA := ruleIDForPolicy(t, pm, evt, "policy_a")
+	idB := ruleIDForPolicy(t, pm, evt, "policy_b")
+	idC := ruleIDForPolicy(t, pm, evt, "policy_c")
+	require.True(t, idA < idB && idB < idC,
+		"a fresh load must produce name-sorted rule IDs (a<b<c); got a=%d b=%d c=%d", idA, idB, idC)
+}
+
+// Test_StableRuleIDs verifies the runtime-stability property that makes matched-rules attribution safe across
+// concurrent policy changes: adding a policy at runtime does not renumber existing rules' IDs (even a
+// lower-sorting one), and a removed policy's ID is reused by the next new rule.
+func Test_StableRuleIDs(t *testing.T) {
 	t.Parallel()
 
 	depsManager := dependencies.NewDependenciesManager(
@@ -152,18 +183,30 @@ func Test_updateRulesForEvent_DeterministicRuleIDs(t *testing.T) {
 	require.NoError(t, err)
 
 	const evt = events.SecurityFileOpen
-	for _, name := range []string{"policy_c", "policy_a", "policy_b"} {
+	addPol := func(name string) {
 		p := NewPolicy()
 		p.Name = name
 		p.Rules[evt] = RuleData{EventID: evt}
 		require.NoError(t, pm.AddPolicy(p))
 	}
 
-	idA := ruleIDForPolicy(t, pm, evt, "policy_a")
-	idB := ruleIDForPolicy(t, pm, evt, "policy_b")
-	idC := ruleIDForPolicy(t, pm, evt, "policy_c")
-	require.True(t, idA < idB && idB < idC,
-		"rule IDs must follow name-sorted policy order (a<b<c); got a=%d b=%d c=%d", idA, idB, idC)
+	addPol("base")
+	baseID := ruleIDForPolicy(t, pm, evt, "base")
+
+	// A lower-sorting policy added at runtime must NOT renumber base.
+	addPol("aaa")
+	require.Equal(t, baseID, ruleIDForPolicy(t, pm, evt, "base"),
+		"base must keep its ID when a lower-sorting policy is added at runtime")
+	aaaID := ruleIDForPolicy(t, pm, evt, "aaa")
+	require.NotEqual(t, baseID, aaaID)
+
+	// Removing a policy frees its ID; base stays stable; the freed ID is reused by the next new rule.
+	require.NoError(t, pm.RemovePolicy("aaa"))
+	require.Equal(t, baseID, ruleIDForPolicy(t, pm, evt, "base"), "base stable after a removal")
+	addPol("zzz")
+	require.Equal(t, aaaID, ruleIDForPolicy(t, pm, evt, "zzz"),
+		"a removed policy's ID must be reused by the next new rule")
+	require.Equal(t, baseID, ruleIDForPolicy(t, pm, evt, "base"), "base still stable after reuse")
 }
 
 // Test_isRuleFilterableInUserland_DetectorScope covers the Phase 2 rule-local scope filter: a
