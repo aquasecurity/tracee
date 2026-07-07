@@ -20,28 +20,41 @@ import (
 // runs its workload, and removes the policy - proven safe by the Test_Runtime* tests. withPolicy is the
 // primitive; Test_SharedTraceePolicyFoundation is the proof of shape (two isolated cases on one tracee).
 
-// withPolicy applies pf to a running tracee, runs fn with a freshly-cleared buffer, then removes the policy
-// and clears the buffer again. It is the building block of the shared-tracee foundation: a case swaps its
-// policy in and out at runtime rather than restarting tracee.
-func withPolicy(t *testing.T, trc *tracee.Tracee, buf *testutils.EventBuffer, pf testutils.PolicyFileWithID, fn func(t *testing.T)) {
+// withPolicies applies each policy to a running tracee, runs fn with a freshly-cleared buffer, then removes
+// them all (reverse apply order) and clears the buffer. It is the building block of the shared-tracee
+// foundation: a case swaps its policies in and out at runtime rather than restarting tracee.
+func withPolicies(t *testing.T, trc *tracee.Tracee, buf *testutils.EventBuffer, pfs []testutils.PolicyFileWithID, fn func(t *testing.T)) {
 	t.Helper()
 
-	p := testutils.NewPolicies([]testutils.PolicyFileWithID{pf})[0]
-	name, err := trc.ApplyPolicy(p)
-	require.NoError(t, err, "apply policy")
-	require.Contains(t, trc.ListPolicies(), name, "applied policy must be listed")
+	pols := testutils.NewPolicies(pfs)
+	applied := make([]string, 0, len(pols))
 
 	defer func() {
-		require.NoError(t, trc.RemovePolicy(name), "remove policy %q", name)
-		require.NotContains(t, trc.ListPolicies(), name, "removed policy must not be listed")
+		for i := len(applied) - 1; i >= 0; i-- {
+			require.NoError(t, trc.RemovePolicy(applied[i]), "remove policy %q", applied[i])
+			require.NotContains(t, trc.ListPolicies(), applied[i], "removed policy must not be listed")
+		}
 		buf.Clear()
 	}()
+
+	for _, p := range pols {
+		name, err := trc.ApplyPolicy(p)
+		require.NoError(t, err, "apply policy")
+		require.Contains(t, trc.ListPolicies(), name, "applied policy must be listed")
+		applied = append(applied, name)
+	}
 
 	// Let the kernel re-push (and any probe attach) settle, then start from a clean buffer.
 	time.Sleep(300 * time.Millisecond)
 	buf.Clear()
 
 	fn(t)
+}
+
+// withPolicy is the single-policy convenience wrapper over withPolicies.
+func withPolicy(t *testing.T, trc *tracee.Tracee, buf *testutils.EventBuffer, pf testutils.PolicyFileWithID, fn func(t *testing.T)) {
+	t.Helper()
+	withPolicies(t, trc, buf, []testutils.PolicyFileWithID{pf}, fn)
 }
 
 // Test_SharedTraceePolicyFoundation runs multiple policy cases against a SINGLE tracee via withPolicy, proving
