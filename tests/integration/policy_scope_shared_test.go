@@ -330,35 +330,11 @@ func Test_PolicyScopeShared(t *testing.T) {
 		})
 	})
 
-	// Was Test_PolicyPerRuleScopeKernelPushdown: a per-rule comm filter on openat (global policy scope) is
-	// pushed to the kernel. Matching openats are emitted; the complement plus all background openat activity is
-	// dropped before submission (EventsFiltered delta 0). This case CHURNS the openat probe (attach on apply,
-	// detach on remove), which is safe on the shared tracee per Test_RuntimeRemovePolicyDetachesProbe. Placed
-	// last so its probe churn cannot affect the exit-based cases above.
-	t.Run("per-rule openat kernel pushdown", func(t *testing.T) {
-		commA := fmt.Sprintf("trcpr%d", os.Getpid())
-		commNone := fmt.Sprintf("trcpn%d", os.Getpid())
-		binA := buildCommBinary(t, binDir, commA)
-		binNone := buildCommBinary(t, binDir, commNone)
-
-		withPolicy(t, trc, buf, openatPerRuleCommPolicy(40, "perrule", commA), func(t *testing.T) {
-			baseline := trc.Stats().EventsFiltered.Get()
-
-			for i := 0; i < 100; i++ {
-				require.NoError(t, exec.Command(binNone).Run()) // complement openats (dropped in kernel)
-			}
-			for i := 0; i < 20; i++ {
-				require.NoError(t, exec.Command(binA).Run()) // matching openats
-			}
-
-			deadline := time.Now().Add(10 * time.Second)
-			for emittedCountByComm(buf, "openat", commA) == 0 && time.Now().Before(deadline) {
-				time.Sleep(100 * time.Millisecond)
-			}
-			require.Positive(t, emittedCountByComm(buf, "openat", commA), "matching openat events must be emitted")
-
-			require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
-				"EventsFiltered moved: complement openat events reached userland, so the per-rule comm scope was not kernel-enforced")
-		})
-	})
+	// NOTE: the per-rule openat pushdown case (Test_PolicyPerRuleScopeKernelPushdown) is intentionally NOT on
+	// this shared tracee. openat is a SYSCALL event, carried by the shared raw_syscalls:sys_enter program;
+	// when the base selects no syscall at init that program is not loaded, so selecting openat at runtime
+	// fails with libbpf "prog 'tracepoint__raw_syscalls__sys_enter': can't attach before loaded" (ApplyPolicy
+	// -> "failed to select event openat"). It stays per-instance, starting tracee WITH the openat policy so
+	// sys_enter is loaded up front. This is a real runtime-write-path gap for syscall events (runtime probe
+	// attach works only for events whose program was loaded at init), not a test artifact.
 }
