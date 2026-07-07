@@ -335,3 +335,59 @@ func Test_RuntimeRemovePolicyDetachesProbe(t *testing.T) {
 	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
 		"EventsFiltered moved after removal: a deselected event is still reaching userland, which would pollute sibling cases")
 }
+
+// Test_RuntimeApplyPolicyAttachesSyscallProbe verifies Option A (docs/runtime-syscall-selection-gap.md).
+// Syscall events ride the shared raw_syscalls dispatchers; with no syscall selected at init those programs are
+// not loaded, so selecting a syscall at runtime fails with "can't attach before loaded". With
+// RuntimePolicyChanges enabled the dispatchers are pre-loaded, so applying a policy that selects openat at
+// runtime succeeds and the event fires. This is the syscall analogue of Test_RuntimeApplyPolicyAttachesProbe
+// (which covers a dedicated-tracepoint event, sched_process_exec, that is loaded at init regardless).
+func Test_RuntimeApplyPolicyAttachesSyscallProbe(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	dir := t.TempDir()
+	commBase := fmt.Sprintf("rtsA%d", os.Getpid()%100000)
+	commSys := fmt.Sprintf("rtsS%d", os.Getpid()%100000)
+	binBase := buildCommBinary(t, dir, commBase)
+	binSys := buildCommBinary(t, dir, commSys)
+
+	// Base selects only sched_process_exit (no syscall). withRuntimePolicyChanges pre-loads the syscall
+	// dispatchers so a runtime syscall selection can attach.
+	base := testutils.NewPolicies([]testutils.PolicyFileWithID{exitScopePolicy(1, "base", commBase)})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+	trc, buf, stream := startTraceeWithPolicies(ctx, t, base, withRuntimePolicyChanges)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	// Sanity: the base is live.
+	require.NoError(t, exec.Command(binBase).Run())
+	require.GreaterOrEqual(t, waitForExitComm(buf, commBase, 1, 10*time.Second), 1, "base exit policy must emit")
+
+	// Apply a policy selecting the SYSCALL event openat at runtime. Without Option A this errors with
+	// "failed to select event openat" ("can't attach before loaded").
+	openatPol := testutils.NewPolicies([]testutils.PolicyFileWithID{openatPerRuleCommPolicy(2, "openat-p", commSys)})[0]
+	_, err := trc.ApplyPolicy(openatPol)
+	require.NoError(t, err, "runtime selection of a syscall event must succeed when RuntimePolicyChanges is enabled")
+	require.Contains(t, trc.ListPolicies(), "openat-p", "applied syscall policy must be listed")
+
+	time.Sleep(500 * time.Millisecond)
+	buf.Clear()
+
+	// Running binSys triggers openats with comm=commSys -> the dispatcher (loaded at init, attached now) fires.
+	for i := 0; i < 20; i++ {
+		require.NoError(t, exec.Command(binSys).Run())
+	}
+	require.GreaterOrEqual(t, waitEventComm(buf, "openat", commSys, 1, 10*time.Second), 1,
+		"applying a syscall-event policy at runtime must attach the dispatcher and emit the event")
+}

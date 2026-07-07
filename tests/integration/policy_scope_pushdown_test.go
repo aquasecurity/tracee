@@ -204,6 +204,13 @@ func withProcessDataStore(c *config.Config) {
 	}
 }
 
+// withRuntimePolicyChanges enables the capability that pre-loads the syscall dispatchers at init, so syscall
+// events (which no exit-only base selects) can be selected at runtime via ApplyPolicy without "can't attach
+// before loaded". See docs/runtime-syscall-selection-gap.md.
+func withRuntimePolicyChanges(c *config.Config) {
+	c.RuntimePolicyChanges = true
+}
+
 // exitEventsByCode returns the sorted matched-policy set of the first emitted sched_process_exit event
 // with the given comm and exit_code, plus the count of such events.
 func exitEventsByCode(buf *testutils.EventBuffer, comm string, code int32) (matched []string, count int) {

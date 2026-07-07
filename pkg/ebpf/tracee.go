@@ -1292,6 +1292,22 @@ func (t *Tracee) setProgramsAutoload() {
 		}
 	}
 
+	// When runtime policy changes are enabled, pre-load shared programs that an unselected-at-init event may
+	// depend on, so it can be attached at runtime (autoload is a load-time decision: SetAutoload EINVALs once
+	// the object is loaded, so a program left unloaded here can never be attached later). Currently this is
+	// the syscall dispatchers: every syscall event depends on SyscallEnter__Internal/SyscallExit__Internal
+	// (pkg/events/core.go), and with no syscall selected at init they would stay unloaded, so a runtime
+	// ApplyPolicy selecting a syscall could not attach ("can't attach before loaded"). The SubscribeAdd
+	// watcher below still runs Autoload(true) at runtime, but that is a no-op once loaded; the point here is
+	// to get them loaded up front. See docs/runtime-syscall-selection-gap.md.
+	if t.config.RuntimePolicyChanges {
+		for _, handle := range []probes.Handle{probes.SyscallEnter__Internal, probes.SyscallExit__Internal} {
+			if err := t.defaultProbes.Autoload(handle, true); err != nil {
+				logger.Debugw("Failed to pre-autoload syscall dispatcher for runtime changes", "handle", handle, "error", err)
+			}
+		}
+	}
+
 	// Upon adding a probe, ensure it's autoloaded
 	t.eventsDependencies.SubscribeAdd(
 		dependencies.ProbeNodeType,

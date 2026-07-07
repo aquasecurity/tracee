@@ -60,6 +60,13 @@ type Config struct {
 	MetricsEnabled    bool
 	HealthzEnabled    bool
 	DetectorConfig    DetectorConfig
+	// RuntimePolicyChanges prepares the eBPF object for runtime event selection. Shared programs that are
+	// otherwise autoloaded only when a dependent event is selected at init - currently the syscall dispatchers
+	// (SyscallEnter__Internal/SyscallExit__Internal), which every syscall event depends on - are loaded up
+	// front, so a runtime ApplyPolicy selecting such an event can attach them (autoload is a load-time
+	// decision; it cannot be enabled after the object is loaded). Off by default: an always-loaded, attached
+	// syscall dispatcher adds per-syscall overhead. See docs/runtime-syscall-selection-gap.md.
+	RuntimePolicyChanges bool
 }
 
 // Validate does static validation of the configuration
