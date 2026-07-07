@@ -26,6 +26,14 @@ type PipelineEvent struct {
 	// MatchedRulesKernel so the kernel bitmap stays pristine.
 	MatchedRulesBitmap []uint64
 
+	// RulesSnapshot is the immutable policy read snapshot captured for this event at decode - an opaque
+	// *policy.Snapshot, set and read only by pkg/ebpf (pkg/events cannot import pkg/policy: it would cycle).
+	// Threading one snapshot through every stage makes all matched-rules reads for the event resolve against a
+	// single consistent version, even if a runtime policy change publishes a newer snapshot mid-flight; the
+	// held pointer also keeps that version alive (GC-based retention) until the event drains. Derived events
+	// inherit their base's snapshot.
+	RulesSnapshot any
+
 	// ProtoEvent is a cached protobuf representation of the event.
 	// It is lazily populated on first call to ToProto() and reused thereafter.
 	// For proto-native detector events, this is set directly without a trace.Event.

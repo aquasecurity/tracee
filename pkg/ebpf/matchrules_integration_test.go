@@ -89,18 +89,18 @@ func TestClearDisabledRules_Integration(t *testing.T) {
 
 	// Gate closed (nothing disabled yet) => clearDisabledRules is a no-op.
 	bitmap := []uint64{bit}
-	tr.clearDisabledRules(ovfEvent, bitmap)
+	tr.clearDisabledRules(pm.LoadSnapshot(), ovfEvent, bitmap)
 	assert.Equal(t, bit, bitmap[0], "no rule disabled yet: bitmap must be unchanged")
 
 	// Disable the rule => its bit is cleared.
 	require.NoError(t, pm.DisableRule("p000", ovfEvent))
 	bitmap = []uint64{bit}
-	tr.clearDisabledRules(ovfEvent, bitmap)
+	tr.clearDisabledRules(pm.LoadSnapshot(), ovfEvent, bitmap)
 	assert.Equal(t, uint64(0), bitmap[0], "disabled rule's bit must be cleared")
 
 	// Re-enable => bit survives again.
 	require.NoError(t, pm.EnableRule("p000", ovfEvent))
 	bitmap = []uint64{bit}
-	tr.clearDisabledRules(ovfEvent, bitmap)
+	tr.clearDisabledRules(pm.LoadSnapshot(), ovfEvent, bitmap)
 	assert.Equal(t, bit, bitmap[0], "re-enabled rule's bit must survive")
 }

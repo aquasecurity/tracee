@@ -44,7 +44,7 @@ type PolicyManager struct {
 	// snap is the immutable, atomically-published view of the per-event read state (rules + exported filter
 	// maps). The event hot path Loads it once and reads without taking pm.mu; writers rebuild and Store it
 	// under pm.mu after every mutation (see publishSnapshot). Never nil after NewManager.
-	snap atomic.Pointer[policySnapshot]
+	snap atomic.Pointer[Snapshot]
 	// detectorScopeFilters holds, per detector OUTPUT event, the scope filters the detector declared
 	// for each required base event (Requirements.Events[].ScopeFilters). Phase 2 pushes them onto the
 	// base events' dependency rules (EventRule.DetectorScopeFilter). Keyed detectorOutputID -> baseID.
@@ -578,22 +578,19 @@ func (pm *PolicyManager) UpdatePolicy(policy *Policy) error {
 	return nil
 }
 
-// policySnapshot is an immutable, atomically-published view of the per-event read state. Readers Load it
-// once and read without locking; writers rebuild and Store it (publishSnapshot) under pm.mu after every
-// mutation. The rules map is a fresh copy per publish, so later in-place map writes (toggles, delete) cannot
-// mutate a published snapshot; the EventRules and their slices are replaced-not-mutated by writers (see the
+// Snapshot is an immutable, atomically-published view of the per-event read state. Readers Load it once and
+// read without locking; writers rebuild and Store it (publishSnapshot) under pm.mu after every mutation. The
+// rules map is a fresh copy per publish, so later in-place map writes (toggles, delete) cannot mutate a
+// published snapshot; the EventRules and their slices are replaced-not-mutated by writers (see the
 // copy-on-write in setRuleEnabled and updateRulesForEvent), so sharing them is safe for lock-free readers.
 //
-// TODO (runtime-swap correctness, deferred to the write-path build-out):
-//   - Per-event single Load: today each accessor Loads snap independently, so the 8+ reads for one event
-//     could straddle a mid-event publish (each Load is atomic, but the set is not). Expose a Snapshot() handle
-//     the pipeline Loads once per event and threads through the matchers, so an event reads one consistent
-//     version. (Rare today - writers are init/operator-driven - but a real gap once runtime swaps happen.)
-//   - Versioned retention: an in-flight event was tagged by the kernel with its rules_version; its
-//     MatchedRules positions refer to that version's rule IDs. Keep version->snapshot and read by the event's
-//     RulesVersion, retaining old versions until in-flight events of that version drain. Only matters once the
-//     write path swaps versions at runtime; see docs/runtime-policy-change.md.
-type policySnapshot struct {
+// Runtime-swap correctness: the pipeline captures one Snapshot per event at decode (LoadSnapshot) and threads
+// it through every stage (see PipelineEvent.RulesSnapshot), so all reads for an event resolve against one
+// consistent version even if a runtime policy change publishes a newer snapshot mid-flight. Retention is
+// automatic: an in-flight event holds a pointer to its Snapshot, so the GC keeps that version alive until the
+// last event of it drains. The PolicyManager.GetXxx wrappers below read the latest snapshot for non-pipeline
+// callers. All Snapshot read methods are safe on a nil receiver (they return the empty defaults).
+type Snapshot struct {
 	rules         map[events.ID]EventRules
 	exportedFMaps *FilterMaps
 }
@@ -607,12 +604,17 @@ func (pm *PolicyManager) publishSnapshot() {
 	for k, v := range pm.rules {
 		rules[k] = v
 	}
-	pm.snap.Store(&policySnapshot{rules: rules, exportedFMaps: pm.exportedFMaps})
+	pm.snap.Store(&Snapshot{rules: rules, exportedFMaps: pm.exportedFMaps})
 }
 
-// eventRulesSnap returns the event's EventRules from the current lock-free snapshot.
-func (pm *PolicyManager) eventRulesSnap(eventID events.ID) (EventRules, bool) {
-	s := pm.snap.Load()
+// LoadSnapshot returns the current lock-free read snapshot. The pipeline calls it once per event at decode and
+// threads the handle through the stages so every read for that event resolves against one consistent version.
+func (pm *PolicyManager) LoadSnapshot() *Snapshot {
+	return pm.snap.Load()
+}
+
+// eventRules returns the event's EventRules from this snapshot. Safe on a nil receiver.
+func (s *Snapshot) eventRules(eventID events.ID) (EventRules, bool) {
 	if s == nil {
 		return EventRules{}, false
 	}
@@ -1009,13 +1011,18 @@ func (pm *PolicyManager) ListPolicyNames() []string {
 // It is the caller's responsibility to ensure that they are not relying on
 // the slice to remain unchanged across calls to AddPolicy, RemovePolicy, or
 // any other function that might update the PolicyManager's rules.
-func (pm *PolicyManager) GetRules(eventID events.ID) []*EventRule {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) GetRules(eventID events.ID) []*EventRule {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return nil // Or return an empty slice: []*EventRule{}
 	}
 
 	return eventRules.Rules
+}
+
+// GetRules reads the latest snapshot; see (*Snapshot).GetRules.
+func (pm *PolicyManager) GetRules(eventID events.ID) []*EventRule {
+	return pm.snap.Load().GetRules(eventID)
 }
 
 // GetUserlandRules returns the UserlandRules slice for a given event ID.
@@ -1028,8 +1035,8 @@ func (pm *PolicyManager) GetRules(eventID events.ID) []*EventRule {
 // It is the caller's responsibility to ensure that they are not relying on
 // the slice to remain unchanged across calls to AddPolicy, RemovePolicy, or
 // any other function that might update the PolicyManager's rules.
-func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) GetUserlandRules(eventID events.ID) []*EventRule {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return nil // Or return an empty slice: []*EventRule{}
 	}
@@ -1037,15 +1044,25 @@ func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
 	return eventRules.UserlandRules
 }
 
+// GetUserlandRules reads the latest snapshot; see (*Snapshot).GetUserlandRules.
+func (pm *PolicyManager) GetUserlandRules(eventID events.ID) []*EventRule {
+	return pm.snap.Load().GetUserlandRules(eventID)
+}
+
 // GetFilterMaps returns the cached read-only export of the filter maps for the userland
 // overflow rules matcher. The export is built once per updateBPF (see buildExportedFilterMaps),
 // not per call, because it is read on the event hot path. The returned value is immutable
 // (replaced, never mutated), so callers may read it without holding the lock.
-func (pm *PolicyManager) GetFilterMaps() *FilterMaps {
-	if s := pm.snap.Load(); s != nil {
-		return s.exportedFMaps
+func (s *Snapshot) GetFilterMaps() *FilterMaps {
+	if s == nil {
+		return nil
 	}
-	return nil
+	return s.exportedFMaps
+}
+
+// GetFilterMaps reads the latest snapshot; see (*Snapshot).GetFilterMaps.
+func (pm *PolicyManager) GetFilterMaps() *FilterMaps {
+	return pm.snap.Load().GetFilterMaps()
 }
 
 // buildExportedFilterMaps converts the internal filterMaps into the exported, read-only
@@ -1163,8 +1180,8 @@ func convertRuleBitmapSlice(input []ruleBitmap) []RuleBitmap {
 // GetContainerFilteredRulesBitmap returns a bitmap where each bit represents a rule
 // for the given event ID, and the bit is set if the corresponding rule has
 // container filtering enabled.
-func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) []uint64 {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) GetContainerFilteredRulesBitmap(eventID events.ID) []uint64 {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return []uint64{0} // No rules for this event, return an empty bitmap
 	}
@@ -1172,13 +1189,18 @@ func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) []ui
 	return eventRules.containerFilteredRules
 }
 
+// GetContainerFilteredRulesBitmap reads the latest snapshot; see (*Snapshot).GetContainerFilteredRulesBitmap.
+func (pm *PolicyManager) GetContainerFilteredRulesBitmap(eventID events.ID) []uint64 {
+	return pm.snap.Load().GetContainerFilteredRulesBitmap(eventID)
+}
+
 // GetMatchedRulesInfo processes a bitmap array of matched rule IDs for a given event and returns
 // a list of policy names corresponding to the matched rules that have the Emit flag set.
 // Supports rules with ID > 64 through bitmap arrays.
-func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap []uint64) []string {
+func (s *Snapshot) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap []uint64) []string {
 	var matchedPolicyNames []string
 
-	eventRules, ok := pm.eventRulesSnap(eventID)
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return matchedPolicyNames
 	}
@@ -1209,12 +1231,16 @@ func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBi
 	return matchedPolicyNames
 }
 
-func (pm *PolicyManager) GetDerivedEventMatchedRules(
+// GetMatchedRulesInfo reads the latest snapshot; see (*Snapshot).GetMatchedRulesInfo.
+func (pm *PolicyManager) GetMatchedRulesInfo(eventID events.ID, matchedRuleIDsBitmap []uint64) []string {
+	return pm.snap.Load().GetMatchedRulesInfo(eventID, matchedRuleIDsBitmap)
+}
+
+func (s *Snapshot) GetDerivedEventMatchedRules(
 	derivedEventID events.ID,
 	baseEventID events.ID,
 	baseMatchedRulesBitmap []uint64,
 ) []uint64 {
-	s := pm.snap.Load()
 	if s == nil {
 		return []uint64{}
 	}
@@ -1263,14 +1289,28 @@ func (pm *PolicyManager) GetDerivedEventMatchedRules(
 	return derivedMatchedRules
 }
 
+// GetDerivedEventMatchedRules reads the latest snapshot; see (*Snapshot).GetDerivedEventMatchedRules.
+func (pm *PolicyManager) GetDerivedEventMatchedRules(
+	derivedEventID events.ID,
+	baseEventID events.ID,
+	baseMatchedRulesBitmap []uint64,
+) []uint64 {
+	return pm.snap.Load().GetDerivedEventMatchedRules(derivedEventID, baseEventID, baseMatchedRulesBitmap)
+}
+
 // IsEventEnabled checks if an event is currently enabled.
-func (pm *PolicyManager) IsEventEnabled(eventID events.ID) bool {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) IsEventEnabled(eventID events.ID) bool {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return false // Event not found, consider it disabled
 	}
 
 	return eventRules.enabled
+}
+
+// IsEventEnabled reads the latest snapshot; see (*Snapshot).IsEventEnabled.
+func (pm *PolicyManager) IsEventEnabled(eventID events.ID) bool {
+	return pm.snap.Load().IsEventEnabled(eventID)
 }
 
 // EnableRule re-enables the named policy's rule(s) for the given event at runtime.
@@ -1336,12 +1376,17 @@ func (pm *PolicyManager) AnyRulesDisabled() bool {
 // GetDisabledRules returns the bitmap of rules disabled at runtime for the event (nil if
 // none). The returned slice is immutable (replaced, never mutated in place), so callers may
 // read it without holding the lock.
-func (pm *PolicyManager) GetDisabledRules(eventID events.ID) []uint64 {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) GetDisabledRules(eventID events.ID) []uint64 {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return nil
 	}
 	return eventRules.disabledRules
+}
+
+// GetDisabledRules reads the latest snapshot; see (*Snapshot).GetDisabledRules.
+func (pm *PolicyManager) GetDisabledRules(eventID events.ID) []uint64 {
+	return pm.snap.Load().GetDisabledRules(eventID)
 }
 
 // EnableEvent enables a specific event in the PolicyManager.
@@ -1370,8 +1415,7 @@ func (pm *PolicyManager) DisableEvent(eventID events.ID) {
 
 // GetSelectedEvents returns a slice of all the event IDs that are currently selected
 // either directly by a policy or as a dependency.
-func (pm *PolicyManager) GetSelectedEvents() []events.ID {
-	s := pm.snap.Load()
+func (s *Snapshot) GetSelectedEvents() []events.ID {
 	if s == nil {
 		return nil
 	}
@@ -1383,15 +1427,25 @@ func (pm *PolicyManager) GetSelectedEvents() []events.ID {
 	return selectedEvents
 }
 
+// GetSelectedEvents reads the latest snapshot; see (*Snapshot).GetSelectedEvents.
+func (pm *PolicyManager) GetSelectedEvents() []events.ID {
+	return pm.snap.Load().GetSelectedEvents()
+}
+
 // IsEventSelected checks if an event is selected by any policy, either directly or as a dependency.
-func (pm *PolicyManager) IsEventSelected(eventID events.ID) bool {
-	_, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) IsEventSelected(eventID events.ID) bool {
+	_, ok := s.eventRules(eventID)
 	return ok
 }
 
+// IsEventSelected reads the latest snapshot; see (*Snapshot).IsEventSelected.
+func (pm *PolicyManager) IsEventSelected(eventID events.ID) bool {
+	return pm.snap.Load().IsEventSelected(eventID)
+}
+
 // HasOverflowRules checks if the specified event has more than 64 rules
-func (pm *PolicyManager) HasOverflowRules(eventID events.ID) bool {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) HasOverflowRules(eventID events.ID) bool {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return false // Event not found, no overflow
 	}
@@ -1399,10 +1453,15 @@ func (pm *PolicyManager) HasOverflowRules(eventID events.ID) bool {
 	return eventRules.hasOverflow
 }
 
+// HasOverflowRules reads the latest snapshot; see (*Snapshot).HasOverflowRules.
+func (pm *PolicyManager) HasOverflowRules(eventID events.ID) bool {
+	return pm.snap.Load().HasOverflowRules(eventID)
+}
+
 // GetRulesCount returns the total number of rules for the event (0 if none). Used by the
 // userland overflow matcher to mask off bit positions beyond the real rules.
-func (pm *PolicyManager) GetRulesCount(eventID events.ID) uint {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) GetRulesCount(eventID events.ID) uint {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return 0
 	}
@@ -1410,13 +1469,18 @@ func (pm *PolicyManager) GetRulesCount(eventID events.ID) uint {
 	return eventRules.rulesCount
 }
 
+// GetRulesCount reads the latest snapshot; see (*Snapshot).GetRulesCount.
+func (pm *PolicyManager) GetRulesCount(eventID events.ID) uint {
+	return pm.snap.Load().GetRulesCount(eventID)
+}
+
 // GetAllRulesBitmap returns a []uint64 bitmap with every rule bit set for the event (bits
 // 0..rulesCount-1) - the userland equivalent of the kernel's submit_for_rules. It seeds the
 // match for a detector's OUTPUT event against its own rules when the base event's bitmap did
 // not carry the output's chain bit (direct-input detectors, see detectEvents). matchPoliciesProto
 // only narrows a bitmap, so without a seed an emitted output would always be dropped.
-func (pm *PolicyManager) GetAllRulesBitmap(eventID events.ID) []uint64 {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) GetAllRulesBitmap(eventID events.ID) []uint64 {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok || eventRules.rulesCount == 0 {
 		return nil
 	}
@@ -1433,11 +1497,16 @@ func (pm *PolicyManager) GetAllRulesBitmap(eventID events.ID) []uint64 {
 	return bitmap
 }
 
+// GetAllRulesBitmap reads the latest snapshot; see (*Snapshot).GetAllRulesBitmap.
+func (pm *PolicyManager) GetAllRulesBitmap(eventID events.ID) []uint64 {
+	return pm.snap.Load().GetAllRulesBitmap(eventID)
+}
+
 // ShouldEmitEvent checks if an event has at least one rule that was explicitly
 // selected by a user (not a dependency or bootstrap rule), indicating that the event
 // should be emitted.
-func (pm *PolicyManager) ShouldEmitEvent(eventID events.ID) bool {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) ShouldEmitEvent(eventID events.ID) bool {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return false // Event not found or no rules defined, not emitted
 	}
@@ -1451,11 +1520,16 @@ func (pm *PolicyManager) ShouldEmitEvent(eventID events.ID) bool {
 	return false // No rules were explicitly selected by the user
 }
 
+// ShouldEmitEvent reads the latest snapshot; see (*Snapshot).ShouldEmitEvent.
+func (pm *PolicyManager) ShouldEmitEvent(eventID events.ID) bool {
+	return pm.snap.Load().ShouldEmitEvent(eventID)
+}
+
 // GetAllMatchedRulesBitmap returns a bitmap array where all bits corresponding to
 // rules for the given event ID are set, indicating that all rules are considered
 // matched. Supports overflow rules (ID > 64).
-func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) []uint64 {
-	eventRules, ok := pm.eventRulesSnap(eventID)
+func (s *Snapshot) GetAllMatchedRulesBitmap(eventID events.ID) []uint64 {
+	eventRules, ok := s.eventRules(eventID)
 	if !ok {
 		return []uint64{} // No rules for this event, return an empty bitmap array
 	}
@@ -1466,6 +1540,11 @@ func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) []uint64 {
 	}
 
 	return allRulesBitmap
+}
+
+// GetAllMatchedRulesBitmap reads the latest snapshot; see (*Snapshot).GetAllMatchedRulesBitmap.
+func (pm *PolicyManager) GetAllMatchedRulesBitmap(eventID events.ID) []uint64 {
+	return pm.snap.Load().GetAllMatchedRulesBitmap(eventID)
 }
 
 func (pm *PolicyManager) UpdateBPF(
