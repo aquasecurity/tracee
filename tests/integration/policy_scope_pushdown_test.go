@@ -311,62 +311,6 @@ func emittedCountByComm(buf *testutils.EventBuffer, eventName, comm string) int 
 	return n
 }
 
-// Test_PolicyPerRuleScopeKernelPushdown proves a PER-RULE scope filter (a comm inside a rule's `filters:`) on
-// openat is pushed to the kernel: matching openats are emitted while the complement plus all background openat
-// activity is dropped before submission (EventsFiltered stays 0).
-//
-// Kept PER-INSTANCE (not on the shared-tracee foundation, Test_PolicyScopeShared): openat is a syscall event
-// on the shared raw_syscalls:sys_enter program, which is not loaded unless a syscall is selected at init, so
-// selecting openat at runtime fails ("can't attach before loaded"). Starting tracee with this policy loads and
-// attaches sys_enter up front.
-func Test_PolicyPerRuleScopeKernelPushdown(t *testing.T) {
-	testutils.AssureIsRoot(t)
-	defer goleak.VerifyNone(t)
-
-	commA := fmt.Sprintf("trcpr%d", os.Getpid())
-	commNone := fmt.Sprintf("trcpn%d", os.Getpid())
-	binA := buildCommBinary(t, t.TempDir(), commA)
-	binNone := buildCommBinary(t, t.TempDir(), commNone)
-
-	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
-		openatPerRuleCommPolicy(1, "perrule", commA),
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
-
-	time.Sleep(2 * time.Second)
-	buf.Clear()
-
-	baseline := trc.Stats().EventsFiltered.Get()
-
-	for i := 0; i < 100; i++ {
-		require.NoError(t, exec.Command(binNone).Run()) // complement openats (dropped in kernel)
-	}
-	for i := 0; i < 20; i++ {
-		require.NoError(t, exec.Command(binA).Run()) // matching openats
-	}
-
-	// Positive control: matching openats are emitted (so a 0 delta means "kernel dropped", not "idle").
-	deadline := time.Now().Add(10 * time.Second)
-	for emittedCountByComm(buf, "openat", commA) == 0 && time.Now().Before(deadline) {
-		time.Sleep(100 * time.Millisecond)
-	}
-	require.Positive(t, emittedCountByComm(buf, "openat", commA), "matching openat events must be emitted")
-
-	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
-		"EventsFiltered moved: complement openat events reached userland, so the per-rule comm scope was not kernel-enforced")
-}
-
 // Test_PolicyPerRuleScopeDerivedEvent covers per-rule scope on a DERIVED event (net_packet_icmp). The
 // per-rule comm is threaded onto the net base dependency rules and pushed to the kernel, so this guards
 // the interaction with the net-event submission path (the a2 socket-bitmap fix): the matching per-rule

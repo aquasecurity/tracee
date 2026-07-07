@@ -387,6 +387,13 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 		cfg.HealthzEnabled = runner.HTTP.IsHealthzEnabled()
 	}
 
+	// The gRPC server exposes runtime policy changes (ApplyPolicy/RemovePolicy). Enable the capability that
+	// pre-loads the shared syscall dispatchers at init, so syscall events can be selected at runtime (not just
+	// dedicated-probe events). See docs/runtime-syscall-selection-gap.md.
+	if runner.GRPC != nil {
+		cfg.RuntimePolicyChanges = true
+	}
+
 	runner.TraceeConfig = cfg
 
 	noSignaturesMode := viper.GetBool("no-signatures")
