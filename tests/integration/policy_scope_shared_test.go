@@ -329,4 +329,36 @@ func Test_PolicyScopeShared(t *testing.T) {
 			require.Zero(t, cNone, "comm-complement exits must be dropped in the kernel")
 		})
 	})
+
+	// Was Test_PolicyPerRuleScopeKernelPushdown: a per-rule comm filter on openat (global policy scope) is
+	// pushed to the kernel. Matching openats are emitted; the complement plus all background openat activity is
+	// dropped before submission (EventsFiltered delta 0). This case CHURNS the openat probe (attach on apply,
+	// detach on remove), which is safe on the shared tracee per Test_RuntimeRemovePolicyDetachesProbe. Placed
+	// last so its probe churn cannot affect the exit-based cases above.
+	t.Run("per-rule openat kernel pushdown", func(t *testing.T) {
+		commA := fmt.Sprintf("trcpr%d", os.Getpid())
+		commNone := fmt.Sprintf("trcpn%d", os.Getpid())
+		binA := buildCommBinary(t, binDir, commA)
+		binNone := buildCommBinary(t, binDir, commNone)
+
+		withPolicy(t, trc, buf, openatPerRuleCommPolicy(40, "perrule", commA), func(t *testing.T) {
+			baseline := trc.Stats().EventsFiltered.Get()
+
+			for i := 0; i < 100; i++ {
+				require.NoError(t, exec.Command(binNone).Run()) // complement openats (dropped in kernel)
+			}
+			for i := 0; i < 20; i++ {
+				require.NoError(t, exec.Command(binA).Run()) // matching openats
+			}
+
+			deadline := time.Now().Add(10 * time.Second)
+			for emittedCountByComm(buf, "openat", commA) == 0 && time.Now().Before(deadline) {
+				time.Sleep(100 * time.Millisecond)
+			}
+			require.Positive(t, emittedCountByComm(buf, "openat", commA), "matching openat events must be emitted")
+
+			require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
+				"EventsFiltered moved: complement openat events reached userland, so the per-rule comm scope was not kernel-enforced")
+		})
+	})
 }

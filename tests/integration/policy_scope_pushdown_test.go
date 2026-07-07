@@ -256,6 +256,22 @@ func exitPolicyScopes(id int, name string, scopes []string, ruleFilters ...strin
 	}
 }
 
+// openatPerRuleCommPolicy builds a global-scope policy with a single openat rule carrying a per-rule comm
+// filter (rule `filters:`), used to exercise per-rule scope kernel pushdown.
+func openatPerRuleCommPolicy(id int, name, comm string) testutils.PolicyFileWithID {
+	return testutils.PolicyFileWithID{
+		Id: id,
+		PolicyFile: polv1beta1.PolicyFile{
+			Metadata: polv1beta1.Metadata{Name: name},
+			Spec: k8s.PolicySpec{
+				Scope:          []string{"global"},
+				DefaultActions: []string{"log"},
+				Rules:          []k8s.Rule{{Event: "openat", Filters: []string{"comm=" + comm}}},
+			},
+		},
+	}
+}
+
 // runAsUID runs bin as the given uid/gid (root only) and waits for it to exit.
 func runAsUID(t *testing.T, bin string, uid uint32) {
 	t.Helper()
@@ -286,74 +302,6 @@ func emittedCountByComm(buf *testutils.EventBuffer, eventName, comm string) int 
 		n++
 	}
 	return n
-}
-
-// Test_PolicyPerRuleScopeKernelPushdown proves that a PER-RULE scope filter (a scope key inside a rule's
-// `filters:` list - rule.Data.ScopeFilter) is enforced IN THE KERNEL, not just user space. openat is
-// selected with a per-rule comm filter (not a policy spec.scope). With the per-rule scope pushdown, the
-// kernel drops every non-matching openat (of which there are a huge number system-wide) before
-// submission, so EventsFiltered stays 0; matching openats still flow. Before the pushdown this filter
-// was userland-only and the counter would climb with all openat activity.
-func Test_PolicyPerRuleScopeKernelPushdown(t *testing.T) {
-	testutils.AssureIsRoot(t)
-	defer goleak.VerifyNone(t)
-
-	commA := fmt.Sprintf("trcpr%d", os.Getpid())
-	commNone := fmt.Sprintf("trcpn%d", os.Getpid())
-	binA := buildCommBinary(t, t.TempDir(), commA)
-	binNone := buildCommBinary(t, t.TempDir(), commNone)
-
-	// openat with a PER-RULE comm filter (rule `filters:`), global policy scope.
-	policies := testutils.NewPolicies([]testutils.PolicyFileWithID{
-		{
-			Id: 1,
-			PolicyFile: polv1beta1.PolicyFile{
-				Metadata: polv1beta1.Metadata{Name: "perrule"},
-				Spec: k8s.PolicySpec{
-					Scope:          []string{"global"},
-					DefaultActions: []string{"log"},
-					Rules:          []k8s.Rule{{Event: "openat", Filters: []string{"comm=" + commA}}},
-				},
-			},
-		},
-	})
-
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
-
-	time.Sleep(2 * time.Second)
-	buf.Clear()
-
-	baseline := trc.Stats().EventsFiltered.Get()
-
-	for i := 0; i < 100; i++ {
-		require.NoError(t, exec.Command(binNone).Run()) // complement openats (dropped in kernel)
-	}
-	for i := 0; i < 20; i++ {
-		require.NoError(t, exec.Command(binA).Run()) // matching openats
-	}
-
-	// Positive control: matching openats are emitted (so a 0 delta means "kernel dropped", not "idle").
-	deadline := time.Now().Add(10 * time.Second)
-	for emittedCountByComm(buf, "openat", commA) == 0 && time.Now().Before(deadline) {
-		time.Sleep(100 * time.Millisecond)
-	}
-	require.Positive(t, emittedCountByComm(buf, "openat", commA), "matching openat events must be emitted")
-
-	// The per-rule comm scope is enforced in the kernel: every non-matching openat (our complement plus
-	// all background openat activity) was dropped before submission, so none reached userland to be
-	// filtered. A non-zero value means the per-rule scope leaked to user-space filtering.
-	require.Zero(t, trc.Stats().EventsFiltered.Get()-baseline,
-		"EventsFiltered moved: complement openat events reached userland, so the per-rule comm scope was not kernel-enforced")
 }
 
 // Test_PolicyPerRuleScopeDerivedEvent covers per-rule scope on a DERIVED event (net_packet_icmp). The
