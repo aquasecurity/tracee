@@ -31,7 +31,7 @@ import (
 // matched-policy set (evt.Policies.Matched), so attribution is asserted exactly.
 //
 // Base event: sched_process_exit (no derivation, so EventsFiltered is a valid kernel-vs-userland signal,
-// and it IS emitted so attribution is observable). See docs/matched-rules-test-scenarios.md (group A).
+// and it IS emitted so attribution is observable).
 
 const schedProcessExitName = "sched_process_exit"
 
@@ -221,7 +221,7 @@ func withProcessDataStore(c *config.Config) {
 
 // withRuntimePolicyChanges enables the capability that pre-loads the syscall dispatchers at init, so syscall
 // events (which no exit-only base selects) can be selected at runtime via ApplyPolicy without "can't attach
-// before loaded". See docs/runtime-syscall-selection-gap.md.
+// before loaded".
 func withRuntimePolicyChanges(c *config.Config) {
 	c.RuntimePolicyChanges = true
 }

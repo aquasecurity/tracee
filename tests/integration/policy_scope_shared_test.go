@@ -34,9 +34,8 @@ func Test_PolicyScopeShared(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
 	defer cancel()
-	// withRuntimePolicyChanges pre-loads the syscall dispatchers so the per-rule openat case below can select
-	// a syscall event at runtime (Option A, docs/runtime-syscall-selection-gap.md). It is harmless for the
-	// exit-based cases.
+	// withRuntimePolicyChanges pre-loads the syscall dispatchers so the per-rule openat case below can select a
+	// syscall event at runtime; harmless for the exit-based cases.
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, base, withRuntimePolicyChanges)
 	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 

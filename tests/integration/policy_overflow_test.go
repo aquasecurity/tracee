@@ -23,8 +23,7 @@ import (
 // Because the kernel filter is defeated for overflow events, these tests do NOT assert EventsFiltered==0
 // (the complement is dropped in userland, not the kernel); they assert attribution instead.
 //
-// overflowPolicyCount is >64 so rule IDs 64.. live in the overflow words. See
-// docs/matched-rules-test-scenarios.md (A10, D3).
+// overflowPolicyCount is >64 so rule IDs 64.. live in the overflow words.
 const overflowPolicyCount = 70
 
 // overflowComm returns a distinct, unusual comm for policy index k (<= 15 chars, e.g. "ovf123_64").

@@ -308,8 +308,8 @@ func Test_RuntimeRemovePolicyDetachesProbe(t *testing.T) {
 		"EventsFiltered moved after removal: a deselected event is still reaching userland, which would pollute sibling cases")
 }
 
-// Test_RuntimeApplyPolicyAttachesSyscallProbe verifies Option A (docs/runtime-syscall-selection-gap.md).
-// Syscall events ride the shared raw_syscalls dispatchers; with no syscall selected at init those programs are
+// Test_RuntimeApplyPolicyAttachesSyscallProbe verifies runtime syscall selection (the RuntimePolicyChanges
+// pre-load). Syscall events ride the shared raw_syscalls dispatchers; with no syscall selected at init those programs are
 // not loaded, so selecting a syscall at runtime fails with "can't attach before loaded". With
 // RuntimePolicyChanges enabled the dispatchers are pre-loaded, so applying a policy that selects openat at
 // runtime succeeds and the event fires. This is the syscall analogue of Test_RuntimeApplyPolicyAttachesProbe

@@ -2367,7 +2367,7 @@ func Test_EventFilters(t *testing.T) {
 
 	// PASS 1: isolated cases (net-asserting, empty-rules/all-events, or tag/comma/exclusion policies). Each
 	// runs on its OWN fresh tracee, and no shared tracee is up yet, so two tracees never overlap. Net scope is
-	// socket-bound (docs/matched-rules-net-matched-rules-fix.md), so these must own their tracee.
+	// socket-bound, so these must own their tracee.
 	for _, tc := range tt {
 		if caseIsShareable(tc) {
 			continue
@@ -2531,10 +2531,9 @@ const (
 )
 
 // caseAssertsNetEvents reports whether any of the case's expected events is a network event (net_*). Such
-// cases must run on their own isolated tracee: net scope is socket-bound (the kernel stamps a socket with the
-// matched-rules active at its creation), so on a shared, long-lived tracee a socket opened by an earlier case
-// would keep emitting events attributed to that case's now-removed rules. See
-// docs/matched-rules-net-matched-rules-fix.md.
+// cases need their own tracee: net scope is socket-bound (the kernel stamps a socket with the matched-rules
+// active at its creation), so on a shared, long-lived tracee a socket opened by an earlier case keeps emitting
+// events attributed to that case's now-removed rules.
 func caseAssertsNetEvents(tc testCase) bool {
 	for _, cmd := range tc.cmdEvents {
 		for _, evt := range cmd.expectedEvents {
