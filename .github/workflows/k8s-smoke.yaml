@@ -1,15 +1,15 @@
 #
-# k8s-smoke - cheap k8s/CRD smoke test of the CURRENT PR code, run as part of PR CI.
+# k8s-smoke - k8s/CRD smoke test of the CURRENT PR code, as part of PR CI.
 #
-# The expensive part of the image is COMPILING tracee, which the PR already does. So we compile once on alpine
-# (cached), package the binary into a COPY-only image (builder/Dockerfile.ci - seconds, no recompile), then run
-# tests/cluster/incluster.sh (k3s + helm + Policy CRD + verify) on the runner HOST so the DaemonSet's node
-# kernel is the runner kernel and eBPF attaches. Exercises the CRD -> tracee path against YOUR code, not the
-# released image, without the ~10-min multi-stage rebuild.
+# One self-contained job. The repo passes no artifacts between jobs (upload/download-artifact are disallowed),
+# so build and smoke run together on a host runner that has the tracee build toolchain + a real kernel: compile
+# `make tracee`, package it into a COPY-only image (builder/Dockerfile.ci - a seconds-long COPY, not the
+# ~10-min multi-stage build), then run tests/cluster/incluster.sh (installs k3s, helm-deploys the chart,
+# applies a Policy CRD, verifies). k3s runs directly on the runner so the DaemonSet's node kernel is the runner
+# kernel and eBPF attaches.
 #
-# The operator is NOT deployed: its only job is to restart the DaemonSet on a Policy CRD change, and the test
-# does that restart itself - so the build only needs `make tracee`. Flip `use_released` (manual runs) to smoke
-# the released image instead (deploy mechanics only, no build).
+# Only `tracee` is built - the operator is not deployed (the test does its DaemonSet restart itself). Set
+# `use_released` (manual runs) to smoke the released image instead (deploy mechanics only, no build).
 #
 name: k8s-smoke
 
@@ -33,65 +33,48 @@ permissions:
   contents: read
 
 jobs:
-  # Compile the PR code on alpine (musl), matching the alpine runtime image. Mirrors the existing
-  # unit-test build (alpine/git container + setup-tracee-alpine) and uploads dist/ so the smoke job
-  # never recompiles.
-  build:
-    name: Build PR image (prebuilt binaries)
-    if: ${{ !inputs.use_released }}
-    runs-on: ubuntu-24.04
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
+  smoke:
+    name: k8s smoke (build + k3s + Policy CRD + verify)
+    if: ${{ !cancelled() && !failure() }}
+    # Host runner with the tracee build toolchain + kernel, same class as the integration-tests job (go and
+    # docker pre-installed, real kernel for eBPF). Adjust the runner label to your infra.
+    runs-on:
+      - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
+      - INSTANCE_TYPE=MEDIUM
+    permissions:
+      contents: read
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
     steps:
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - name: Setup Tracee (alpine build deps)
-        uses: ./.github/actions/setup-tracee-alpine
-      - name: Cache Go build
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      - name: Prepare Environment
+        run: mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Cache Go modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: k8s-smoke-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: k8s-smoke-go-
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-k8s-smoke-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-k8s-smoke-
       - name: Build tracee (PR code)
-        run: |
-          make clean
-          make tracee
-      - name: Upload dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: tracee-dist
-          path: dist/tracee
-          retention-days: 1
-
-  # Deploy + verify on the HOST (no container) so k3s' node kernel is the runner kernel and the tracee
-  # DaemonSet can attach eBPF. Downloads the prebuilt dist/ and packages it with the COPY-only image.
-  smoke:
-    name: k3s + helm + Policy CRD + verify
-    needs: build
-    if: ${{ always() && (needs.build.result == 'success' || inputs.use_released) }}
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-      - name: Download dist
         if: ${{ !inputs.use_released }}
-        uses: actions/download-artifact@v4
-        with:
-          name: tracee-dist
-          path: dist
+        run: PATH="${PATH}:${GOROOT}/bin" make tracee
       - name: Build COPY-only image (PR code)
         if: ${{ !inputs.use_released }}
-        run: |
-          chmod +x dist/tracee   # upload-artifact drops the exec bit
-          docker build -f builder/Dockerfile.ci -t tracee:pr .
+        run: docker build -f builder/Dockerfile.ci -t tracee:pr .
       - name: Cluster smoke test
         run: |
           if [ "${{ inputs.use_released }}" = "true" ]; then
             sudo -E USE_RELEASED=1 tests/cluster/incluster.sh
           else
-            # SKIP_BUILD=1: import the COPY-only image we just built, don't recompile.
             sudo -E SKIP_BUILD=1 TRACEE_IMAGE=tracee:pr tests/cluster/incluster.sh
           fi

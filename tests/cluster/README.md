@@ -43,14 +43,15 @@ the first real run:
 
 ## In CI
 
-`run.sh` (Vagrant/QEMU) can't run on stock GitHub runners (no nested KVM), but the runner is
-already a real-kernel Linux VM, so `incluster.sh` runs on it directly. The
+`run.sh` (Vagrant/QEMU) can't run on stock GitHub runners (no nested KVM), but the CI host
+runner is already a real-kernel Linux VM, so `incluster.sh` runs on it directly. The
 `.github/workflows/k8s-smoke.yaml` workflow (triggered on PRs that touch code/chart/harness) does
-this cheaply for the **current PR code**:
+this for the **current PR code** in **one self-contained job** — the repo passes no artifacts
+between jobs, so build and smoke run together on a host runner that has the build toolchain:
 
-1. compile `tracee` once on alpine (cached),
-2. package the prebuilt binary into a COPY-only image (`builder/Dockerfile.ci`) — seconds, no
-   recompile, unlike the full `Dockerfile.alpine-tracee-container`,
+1. `make tracee` (Go cached),
+2. package the binary into a COPY-only image (`builder/Dockerfile.ci`, glibc/ubuntu base) — a
+   seconds-long COPY, not the ~10-min `Dockerfile.alpine-tracee-container` build,
 3. `SKIP_BUILD=1 TRACEE_IMAGE=... incluster.sh` imports that image and runs the smoke test.
 
 Flip the workflow's `use_released` input to smoke the released image instead (deploy mechanics
