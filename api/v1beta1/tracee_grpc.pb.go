@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	TraceeService_GetEventDefinitions_FullMethodName = "/tracee.v1beta1.TraceeService/GetEventDefinitions"
+	TraceeService_GetDetectorsCatalog_FullMethodName = "/tracee.v1beta1.TraceeService/GetDetectorsCatalog"
 	TraceeService_StreamEvents_FullMethodName        = "/tracee.v1beta1.TraceeService/StreamEvents"
 	TraceeService_EnableEvent_FullMethodName         = "/tracee.v1beta1.TraceeService/EnableEvent"
 	TraceeService_DisableEvent_FullMethodName        = "/tracee.v1beta1.TraceeService/DisableEvent"
@@ -31,6 +32,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TraceeServiceClient interface {
 	GetEventDefinitions(ctx context.Context, in *GetEventDefinitionsRequest, opts ...grpc.CallOption) (*GetEventDefinitionsResponse, error)
+	GetDetectorsCatalog(ctx context.Context, in *GetDetectorsCatalogRequest, opts ...grpc.CallOption) (*GetDetectorsCatalogResponse, error)
 	StreamEvents(ctx context.Context, in *StreamEventsRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[StreamEventsResponse], error)
 	EnableEvent(ctx context.Context, in *EnableEventRequest, opts ...grpc.CallOption) (*EnableEventResponse, error)
 	DisableEvent(ctx context.Context, in *DisableEventRequest, opts ...grpc.CallOption) (*DisableEventResponse, error)
@@ -49,6 +51,16 @@ func (c *traceeServiceClient) GetEventDefinitions(ctx context.Context, in *GetEv
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetEventDefinitionsResponse)
 	err := c.cc.Invoke(ctx, TraceeService_GetEventDefinitions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *traceeServiceClient) GetDetectorsCatalog(ctx context.Context, in *GetDetectorsCatalogRequest, opts ...grpc.CallOption) (*GetDetectorsCatalogResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDetectorsCatalogResponse)
+	err := c.cc.Invoke(ctx, TraceeService_GetDetectorsCatalog_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +121,7 @@ func (c *traceeServiceClient) GetVersion(ctx context.Context, in *GetVersionRequ
 // for forward compatibility.
 type TraceeServiceServer interface {
 	GetEventDefinitions(context.Context, *GetEventDefinitionsRequest) (*GetEventDefinitionsResponse, error)
+	GetDetectorsCatalog(context.Context, *GetDetectorsCatalogRequest) (*GetDetectorsCatalogResponse, error)
 	StreamEvents(*StreamEventsRequest, grpc.ServerStreamingServer[StreamEventsResponse]) error
 	EnableEvent(context.Context, *EnableEventRequest) (*EnableEventResponse, error)
 	DisableEvent(context.Context, *DisableEventRequest) (*DisableEventResponse, error)
@@ -125,6 +138,9 @@ type UnimplementedTraceeServiceServer struct{}
 
 func (UnimplementedTraceeServiceServer) GetEventDefinitions(context.Context, *GetEventDefinitionsRequest) (*GetEventDefinitionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventDefinitions not implemented")
+}
+func (UnimplementedTraceeServiceServer) GetDetectorsCatalog(context.Context, *GetDetectorsCatalogRequest) (*GetDetectorsCatalogResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDetectorsCatalog not implemented")
 }
 func (UnimplementedTraceeServiceServer) StreamEvents(*StreamEventsRequest, grpc.ServerStreamingServer[StreamEventsResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method StreamEvents not implemented")
@@ -173,6 +189,24 @@ func _TraceeService_GetEventDefinitions_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(TraceeServiceServer).GetEventDefinitions(ctx, req.(*GetEventDefinitionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TraceeService_GetDetectorsCatalog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDetectorsCatalogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TraceeServiceServer).GetDetectorsCatalog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: TraceeService_GetDetectorsCatalog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TraceeServiceServer).GetDetectorsCatalog(ctx, req.(*GetDetectorsCatalogRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -252,6 +286,10 @@ var TraceeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetEventDefinitions",
 			Handler:    _TraceeService_GetEventDefinitions_Handler,
+		},
+		{
+			MethodName: "GetDetectorsCatalog",
+			Handler:    _TraceeService_GetDetectorsCatalog_Handler,
 		},
 		{
 			MethodName: "EnableEvent",

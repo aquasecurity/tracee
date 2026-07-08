@@ -24,3 +24,7 @@ func (tc *Server) StreamEvents(ctx context.Context, req *pb.StreamEventsRequest)
 func (tc *Server) GetEventDefinitions(ctx context.Context, req *pb.GetEventDefinitionsRequest) (*pb.GetEventDefinitionsResponse, error) {
 	return tc.serviceClient.GetEventDefinitions(ctx, req)
 }
+
+func (tc *Server) GetDetectorsCatalog(ctx context.Context, req *pb.GetDetectorsCatalogRequest) (*pb.GetDetectorsCatalogResponse, error) {
+	return tc.serviceClient.GetDetectorsCatalog(ctx, req)
+}

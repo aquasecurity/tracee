@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option go_package = "github.co/aquasecurity/tracee/api/v1beta1";
+
+package tracee.v1beta1;
+
+import "api/v1beta1/definition.proto";
+
+message DetectorCatalogEntry {
+    string detector_id = 1;
+    string detector_name = 2;
+    string event_name = 3;
+    Version version = 4;
+    string description = 5;
+    repeated string tags = 6;
+    map<string, string> properties = 7;
+}
+
+message GetDetectorsCatalogRequest {
+    repeated string detector_ids = 1;
+    repeated string event_names = 2;
+}
+
+message GetDetectorsCatalogResponse {
+    repeated DetectorCatalogEntry entries = 1;
+}
