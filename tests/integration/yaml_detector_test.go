@@ -726,34 +726,20 @@ output:
 	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for a process not matching scope comm=true")
 }
 
-// Test_YAMLDetectorScopeFilterKernelPushdown proves the detector-declared scope filter is enforced
-// IN THE KERNEL, not merely re-checked in userland - the substantive Phase 2 claim. Its companion
-// Test_YAMLDetectorScopeFilterPushdown only proves the filter WORKS end-to-end (a kernel drop and a
-// userland drop look identical from the output stream); this test proves WHERE the drop happens, with
-// deterministic exact counts.
+// Test_YAMLDetectorScopeFilterKernelPushdown proves the detector-declared scope filter is enforced IN THE
+// KERNEL, not just re-checked in userland (the substantive Phase 2 claim). The companion
+// Test_YAMLDetectorScopeFilterPushdown only shows the filter works end-to-end; a kernel drop and a userland
+// drop look identical in the output, so this test pins down WHERE the drop happens via exact counts.
 //
-// Design (deterministic, self-contained workload):
-//   - The scoped comm is a UNIQUE, unusual string (derived from this test process's pid), and the
-//     matching processes are copies of /usr/bin/true renamed to that comm. So the ONLY processes on the
-//     whole system that can match the filter are the ones this test spawns - no reliance on ambient
-//     activity or fuzzy thresholds.
-//   - In the kernel (tracee.bpf.c sched_process_exit) a non-matching exit hits
-//     `evaluate_scope_filters` -> `if (!rules_matched) return 0;` and is dropped BEFORE
-//     events_perf_submit: it never enters the perf buffer, never reaches userland. So:
-//   - matching exits: kernel submits exactly one per single-threaded process -> the pipeline sees
-//     exactly matchRuns of them -> the detector fires exactly matchRuns times (no loss, because
-//     non-matching events never even occupy the buffer);
-//   - non-matching exits (our nonMatchRuns copies + every background process exit): dropped in the
-//     kernel -> stats.EventsFiltered (events the kernel SUBMITTED but userland then dropped) stays
-//     at exactly 0. If the filter lived only in userland, the kernel would submit them all and this
-//     counter would climb.
+// Deterministic workload: the scoped comm is a unique string (from this pid), and the matching processes are
+// copies of /usr/bin/true renamed to it, so only this test's processes can match. In the kernel a non-matching
+// exit is dropped (evaluate_scope_filters -> !rules_matched) before events_perf_submit, never reaching
+// userland - so matching exits fire the detector exactly matchRuns times, while stats.EventsFiltered
+// (kernel-submitted then userland-dropped) stays at 0. A userland-only filter would let that counter climb.
 //
-// sched_process_exit is the base event because (a) it has NO derivation, so a userland drop actually
-// increments EventsFiltered (events WITH a derivation take the keep-for-derivation branch and bypass
-// that counter - which is why sched_process_exec, used by the companion test, cannot serve here), and
-// (b) the harness forces Source=SourceNone (no process tree), so nothing else selects it with a broad
-// rule that would union-defeat the kernel filter. Detector outputs never touch EventsFiltered
-// (matchPoliciesProto just skips), so the counter isolates the base event.
+// Base event is sched_process_exit: it has no derivation, so a userland drop actually bumps EventsFiltered
+// (derived events bypass that counter - why the companion's sched_process_exec can't serve here), and the
+// harness forces Source=SourceNone so nothing selects it with a broad rule that union-defeats the filter.
 func Test_YAMLDetectorScopeFilterKernelPushdown(t *testing.T) {
 	testutils.AssureIsRoot(t)
 	defer goleak.VerifyNone(t)

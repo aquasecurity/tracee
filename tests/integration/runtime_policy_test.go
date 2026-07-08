@@ -16,14 +16,12 @@ import (
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
-// These tests exercise RUNTIME policy changes on a RUNNING tracee - no restart. They are the first integration
-// coverage of Tracee.ApplyPolicy / RemovePolicy (the userland side of the runtime policy-change work) and the
-// seed of a shared-tracee test foundation. Each asserts that a change actually TAKES EFFECT end to end: the
-// userland rule swap (PolicyManager + atomic snapshot) AND the kernel re-push (populateFilterMaps), plus probe
-// attach for a newly-selected event.
+// These tests exercise RUNTIME policy changes on a running tracee (no restart): Tracee.ApplyPolicy /
+// RemovePolicy. Each asserts the change takes effect end to end - the userland rule swap (PolicyManager
+// atomic snapshot) AND the kernel re-push (populateFilterMaps), plus probe attach for a newly-selected event.
 //
-// Note: these use sched_process_exit / sched_process_exec, whose comm comes from the kernel event context
-// (not the userland process data store), so they need no ProcessStore config.
+// They use sched_process_exit/exec, whose comm comes from the kernel event context (not the process data
+// store), so they need no ProcessStore config.
 
 // countEventComm counts buffered events of the given name whose process comm matches.
 func countEventComm(buf *testutils.EventBuffer, eventName, comm string) int {

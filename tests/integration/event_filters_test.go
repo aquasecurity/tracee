@@ -2619,16 +2619,12 @@ func orPolNames(policies ...string) []string {
 	return policies
 }
 
-// isInheritedNetEvent reports whether an event name is a packet/flow event whose policy match
-// is inherited from socket-tracking context rather than evaluated against the emitting task.
-// Network-event scope is socket-bound: the matched bitmap is computed once at socket-tracking
-// time and stored in an LRU map keyed by socket inode, never re-evaluated per packet. On
-// socket-inode reuse, a packet from an unrelated task (e.g. systemd-resolved doing DNS during
-// the test window) can carry a comm-matched bitmap and leak into a comm-scoped case whose own
-// command generates no network traffic. This is a pre-existing limitation of the eBPF network
-// path (behaves identically on main), not specific to the rule model, so comm-only cases set
-// testCase.ignoreNetEvents to opt out of asserting on these background packets. Process-context
-// network events (net_tcp_connect, etc.) are properly per-task scoped and are NOT filtered.
+// isInheritedNetEvent reports whether an event name is a packet/flow event whose scope match is
+// socket-bound: the matched bitmap is computed once at socket-tracking time (LRU keyed by socket inode),
+// not per packet. On inode reuse, a packet from an unrelated task (e.g. background systemd-resolved DNS)
+// can carry a comm-matched bitmap and leak into a comm-scoped case. This is a pre-existing eBPF-net
+// limitation (same on main), so comm-only cases set ignoreNetEvents to skip these. Process-context net
+// events (net_tcp_connect, ...) are per-task scoped and NOT filtered.
 func isInheritedNetEvent(name string) bool {
 	return strings.HasPrefix(name, "net_packet_") || strings.HasPrefix(name, "net_flow_")
 }
