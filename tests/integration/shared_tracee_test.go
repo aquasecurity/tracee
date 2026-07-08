@@ -34,6 +34,7 @@ func withPolicies(t *testing.T, trc *tracee.Tracee, buf *testutils.EventBuffer, 
 			require.NoError(t, trc.RemovePolicy(applied[i]), "remove policy %q", applied[i])
 			require.NotContains(t, trc.ListPolicies(), applied[i], "removed policy must not be listed")
 		}
+		t.Logf("  <<< shared tracee: removed policies at runtime (no restart): %v", applied)
 		buf.Clear()
 	}()
 
@@ -43,6 +44,7 @@ func withPolicies(t *testing.T, trc *tracee.Tracee, buf *testutils.EventBuffer, 
 		require.Contains(t, trc.ListPolicies(), name, "applied policy must be listed")
 		applied = append(applied, name)
 	}
+	t.Logf("  >>> shared tracee: applied policies at runtime (no restart): %v", applied)
 
 	// Let the kernel re-push (and any probe attach) settle, then start from a clean buffer.
 	time.Sleep(300 * time.Millisecond)
