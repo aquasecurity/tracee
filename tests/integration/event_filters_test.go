@@ -121,7 +121,11 @@ func Test_EventFilters(t *testing.T) {
 								"pidns=0", // no events expected
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							// Empty rules => the default event set (pkg/cmd/flags/policy.go). Kept empty (the
+							// other scope cases now use an explicit "openat" rule so they can share the tracee)
+							// to keep coverage of the empty-rules expansion path; runs isolated (default set
+							// includes net, which is socket-bound and can't be neutrally pre-staged).
+							Rules: []k8s.Rule{},
 						},
 					},
 				},
@@ -150,7 +154,7 @@ func Test_EventFilters(t *testing.T) {
 								"mntns!=" + testutils.GetProcNS("mnt"), // no events expected
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{}, // empty-rules canary; isolated (see mntns/pidns case)
 						},
 					},
 				},
@@ -178,7 +182,7 @@ func Test_EventFilters(t *testing.T) {
 								"pidns!=" + testutils.GetProcNS("pid"), // no events expected
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{}, // empty-rules canary; isolated (see mntns/pidns case)
 						},
 					},
 				},
@@ -677,7 +681,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -712,7 +716,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -826,7 +830,7 @@ func Test_EventFilters(t *testing.T) {
 								"pid=1",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -859,7 +863,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -894,7 +898,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -910,7 +914,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=who",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -945,7 +949,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -960,7 +964,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=who",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -1435,7 +1439,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -1451,7 +1455,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -1494,7 +1498,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -1509,7 +1513,7 @@ func Test_EventFilters(t *testing.T) {
 								"comm=who,ls",
 							},
 							DefaultActions: []string{"log"},
-							Rules:          []k8s.Rule{},
+							Rules:          []k8s.Rule{{Event: "openat"}},
 						},
 					},
 				},
@@ -2337,25 +2341,39 @@ func Test_EventFilters(t *testing.T) {
 		},
 	}
 
-	// run tests cases
+	// Two passes so at most ONE tracee is ever alive: PASS 1 runs the isolated cases (each on its own fresh
+	// tracee), then PASS 2 brings up a single shared tracee only for the shareable cases. This keeps the
+	// shared tracee from idling alongside every isolated case's tracee.
+	shareable, isolated := 0, 0
 	for _, tc := range tt {
+		if caseIsShareable(tc) {
+			shareable++
+		} else {
+			isolated++
+		}
+	}
+	t.Logf("event_filters: %d/%d cases on the shared tracee, %d isolated (own start/stop)", shareable, len(tt), isolated)
+
+	applySkips := func(t *testing.T, tc testCase) {
+		if tc.requiresContainerEngine && testutils.ContainerEngine() == "" {
+			t.Skip("no container engine available (docker/podman); set TRACEE_CONTAINER_ENGINE to override")
+		}
+		if tc.requiresExecutable != "" {
+			if _, err := os.Stat(tc.requiresExecutable); err != nil {
+				t.Skipf("required executable %s not present (engine-specific case): %v", tc.requiresExecutable, err)
+			}
+		}
+	}
+
+	// PASS 1: isolated cases (net-asserting, empty-rules/all-events, or tag/comma/exclusion policies). Each
+	// runs on its OWN fresh tracee, and no shared tracee is up yet, so two tracees never overlap. Net scope is
+	// socket-bound (docs/matched-rules-net-matched-rules-fix.md), so these must own their tracee.
+	for _, tc := range tt {
+		if caseIsShareable(tc) {
+			continue
+		}
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.requiresContainerEngine && testutils.ContainerEngine() == "" {
-				t.Skip("no container engine available (docker/podman); set TRACEE_CONTAINER_ENGINE to override")
-			}
-			if tc.requiresExecutable != "" {
-				if _, err := os.Stat(tc.requiresExecutable); err != nil {
-					t.Skipf("required executable %s not present (engine-specific case): %v", tc.requiresExecutable, err)
-				}
-			}
-
-			// Per-case goroutine-leak probe to find the source of the integration OOM:
-			// registered first so it runs LAST (after the explicit tracee stop below), so a
-			// clean per-case shutdown leaves nothing and the first leaking case fails here
-			// with the goroutine stack — before cumulative leaks OOM a later case.
-			defer goleak.VerifyNone(t)
-
-			// wait for the previous test to cool down
+			applySkips(t, tc)
 			coolDown(t, tc.coolDown)
 
 			// prepare tracee traceeConfig
@@ -2438,6 +2456,73 @@ func Test_EventFilters(t *testing.T) {
 			}
 		})
 	}
+
+	// PASS 2: one shared tracee for all shareable cases. defaultAutoload is false (only selected events'
+	// probes load at init), so the base selects every event the shareable cases use, scoped to a comm that
+	// never matches - it loads their probes without emitting. Each case then just applies/removes its own
+	// policy at runtime (withPolicies), which mirrors exactly the events that case expects.
+	baseEvents := map[string]bool{}
+	for _, tc := range tt {
+		if !caseIsShareable(tc) {
+			continue
+		}
+		for _, pf := range tc.policyFiles {
+			for _, rule := range pf.PolicyFile.Spec.Rules {
+				baseEvents[rule.Event] = true
+			}
+		}
+	}
+	baseRules := make([]k8s.Rule, 0, len(baseEvents))
+	for name := range baseEvents {
+		baseRules = append(baseRules, k8s.Rule{Event: name})
+	}
+	baseComm := fmt.Sprintf("efbase%d", os.Getpid()%100000)
+	sharedBase := testutils.NewPolicies([]testutils.PolicyFileWithID{{
+		Id: 1,
+		PolicyFile: v1beta1.PolicyFile{
+			Metadata: v1beta1.Metadata{Name: "ef-base"},
+			Spec: k8s.PolicySpec{
+				Scope:          []string{"comm=" + baseComm}, // never matches: loads probes without emitting
+				DefaultActions: []string{"log"},
+				Rules:          baseRules,
+			},
+		},
+	}})
+
+	sharedCtx, sharedCancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer sharedCancel()
+	t.Logf("=== shared tracee: STARTING (once, only for the %d shareable cases) ===", shareable)
+	sharedTrc, sharedBuf, sharedStream := startTraceeWithPolicies(sharedCtx, t, sharedBase, withRuntimePolicyChanges)
+	t.Logf("=== shared tracee: STARTED ===")
+	defer func() {
+		t.Logf("=== shared tracee: STOPPING (after all shareable cases) ===")
+		sharedTrc.Unsubscribe(sharedStream)
+		sharedCancel()
+		if err := testutils.WaitForTraceeStop(sharedTrc); err != nil {
+			t.Logf("Error stopping shared tracee: %v", err)
+		}
+		t.Logf("=== shared tracee: STOPPED ===")
+	}()
+	time.Sleep(2 * time.Second)
+
+	for _, tc := range tt {
+		if !caseIsShareable(tc) {
+			continue
+		}
+		t.Run(tc.name, func(t *testing.T) {
+			applySkips(t, tc)
+			coolDown(t, tc.coolDown)
+
+			// Apply this case's policies on the shared tracee at runtime, run the workload + assertions
+			// against the shared buffer (cleared by withPolicies), then remove the policies.
+			withPolicies(t, sharedTrc, sharedBuf, tc.policyFiles, func(t *testing.T) {
+				if err := tc.test(t, tc.cmdEvents, sharedBuf, tc.useSyscaller, tc.ignoreNetEvents); err != nil {
+					t.Logf("Test %s failed: %v", t.Name(), err)
+					t.Fail()
+				}
+			})
+		})
+	}
 }
 
 const (
@@ -2453,6 +2538,58 @@ const (
 	anyPolicy      = 0
 	anyPolicyName  = ""
 )
+
+// caseAssertsNetEvents reports whether any of the case's expected events is a network event (net_*). Such
+// cases must run on their own isolated tracee: net scope is socket-bound (the kernel stamps a socket with the
+// matched-rules active at its creation), so on a shared, long-lived tracee a socket opened by an earlier case
+// would keep emitting events attributed to that case's now-removed rules. See
+// docs/matched-rules-net-matched-rules-fix.md.
+func caseAssertsNetEvents(tc testCase) bool {
+	for _, cmd := range tc.cmdEvents {
+		for _, evt := range cmd.expectedEvents {
+			if strings.HasPrefix(evt.Name, "net_") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// isSimpleEvent reports whether name is a single, valid event that can seed the shared base policy - excluding
+// exclusion ("-x"), tag ("tag=fs"), and comma-joined ("a,b") rule forms, whose probes the all-events base
+// can't reliably load. Such rules keep their case isolated instead.
+func isSimpleEvent(name string) bool {
+	// Reject exclusion ("-x"), tag ("tag=fs"), comma-joined ("a,b"), and net events. Net events (net_*) need
+	// the socket/cgroup-skb infra loaded, which the shared base (kprobes/tracepoints) does not provide, so a
+	// case selecting one must run isolated.
+	if name == "" || strings.HasPrefix(name, "-") || strings.HasPrefix(name, "net_") || strings.ContainsAny(name, "=,") {
+		return false
+	}
+	return !events.Core.GetDefinitionByName(name).NotValid()
+}
+
+// caseIsShareable reports whether a case can run on the shared tracee: it must assert no net events (net scope
+// is socket-bound, so it needs its own tracee) and every policy must have explicit, simple event rules so the
+// base can load exactly those probes at init (defaultAutoload is false, only selected events' probes load).
+func caseIsShareable(tc testCase) bool {
+	if caseAssertsNetEvents(tc) {
+		return false
+	}
+	for _, pf := range tc.policyFiles {
+		// An empty-rules policy expands to the ENTIRE default event set (pkg/cmd/flags/policy.go: "if no
+		// events were specified, add all events from the default set"), which the shared base cannot pre-load
+		// - run such a case isolated.
+		if len(pf.PolicyFile.Spec.Rules) == 0 {
+			return false
+		}
+		for _, rule := range pf.PolicyFile.Spec.Rules {
+			if !isSimpleEvent(rule.Event) {
+				return false
+			}
+		}
+	}
+	return true
+}
 
 type testCase struct {
 	name                    string
