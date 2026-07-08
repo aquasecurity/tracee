@@ -1,0 +1,33 @@
+# Dockerfile.ci - CI-only image that PACKAGES prebuilt binaries, it does NOT compile.
+#
+# builder/Dockerfile.alpine-tracee-container compiles tracee + operator from scratch inside the
+# image (the `tracee-make` stage - ~10 min, no Go cache). This file skips that: it mirrors only the
+# cheap `tracee-core` packaging stage, copying an already-built dist/ from the build context into the
+# runtime base. Turns the image step from ~10 min into a seconds-long COPY, so a k8s/CRD smoke test can
+# exercise the CURRENT PR code without a full multi-stage rebuild.
+#
+# Requirements:
+#   - dist/tracee and dist/tracee-operator must be built on ALPINE/musl (to match this alpine runtime).
+#     The k8s-smoke workflow builds them in the same alpine container the unit tests use; equivalently:
+#     `make tracee tracee-operator` inside an alpine/musl toolchain.
+#   - The core-flavor eBPF object is EMBEDDED in the tracee binary (go:embed), so copying dist/tracee is
+#     sufficient - the real tracee-core stage copies nothing else BPF-related for the same reason.
+#
+# Not for release: the official images still come from Dockerfile.alpine-tracee-container (which also
+# validates the build itself). This is a fast PR/smoke shortcut only.
+
+FROM alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11
+USER root
+
+# Runtime deps only (same set as tracee-base) + an empty signatures dir so tracee finds it.
+RUN apk --no-cache add coreutils sudo curl libelf zlib zstd libc6-compat mandoc && \
+    mkdir -p /tracee/signatures
+
+ENV HOME=/tracee
+WORKDIR /tracee
+
+COPY dist/tracee /tracee/tracee
+COPY dist/tracee-operator /tracee/tracee-operator
+COPY builder/entrypoint.sh /tracee/entrypoint.sh
+
+ENTRYPOINT ["/tracee/entrypoint.sh"]

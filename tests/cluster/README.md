@@ -36,6 +36,22 @@ the first real run:
   configured for `stdout` JSON output, so this works with the default `context_comm` policy
   (openat by `comm=ls`); change `POLICY_FILE` and the grep in `verify()` if you use another.
 
+## In CI
+
+`run.sh` (Vagrant/QEMU) can't run on stock GitHub runners (no nested KVM), but the runner is
+already a real-kernel Linux VM, so `incluster.sh` runs on it directly. The
+`.github/workflows/k8s-smoke.yaml` workflow does this cheaply for the **current PR code**:
+
+1. compile `tracee` + `tracee-operator` once on alpine (cached),
+2. package the prebuilt binaries into a COPY-only image (`builder/Dockerfile.ci`) — seconds, no
+   recompile, unlike the full `Dockerfile.alpine-tracee-container`,
+3. `SKIP_BUILD=1 TRACEE_IMAGE=... incluster.sh` imports that image and runs the smoke test.
+
+Flip the workflow's `use_released` input to smoke the released image instead (deploy mechanics
+only, no build). `SKIP_BUILD=1` also works locally: `docker build -f builder/Dockerfile.ci -t
+tracee:pr .` (with a prebuilt `dist/`) then `sudo SKIP_BUILD=1 TRACEE_IMAGE=tracee:pr
+tests/cluster/incluster.sh`.
+
 ## Why this exists
 
 It's the groundwork for validating the k8s/operator path — including the future in-daemon CRD

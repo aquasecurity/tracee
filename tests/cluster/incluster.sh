@@ -9,6 +9,8 @@
 #   REPO_DIR       repo root (default: script's ../../ )
 #   NAMESPACE      k8s namespace for tracee (default: tracee-system)
 #   USE_RELEASED   1 = pull docker.io/aquasec/tracee instead of building locally (deploy-mechanics only)
+#   SKIP_BUILD     1 = TRACEE_IMAGE is ALREADY built locally; just import it (no docker build). Used by the
+#                  k8s-smoke CI, which pre-packages prebuilt binaries via builder/Dockerfile.ci.
 #   TRACEE_IMAGE   image ref to deploy (default: tracee:cluster-test, or the released tag). One image serves
 #                  BOTH the tracee DaemonSet and the operator Deployment (it carries both binaries).
 #   POLICY_FILE    Policy CRD to apply (default: examples/policies/yaml/k8s/context_comm.yaml)
@@ -21,6 +23,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_DIR=${REPO_DIR:-$(cd "${SCRIPT_DIR}/../.." && pwd)}
 NAMESPACE=${NAMESPACE:-tracee-system}
 USE_RELEASED=${USE_RELEASED:-0}
+SKIP_BUILD=${SKIP_BUILD:-0}
 POLICY_FILE=${POLICY_FILE:-examples/policies/yaml/k8s/context_comm.yaml}
 READY_TIMEOUT=${READY_TIMEOUT:-180}
 KEEP=${KEEP:-0}
@@ -72,6 +75,13 @@ build_and_import_images() {
         # Pre-pull into k3s' containerd so IfNotPresent works without registry auth at pod start.
         k3s ctr images pull "${TRACEE_IMAGE}" || die "pull ${TRACEE_IMAGE}"
         ok "using released image ${TRACEE_IMAGE}"
+    elif [ "${SKIP_BUILD}" = "1" ]; then
+        # Image already built by the caller (e.g. the k8s-smoke workflow's COPY-only builder/Dockerfile.ci,
+        # which packages prebuilt binaries instead of recompiling). Just import it into k3s' containerd.
+        have docker || die "docker not found (needed to import the prebuilt image)"
+        docker image inspect "${TRACEE_IMAGE}" >/dev/null 2>&1 || die "prebuilt image ${TRACEE_IMAGE} not found (SKIP_BUILD=1)"
+        docker save "${TRACEE_IMAGE}" | k3s ctr images import - || die "import ${TRACEE_IMAGE}"
+        ok "prebuilt image imported into k3s"
     else
         # Dockerfile.alpine-tracee-container produces ONE image carrying both the tracee and tracee-operator
         # binaries (see its COPY of dist/tracee + dist/tracee-operator), which is exactly what the Helm chart's

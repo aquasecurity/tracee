@@ -1,0 +1,94 @@
+#
+# k8s-smoke - cheap k8s/CRD smoke test of the CURRENT PR code.
+#
+# Idea: the expensive part of the container image is COMPILING tracee, which the PR already does. So we
+# compile ONCE on alpine (cached), package the prebuilt binaries into a COPY-only image
+# (builder/Dockerfile.ci - seconds, no recompile), then run tests/cluster/incluster.sh (k3s + helm +
+# Policy CRD + verify) directly on the runner host so the DaemonSet's node kernel is the runner kernel
+# and eBPF attaches. This exercises the real operator/CRD/deploy path against YOUR code, not the
+# released image, without the ~10-min multi-stage rebuild.
+#
+# Manual by default (heavier than unit/integration CI). Flip `use_released` to smoke the released image
+# instead (deploy mechanics only, no build - the cheap Tier-1 fallback). To gate on PRs, uncomment the
+# pull_request trigger and add a label check.
+#
+name: k8s-smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      use_released:
+        description: "Smoke the released image instead of building the PR code"
+        type: boolean
+        default: false
+  # pull_request:
+  #   types: [labeled]   # then gate the jobs on: if: github.event.label.name == 'test-k8s'
+
+permissions:
+  contents: read
+
+jobs:
+  # Compile the PR code on alpine (musl), matching the alpine runtime image. Mirrors the existing
+  # unit-test build (alpine/git container + setup-tracee-alpine) and uploads dist/ so the smoke job
+  # never recompiles.
+  build:
+    name: Build PR image (prebuilt binaries)
+    if: ${{ !inputs.use_released }}
+    runs-on: ubuntu-24.04
+    container:
+      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Setup Tracee (alpine build deps)
+        uses: ./.github/actions/setup-tracee-alpine
+      - name: Cache Go build
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: k8s-smoke-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: k8s-smoke-go-
+      - name: Build tracee + operator (PR code)
+        run: |
+          make clean
+          make tracee tracee-operator
+      - name: Upload dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracee-dist
+          path: |
+            dist/tracee
+            dist/tracee-operator
+          retention-days: 1
+
+  # Deploy + verify on the HOST (no container) so k3s' node kernel is the runner kernel and the tracee
+  # DaemonSet can attach eBPF. Downloads the prebuilt dist/ and packages it with the COPY-only image.
+  smoke:
+    name: k3s + helm + Policy CRD + verify
+    needs: build
+    if: ${{ always() && (needs.build.result == 'success' || inputs.use_released) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - name: Download dist
+        if: ${{ !inputs.use_released }}
+        uses: actions/download-artifact@v4
+        with:
+          name: tracee-dist
+          path: dist
+      - name: Build COPY-only image (PR code)
+        if: ${{ !inputs.use_released }}
+        run: |
+          chmod +x dist/tracee dist/tracee-operator   # upload-artifact drops the exec bit
+          docker build -f builder/Dockerfile.ci -t tracee:pr .
+      - name: Cluster smoke test
+        run: |
+          if [ "${{ inputs.use_released }}" = "true" ]; then
+            sudo -E USE_RELEASED=1 tests/cluster/incluster.sh
+          else
+            # SKIP_BUILD=1: import the COPY-only image we just built, don't recompile.
+            sudo -E SKIP_BUILD=1 TRACEE_IMAGE=tracee:pr tests/cluster/incluster.sh
+          fi
