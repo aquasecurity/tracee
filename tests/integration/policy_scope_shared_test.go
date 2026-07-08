@@ -38,13 +38,7 @@ func Test_PolicyScopeShared(t *testing.T) {
 	// a syscall event at runtime (Option A, docs/runtime-syscall-selection-gap.md). It is harmless for the
 	// exit-based cases.
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, base, withRuntimePolicyChanges)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
+	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 
 	time.Sleep(2 * time.Second)
 

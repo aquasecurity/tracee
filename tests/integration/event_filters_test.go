@@ -2491,18 +2491,9 @@ func Test_EventFilters(t *testing.T) {
 
 	sharedCtx, sharedCancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer sharedCancel()
-	t.Logf("=== shared tracee: STARTING (once, only for the %d shareable cases) ===", shareable)
+	t.Logf("=== shared tracee: bringing up for the %d shareable cases ===", shareable)
 	sharedTrc, sharedBuf, sharedStream := startTraceeWithPolicies(sharedCtx, t, sharedBase, withRuntimePolicyChanges)
-	t.Logf("=== shared tracee: STARTED ===")
-	defer func() {
-		t.Logf("=== shared tracee: STOPPING (after all shareable cases) ===")
-		sharedTrc.Unsubscribe(sharedStream)
-		sharedCancel()
-		if err := testutils.WaitForTraceeStop(sharedTrc); err != nil {
-			t.Logf("Error stopping shared tracee: %v", err)
-		}
-		t.Logf("=== shared tracee: STOPPED ===")
-	}()
+	defer stopTraceeWithPolicies(t, sharedTrc, sharedStream, sharedCancel)
 	time.Sleep(2 * time.Second)
 
 	for _, tc := range tt {

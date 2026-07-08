@@ -82,13 +82,7 @@ func Test_SharedTraceePolicyFoundation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, base)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
+	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 
 	time.Sleep(2 * time.Second)
 

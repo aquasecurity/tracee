@@ -86,6 +86,7 @@ func startTraceeWithPolicies(ctx context.Context, t *testing.T, policies []*poli
 	require.NoError(t, err)
 
 	require.NoError(t, testutils.WaitForTraceeStart(trc), "Tracee failed to start")
+	t.Logf("=== tracee STARTED: %s ===", t.Name())
 
 	buf := testutils.NewEventBuffer()
 	go func() {
@@ -102,6 +103,20 @@ func startTraceeWithPolicies(ctx context.Context, t *testing.T, policies []*poli
 	}()
 
 	return trc, buf, stream
+}
+
+// stopTraceeWithPolicies tears down a tracee started by startTraceeWithPolicies, logging its lifecycle so a run
+// shows each test's tracee start/stop clearly (matching the shared-tracee logging in Test_EventFilters). Every
+// shared-tracee test runs its own isolated tracee for the whole test; these bookend logs make that visible.
+func stopTraceeWithPolicies(t *testing.T, trc *tracee.Tracee, stream *streams.Stream, cancel context.CancelFunc) {
+	t.Helper()
+	t.Logf("=== tracee STOPPING: %s ===", t.Name())
+	trc.Unsubscribe(stream)
+	cancel()
+	if err := testutils.WaitForTraceeStop(trc); err != nil {
+		t.Logf("Error stopping Tracee: %v", err)
+	}
+	t.Logf("=== tracee STOPPED: %s ===", t.Name())
 }
 
 // exitPoliciesForComm returns the matched-policy set (sorted) of the first emitted sched_process_exit
@@ -349,13 +364,7 @@ func Test_PolicyPerRuleScopeDerivedEvent(t *testing.T) {
 	defer cancel()
 
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
+	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 
 	time.Sleep(2 * time.Second)
 	buf.Clear()
@@ -415,13 +424,7 @@ func Test_PolicyPerRuleBinaryScopeKernelPushdown(t *testing.T) {
 	defer cancel()
 
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
+	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 
 	time.Sleep(2 * time.Second)
 	buf.Clear()

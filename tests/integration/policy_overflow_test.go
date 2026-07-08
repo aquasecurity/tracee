@@ -59,13 +59,7 @@ func Test_PolicyOverflowDistinctComms(t *testing.T) {
 	defer cancel()
 
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
+	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 
 	time.Sleep(2 * time.Second)
 	buf.Clear()
@@ -121,13 +115,7 @@ func Test_PolicyOverflowCrossBoundaryMatch(t *testing.T) {
 	defer cancel()
 
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
+	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 
 	time.Sleep(2 * time.Second)
 	buf.Clear()
@@ -190,13 +178,7 @@ func Test_PolicyOverflowBinaryScope(t *testing.T) {
 	// executable-scope narrowing for overflow rules reads it. Without it the path is empty and the narrowing
 	// safely skips (over-attributes). This is the first integration test to exercise the data store.
 	trc, buf, stream := startTraceeWithPolicies(ctx, t, policies, withProcessDataStore)
-	defer func() {
-		trc.Unsubscribe(stream)
-		cancel()
-		if err := testutils.WaitForTraceeStop(trc); err != nil {
-			t.Logf("Error stopping Tracee: %v", err)
-		}
-	}()
+	defer stopTraceeWithPolicies(t, trc, stream, cancel)
 
 	time.Sleep(2 * time.Second)
 	buf.Clear()
