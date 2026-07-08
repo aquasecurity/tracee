@@ -438,9 +438,11 @@ event has been submitted, so it saves downstream work rather than kernel submiss
     The kernel tracks which rules matched an event in a single 64-bit value. When one event is
     selected by **more than 64 rules** (counting every policy and detector that selects it), the
     kernel can no longer represent them all, so it **submits every instance of that event** and
-    lets user space match the rules beyond the 64th. Reporting stays correct, but the in-kernel
-    reduction for that event is lost. This is uncommon, but worth knowing for very large policy
-    sets.
+    lets user space match the rules beyond the 64th. The in-kernel reduction for that event is
+    lost. Reporting stays correct except in one edge case: a rule beyond the 64th that is scoped
+    by *executable* or *tree/follow* is re-checked in user space, so for an event from an
+    already-exited process (which can no longer be re-checked) it may over-report. Uncommon, but
+    worth knowing for very large policy sets.
 
 ## How filters compose across policies (performance)
 
