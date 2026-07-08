@@ -9,6 +9,7 @@ package bufferdecoder
 import (
 	"encoding/binary"
 	"fmt"
+	"slices"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -372,6 +373,7 @@ func (decoder *EbpfDecoder) DecodeUint64Array(msg *[]uint64) error {
 	if err != nil {
 		return errfmt.Errorf("error reading ulong array number of elements: %v", err)
 	}
+	*msg = slices.Grow(*msg, int(arrLen)) // one alloc up front instead of append regrowth
 	for i := 0; i < int(arrLen); i++ {
 		var element uint64
 		err := decoder.DecodeUint64(&element)
