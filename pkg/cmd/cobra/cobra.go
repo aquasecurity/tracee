@@ -388,8 +388,8 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	}
 
 	// The gRPC server exposes runtime policy changes (ApplyPolicy/RemovePolicy). Enable the capability that
-	// pre-loads the shared syscall dispatchers at init, so syscall events can be selected at runtime (not just
-	// dedicated-probe events). See docs/runtime-syscall-selection-gap.md.
+	// pre-loads the shared syscall dispatchers at init, so syscall events (not just dedicated-probe events)
+	// can be selected at runtime.
 	if runner.GRPC != nil {
 		cfg.RuntimePolicyChanges = true
 	}

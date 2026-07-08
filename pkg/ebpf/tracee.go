@@ -1298,8 +1298,8 @@ func (t *Tracee) setProgramsAutoload() {
 	// the syscall dispatchers: every syscall event depends on SyscallEnter__Internal/SyscallExit__Internal
 	// (pkg/events/core.go), and with no syscall selected at init they would stay unloaded, so a runtime
 	// ApplyPolicy selecting a syscall could not attach ("can't attach before loaded"). The SubscribeAdd
-	// watcher below still runs Autoload(true) at runtime, but that is a no-op once loaded; the point here is
-	// to get them loaded up front. See docs/runtime-syscall-selection-gap.md.
+	// watcher below still runs Autoload(true) at runtime, but that's a no-op once loaded; the point here is to
+	// load them up front.
 	if t.config.RuntimePolicyChanges {
 		for _, handle := range []probes.Handle{probes.SyscallEnter__Internal, probes.SyscallExit__Internal} {
 			if err := t.defaultProbes.Autoload(handle, true); err != nil {
@@ -2335,9 +2335,9 @@ func (t *Tracee) ListPolicies() []string {
 // The caller is responsible for parsing/validating the policy (the YAML->*Policy parse lives in the cmd
 // layer, above this package). Returns the policy name.
 //
-// NOTE (runtime, needs integration verification): populateFilterMaps rewrites the kernel maps while events
-// flow; there is a brief window where the kernel still filters by the previous maps. This is the versioned-
-// snapshot concern tracked in docs/runtime-policy-change.md; acceptable for a rare operator-driven change.
+// NOTE: populateFilterMaps rewrites the kernel maps while events flow, so there's a brief window where the
+// kernel still filters by the previous maps - acceptable for a rare operator-driven change. Exercised by the
+// Test_Runtime* integration tests.
 func (t *Tracee) ApplyPolicy(p *policy.Policy) (string, error) {
 	if p == nil {
 		return "", errfmt.Errorf("nil policy")

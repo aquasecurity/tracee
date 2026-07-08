@@ -167,11 +167,11 @@ type EventRules struct {
 	UserlandRules          []*EventRule        // List of rules with userland filters enabled
 	enabled                bool                // Flag indicating whether the event is enabled. TODO: move to events manager
 	rulesVersion           uint16              // Version of the rules for this event (for future updates)
-	rulesCount             uint                // The total number of rules for this event
+	rulesCount             uint                // Highest rule ID + 1 (bitmap width); retired IDs leave gaps, so it can exceed the live rule count
 	ruleIDToEventRule      map[uint]*EventRule // Map from RuleID to EventRule for fast lookup
 	containerFilteredRules []uint64            // Bitmaps to track container-filtered rules
 	disabledRules          []uint64            // Bitmap of rules disabled at runtime (EnableRule/DisableRule)
-	hasOverflow            bool                // Flag to indicate if there are more than 64 rules
+	hasOverflow            bool                // True when a rule has ID >= 64 (rulesCount > 64): beyond the kernel's u64 matched-rules bitmap
 }
 
 type RuleSelectionType int
@@ -473,16 +473,10 @@ func (pm *PolicyManager) addPolicyLocked(policy *Policy, opts ...AddPolicyOption
 	for k, v := range pm.policies {
 		tempPolicies[k] = v
 	}
-	// TODO (scoped apply, deferred): this deep-copies EVERY event's rules on every add/remove/update, but only
-	// the policy's events and their transitive dependencies actually change. The deep copy is load-bearing for
-	// correctness today - updateRulesForEvent mutates reused dependency rules' IDs in place (depRule.ID = ...)
-	// and addTransitiveDependencyRules modifies dependency events - so it cannot just become a shallow copy. A
-	// scoped version would shallow-copy the map and copy-on-write each EventRules only right before it is
-	// touched (updateRulesForEvent's existingDepRules reuse + addTransitiveDependencyRules' recursion). This is
-	// init + runtime shared machinery, but the win is architectural, not perf: the path is never per-event
-	// (init is one-time; runtime policy changes are operator-rare), so the deep copy is negligible. Fold it into
-	// the runtime write-path build-out (kernel re-push + versioned snapshot retention), where the apply path's
-	// blast radius is already being reasoned about. See docs/runtime-policy-change.md.
+	// Deep-copy every event's rules so a failed add can be discarded without touching live state.
+	// updateRulesForEvent and addTransitiveDependencyRules mutate reused dependency rules in place, so a
+	// shallow copy is unsafe. Runs on init and every runtime add/remove/update, but never per-event (runtime
+	// changes are operator-rare), so the cost is negligible.
 	tempRules := make(map[events.ID]EventRules)
 	for k, v := range pm.rules {
 		tempRules[k] = deepCopyEventRules(v)
@@ -513,8 +507,6 @@ func (pm *PolicyManager) addPolicyLocked(policy *Policy, opts ...AddPolicyOption
 	pm.assignStableRuleIDs(tempRules) // keep rule IDs constant across add/remove (runtime-safe attribution)
 	pm.policies = tempPolicies
 	pm.rules = tempRules
-
-	// TODO: Notify listeners (if any) about the policy change
 
 	return nil
 }
@@ -596,8 +588,8 @@ func (pm *PolicyManager) removePolicyLocked(policyName string) error {
 	for k, v := range pm.policies {
 		tempPolicies[k] = v
 	}
-	// TODO (scoped apply, deferred): deep-copies every event's rules; only the removed policy's events + their
-	// transitive deps change. See the fuller note in addPolicyLocked and docs/runtime-policy-change.md.
+	// Deep-copy every event's rules so a failed removal can be discarded without touching live state (see
+	// addPolicyLocked for why a shallow copy is unsafe). Operator-rare, so the cost is negligible.
 	tempRules := make(map[events.ID]EventRules)
 	for k, v := range pm.rules {
 		tempRules[k] = deepCopyEventRules(v)
@@ -644,29 +636,20 @@ func (pm *PolicyManager) removePolicyLocked(policyName string) error {
 	pm.policies = tempPolicies
 	pm.rules = tempRules
 
-	// TODO: Notify listeners (if any) about the policy removal
-
 	return nil
 }
 
-// UpdatePolicy atomically replaces an existing policy (matched by name) with a new definition. It is the
-// runtime "update" op: unlike a separate RemovePolicy + AddPolicy, the whole change happens under a single
-// lock, so concurrent readers never observe a window in which the policy is absent. It is implemented as a
-// locked remove followed by a locked add, reusing their event-selection and rule-recomputation logic; on
-// failure of the add, the policy and rule maps are restored to their pre-update values.
+// UpdatePolicy atomically replaces an existing policy (by name). Unlike RemovePolicy+AddPolicy, the whole
+// change happens under one lock, so readers never see the policy absent. It is a locked remove then add; a
+// failed add rolls both maps back.
 //
-// Note: per-rule disable toggles (DisableRule) on the policy's events reset, because the rules are rebuilt
-// and their IDs (bitmap positions) shift - the same behavior AddPolicy already has. The event-dependency
-// manager's selections are not rolled back on a mid-update error (the same pre-existing non-transactionality
-// as AddPolicy); such errors only arise from undefined events or unsatisfiable dependencies.
+// Per-rule DisableRule toggles on the policy's events reset, since the rules are rebuilt and their
+// bitmap-position IDs shift (same as AddPolicy). A mid-update error does not roll back the dependency-manager
+// selections (same non-transactionality as AddPolicy) and only arises from undefined events or unsatisfiable
+// dependencies.
 //
-// TODO (runtime write path, deferred): this only updates the USERLAND rules + snapshot. The kernel filter
-// maps (comm/uid/binary/..., submit_for_rules, event config) still hold the old policy until UpdateBPF
-// re-pushes them, so a complete runtime change is UpdatePolicy followed by UpdateBPF(bpfModule, cts, fields).
-// Both exist; what is missing is the control-plane trigger that orchestrates them - extend the existing gRPC
-// TraceeService (api/v1beta1/tracee.proto) with ApplyPolicy(upsert)/RemovePolicy/List over its unix socket
-// and replace the k8s reconciler's restartDaemonSet with a hot ApplyPolicy call. (Blocked here: protoc is not
-// available to regenerate the stubs.) See docs/runtime-policy-change.md.
+// Userland only: the caller (Tracee.ApplyPolicy) re-pushes the kernel filter maps via populateFilterMaps. The
+// gRPC ApplyPolicy/RemovePolicy RPCs expose the full runtime flow.
 func (pm *PolicyManager) UpdatePolicy(policy *Policy) error {
 	if policy == nil {
 		return PolicyNilError()

@@ -60,15 +60,11 @@ type Config struct {
 	MetricsEnabled    bool
 	HealthzEnabled    bool
 	DetectorConfig    DetectorConfig
-	// RuntimePolicyChanges prepares the eBPF object for runtime event selection. Shared programs that are
-	// otherwise autoloaded only when a dependent event is selected at init - currently the syscall dispatchers
-	// (SyscallEnter__Internal/SyscallExit__Internal), which every syscall event depends on - are loaded up
-	// front, so a runtime ApplyPolicy selecting such an event can attach them (autoload is a load-time
-	// decision; it cannot be enabled after the object is loaded). Off by default, but the idle cost is small:
-	// this only LOADS the dispatchers. Loading and attaching are separate - they are ATTACHED (and add
-	// per-syscall cost) only once a syscall event is actually selected, via the normal dependency-driven
-	// attach path. So with the capability on and no syscall selected, the cost is just two loaded-but-
-	// unattached programs. See docs/runtime-syscall-selection-gap.md.
+	// RuntimePolicyChanges pre-loads the shared syscall dispatchers (SyscallEnter/Exit__Internal, which every
+	// syscall event depends on) at init, so a runtime ApplyPolicy can attach a syscall event later - autoload
+	// is a load-time decision and can't be enabled once the BPF object is loaded. Off by default; the idle cost
+	// is just two loaded-but-unattached programs. They are attached (and add per-syscall cost) only when a
+	// syscall event is actually selected, via the normal dependency-driven path.
 	RuntimePolicyChanges bool
 }
 

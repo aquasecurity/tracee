@@ -292,12 +292,10 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			// Set the internal working bitmap from the kernel-matched rules.
 			// The kernel emits a single u64 of rule bits (IDs 0-63); rule IDs >= 64
 			// are evaluated in userland by matchOverflowRules below.
-			// Net base events (IDs < MaxNetID) carry a socket-derived kernel bitmap keyed by the
-			// socket-creation event's rule ids, not this event's, so it is unreliable in the
-			// per-event rule-id model and is only a coarse submit gate. Recompute in userland:
-			// start with every rule as a candidate and let matchOverflowRules + matchPolicies narrow
-			// by scope from the event's own workload; deriveEvents then remaps to the derived net
-			// events. See docs/matched-rules-net-matched-rules-fix.md.
+			// Net base events (IDs < MaxNetID) carry a socket-bound kernel bitmap keyed by the socket-creation
+			// event's rule IDs, not this event's - unreliable here, only a coarse submit gate. Recompute in
+			// userland: seed every rule as a candidate and let matchOverflowRules + matchPolicies narrow by the
+			// event's own workload scope; deriveEvents then remaps to the derived net events.
 			// Capture one policy read snapshot for this event and carry it on the event, so every
 			// matched-rules read across all stages resolves against a single consistent version even if a
 			// runtime policy change publishes a newer snapshot mid-flight. The held pointer also keeps that
@@ -545,7 +543,7 @@ func (t *Tracee) matchOverflowRules(event *events.PipelineEvent) {
 	// exact for live-process events (exec, security_file_open, ...) and degrades safely otherwise. Do NOT
 	// narrow binary HERE with the absent path: it would force a verdict on empty data and drop legitimate
 	// events. Tree/follow are 0-63 only, so they never overflow. Full exit-event enforcement would need the
-	// binary from the kernel event context or the staged model (docs/deferred-filter-evaluation.md).
+	// binary from the kernel event context or a staged (match/fail/pending) model.
 	// (scope filters mutate bitmap in place; it was already stored on the event above)
 }
 
