@@ -263,40 +263,40 @@ func Test_addTransitiveDependencyRules_DetectorScopePushdown(t *testing.T) {
 	pm, err := NewManager(ManagerConfig{}, depsManager)
 	require.NoError(t, err)
 
-	// Find a real event D that depends on another event B (direct dependency).
-	var D, B events.ID
+	// Find a real event depEvt that depends on another event baseEvt (direct dependency).
+	var depEvt, baseEvt events.ID
 	found := false
 	for _, def := range events.Core.GetDefinitions() {
 		if deps := def.GetDependencies().GetPrimaryDependencies().GetIDs(); len(deps) > 0 {
-			D, B = def.GetID(), deps[0]
+			depEvt, baseEvt = def.GetID(), deps[0]
 			found = true
 			break
 		}
 	}
 	require.True(t, found, "need a real event with an event dependency for this test")
 
-	// Declare a detector scope filter for the (D -> B) edge, then select D.
+	// Declare a detector scope filter for the (depEvt -> baseEvt) edge, then select depEvt.
 	scope := filters.NewScopeFilter()
 	require.NoError(t, scope.Parse("comm", "=bash"))
 	pm.SetDetectorScopeFilters(map[events.ID]map[events.ID]*filters.ScopeFilter{
-		D: {B: scope},
+		depEvt: {baseEvt: scope},
 	})
 
 	p := NewPolicy()
 	p.Name = "sel_detector"
-	p.Rules[D] = RuleData{EventID: D}
+	p.Rules[depEvt] = RuleData{EventID: depEvt}
 	require.NoError(t, pm.AddPolicy(p))
 
-	// B's dependency rule (from D's chain) must carry the declared detector scope filter.
+	// baseEvt's dependency rule (from depEvt's chain) must carry the declared detector scope filter.
 	gotScope := false
-	for _, r := range pm.GetRules(B) {
+	for _, r := range pm.GetRules(baseEvt) {
 		if r.SelectionType == SelectedByDependency && r.DetectorScopeFilter == scope {
 			gotScope = true
 			break
 		}
 	}
 	require.True(t, gotScope,
-		"base event %d dependency rule must carry the detector scope filter for the %d->%d edge", B, D, B)
+		"base event %d dependency rule must carry the detector scope filter for the %d->%d edge", baseEvt, depEvt, baseEvt)
 }
 
 // Test_addTransitiveDependencyRules_DetectorDataPushdown is the data-filter analogue of the scope
@@ -312,15 +312,15 @@ func Test_addTransitiveDependencyRules_DetectorDataPushdown(t *testing.T) {
 	pm, err := NewManager(ManagerConfig{}, depsManager)
 	require.NoError(t, err)
 
-	const B = events.SchedProcessExec // has a "pathname" data field
+	const baseEvt = events.SchedProcessExec // has a "pathname" data field
 
-	// Find a real event D that directly depends on B.
-	var D events.ID
+	// Find a real event depEvt that directly depends on baseEvt.
+	var depEvt events.ID
 	found := false
 	for _, def := range events.Core.GetDefinitions() {
 		for _, dep := range def.GetDependencies().GetPrimaryDependencies().GetIDs() {
-			if dep == B {
-				D, found = def.GetID(), true
+			if dep == baseEvt {
+				depEvt, found = def.GetID(), true
 				break
 			}
 		}
@@ -330,27 +330,27 @@ func Test_addTransitiveDependencyRules_DetectorDataPushdown(t *testing.T) {
 	}
 	require.True(t, found, "need a real event depending on sched_process_exec")
 
-	// Declare a detector data filter for the (D -> B) edge, then select D.
+	// Declare a detector data filter for the (depEvt -> baseEvt) edge, then select depEvt.
 	df := filters.NewDetectorDataFilter()
-	require.NoError(t, df.Parse(B, "pathname", "=/usr/bin/nc"))
+	require.NoError(t, df.Parse(baseEvt, "pathname", "=/usr/bin/nc"))
 	pm.SetDetectorDataFilters(map[events.ID]map[events.ID]*filters.DataFilter{
-		D: {B: df},
+		depEvt: {baseEvt: df},
 	})
 
 	p := NewPolicy()
 	p.Name = "sel_detector"
-	p.Rules[D] = RuleData{EventID: D}
+	p.Rules[depEvt] = RuleData{EventID: depEvt}
 	require.NoError(t, pm.AddPolicy(p))
 
 	gotData := false
-	for _, r := range pm.GetRules(B) {
+	for _, r := range pm.GetRules(baseEvt) {
 		if r.SelectionType == SelectedByDependency && r.DetectorDataFilter == df {
 			gotData = true
 			break
 		}
 	}
 	require.True(t, gotData,
-		"base event %d dependency rule must carry the detector data filter for the %d->%d edge", B, D, B)
+		"base event %d dependency rule must carry the detector data filter for the %d->%d edge", baseEvt, depEvt, baseEvt)
 }
 
 // Test_RecomputeRules_AppliesDetectorScopeAfterPolicyLoad mirrors the real init order: policies are
@@ -366,11 +366,11 @@ func Test_RecomputeRules_AppliesDetectorScopeAfterPolicyLoad(t *testing.T) {
 	pm, err := NewManager(ManagerConfig{}, depsManager)
 	require.NoError(t, err)
 
-	var D, B events.ID
+	var depEvt, baseEvt events.ID
 	found := false
 	for _, def := range events.Core.GetDefinitions() {
 		if deps := def.GetDependencies().GetPrimaryDependencies().GetIDs(); len(deps) > 0 {
-			D, B = def.GetID(), deps[0]
+			depEvt, baseEvt = def.GetID(), deps[0]
 			found = true
 			break
 		}
@@ -380,21 +380,21 @@ func Test_RecomputeRules_AppliesDetectorScopeAfterPolicyLoad(t *testing.T) {
 	// Policy loaded BEFORE the detector scope is known (as at NewManager, before registerAllDetectors).
 	p := NewPolicy()
 	p.Name = "sel_detector"
-	p.Rules[D] = RuleData{EventID: D}
+	p.Rules[depEvt] = RuleData{EventID: depEvt}
 	require.NoError(t, pm.AddPolicy(p))
 
-	for _, r := range pm.GetRules(B) {
+	for _, r := range pm.GetRules(baseEvt) {
 		require.Nil(t, r.DetectorScopeFilter, "no detector scope before SetDetectorScopeFilters + RecomputeRules")
 	}
 
 	// Detectors register later: install the filters, then recompute.
 	scope := filters.NewScopeFilter()
 	require.NoError(t, scope.Parse("comm", "=bash"))
-	pm.SetDetectorScopeFilters(map[events.ID]map[events.ID]*filters.ScopeFilter{D: {B: scope}})
+	pm.SetDetectorScopeFilters(map[events.ID]map[events.ID]*filters.ScopeFilter{depEvt: {baseEvt: scope}})
 	require.NoError(t, pm.RecomputeRules())
 
 	gotScope := false
-	for _, r := range pm.GetRules(B) {
+	for _, r := range pm.GetRules(baseEvt) {
 		if r.SelectionType == SelectedByDependency && r.DetectorScopeFilter == scope {
 			gotScope = true
 			break
