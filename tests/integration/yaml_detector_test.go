@@ -740,13 +740,13 @@ output:
 //   - In the kernel (tracee.bpf.c sched_process_exit) a non-matching exit hits
 //     `evaluate_scope_filters` -> `if (!rules_matched) return 0;` and is dropped BEFORE
 //     events_perf_submit: it never enters the perf buffer, never reaches userland. So:
-//       * matching exits: kernel submits exactly one per single-threaded process -> the pipeline sees
-//         exactly matchRuns of them -> the detector fires exactly matchRuns times (no loss, because
-//         non-matching events never even occupy the buffer);
-//       * non-matching exits (our nonMatchRuns copies + every background process exit): dropped in the
-//         kernel -> stats.EventsFiltered (events the kernel SUBMITTED but userland then dropped) stays
-//         at exactly 0. If the filter lived only in userland, the kernel would submit them all and this
-//         counter would climb.
+//   - matching exits: kernel submits exactly one per single-threaded process -> the pipeline sees
+//     exactly matchRuns of them -> the detector fires exactly matchRuns times (no loss, because
+//     non-matching events never even occupy the buffer);
+//   - non-matching exits (our nonMatchRuns copies + every background process exit): dropped in the
+//     kernel -> stats.EventsFiltered (events the kernel SUBMITTED but userland then dropped) stays
+//     at exactly 0. If the filter lived only in userland, the kernel would submit them all and this
+//     counter would climb.
 //
 // sched_process_exit is the base event because (a) it has NO derivation, so a userland drop actually
 // increments EventsFiltered (events WITH a derivation take the keep-for-derivation branch and bypass

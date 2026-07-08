@@ -510,7 +510,8 @@ _Static_assert(sizeof(tree_rule_table_t) == 136,
 _Static_assert(sizeof(event_tree_config_t) == 272,
                "event_tree_config_t changed; update Go eventTreeConfig");
 _Static_assert(sizeof(filter_version_key_t) == 8,
-               "filter_version_key_t changed; update Go filterVersionKey (versioned filter map key)");
+               "filter_version_key_t changed; update Go filterVersionKey (versioned filter map "
+               "key)");
 _Static_assert(sizeof(event_config_t) == 288,
                "event_config_t changed; update Go eventConfig (events_config_map value)");
 
