@@ -1,28 +1,33 @@
 #
-# k8s-smoke - cheap k8s/CRD smoke test of the CURRENT PR code.
+# k8s-smoke - cheap k8s/CRD smoke test of the CURRENT PR code, run as part of PR CI.
 #
-# Idea: the expensive part of the container image is COMPILING tracee, which the PR already does. So we
-# compile ONCE on alpine (cached), package the prebuilt binaries into a COPY-only image
-# (builder/Dockerfile.ci - seconds, no recompile), then run tests/cluster/incluster.sh (k3s + helm +
-# Policy CRD + verify) directly on the runner host so the DaemonSet's node kernel is the runner kernel
-# and eBPF attaches. This exercises the real operator/CRD/deploy path against YOUR code, not the
+# The expensive part of the image is COMPILING tracee, which the PR already does. So we compile once on alpine
+# (cached), package the binary into a COPY-only image (builder/Dockerfile.ci - seconds, no recompile), then run
+# tests/cluster/incluster.sh (k3s + helm + Policy CRD + verify) on the runner HOST so the DaemonSet's node
+# kernel is the runner kernel and eBPF attaches. Exercises the CRD -> tracee path against YOUR code, not the
 # released image, without the ~10-min multi-stage rebuild.
 #
-# Manual by default (heavier than unit/integration CI). Flip `use_released` to smoke the released image
-# instead (deploy mechanics only, no build - the cheap Tier-1 fallback). To gate on PRs, uncomment the
-# pull_request trigger and add a label check.
+# The operator is NOT deployed: its only job is to restart the DaemonSet on a Policy CRD change, and the test
+# does that restart itself - so the build only needs `make tracee`. Flip `use_released` (manual runs) to smoke
+# the released image instead (deploy mechanics only, no build).
 #
 name: k8s-smoke
 
 on:
+  pull_request:
+    paths: # heavy job: only when code, chart, or the smoke harness changes
+      - 'pkg/**'
+      - 'cmd/**'
+      - 'deploy/helm/**'
+      - 'builder/Dockerfile.ci'
+      - 'tests/cluster/**'
+      - '.github/workflows/k8s-smoke.yaml'
   workflow_dispatch:
     inputs:
       use_released:
         description: "Smoke the released image instead of building the PR code"
         type: boolean
         default: false
-  # pull_request:
-  #   types: [labeled]   # then gate the jobs on: if: github.event.label.name == 'test-k8s'
 
 permissions:
   contents: read
@@ -50,17 +55,15 @@ jobs:
             ~/go/pkg/mod
           key: k8s-smoke-go-${{ hashFiles('**/go.sum') }}
           restore-keys: k8s-smoke-go-
-      - name: Build tracee + operator (PR code)
+      - name: Build tracee (PR code)
         run: |
           make clean
-          make tracee tracee-operator
+          make tracee
       - name: Upload dist
         uses: actions/upload-artifact@v4
         with:
           name: tracee-dist
-          path: |
-            dist/tracee
-            dist/tracee-operator
+          path: dist/tracee
           retention-days: 1
 
   # Deploy + verify on the HOST (no container) so k3s' node kernel is the runner kernel and the tracee
@@ -82,7 +85,7 @@ jobs:
       - name: Build COPY-only image (PR code)
         if: ${{ !inputs.use_released }}
         run: |
-          chmod +x dist/tracee dist/tracee-operator   # upload-artifact drops the exec bit
+          chmod +x dist/tracee   # upload-artifact drops the exec bit
           docker build -f builder/Dockerfile.ci -t tracee:pr .
       - name: Cluster smoke test
         run: |

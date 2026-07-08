@@ -4,11 +4,16 @@ End-to-end smoke test for Tracee on Kubernetes, in a throwaway VM:
 
 1. bring up the Vagrant **test** VM (QEMU, defined in the repo `Vagrantfile`),
 2. install single-node **k3s**,
-3. build the local Tracee image (one image carries both the `tracee` and `tracee-operator`
-   binaries) and import it into k3s' containerd — or pull the released image,
-4. `helm install` the chart from `deploy/helm/tracee`,
-5. apply a **Policy** CRD (`examples/policies/yaml/k8s/context_comm.yaml` by default),
-6. verify the Tracee DaemonSet is Ready and its stdout shows events for the policy.
+3. build the local Tracee image and import it into k3s' containerd — or pull the released image,
+4. `helm install` the chart from `deploy/helm/tracee` with the operator disabled
+   (`operator.create=false`),
+5. apply a **Policy** CRD (`examples/policies/yaml/k8s/context_comm.yaml` by default), then roll
+   the tracee DaemonSet so it re-reads the CRD,
+6. verify the DaemonSet is Ready and its stdout shows events for the policy.
+
+Tracee reads Policy CRDs itself at boot; the tracee-operator's only job is to restart the
+DaemonSet when a CRD changes, so the test does that restart itself and skips the operator (the CI
+image then carries only the `tracee` binary).
 
 ## Run
 
@@ -40,10 +45,11 @@ the first real run:
 
 `run.sh` (Vagrant/QEMU) can't run on stock GitHub runners (no nested KVM), but the runner is
 already a real-kernel Linux VM, so `incluster.sh` runs on it directly. The
-`.github/workflows/k8s-smoke.yaml` workflow does this cheaply for the **current PR code**:
+`.github/workflows/k8s-smoke.yaml` workflow (triggered on PRs that touch code/chart/harness) does
+this cheaply for the **current PR code**:
 
-1. compile `tracee` + `tracee-operator` once on alpine (cached),
-2. package the prebuilt binaries into a COPY-only image (`builder/Dockerfile.ci`) — seconds, no
+1. compile `tracee` once on alpine (cached),
+2. package the prebuilt binary into a COPY-only image (`builder/Dockerfile.ci`) — seconds, no
    recompile, unlike the full `Dockerfile.alpine-tracee-container`,
 3. `SKIP_BUILD=1 TRACEE_IMAGE=... incluster.sh` imports that image and runs the smoke test.
 
@@ -54,5 +60,6 @@ tests/cluster/incluster.sh`.
 
 ## Why this exists
 
-It's the groundwork for validating the k8s/operator path — including the future in-daemon CRD
-watch (no-restart policy updates). Today it validates the current operator + CRD deployment.
+It validates the k8s deploy + CRD path against the current code: the chart deploys, tracee loads
+a Policy CRD, and traces per that policy. It's also groundwork for the future in-daemon CRD watch
+(no-restart policy updates via the runtime ApplyPolicy path), which would remove the restart step.

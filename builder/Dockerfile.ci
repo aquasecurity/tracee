@@ -7,11 +7,11 @@
 # exercise the CURRENT PR code without a full multi-stage rebuild.
 #
 # Requirements:
-#   - dist/tracee and dist/tracee-operator must be built on ALPINE/musl (to match this alpine runtime).
-#     The k8s-smoke workflow builds them in the same alpine container the unit tests use; equivalently:
-#     `make tracee tracee-operator` inside an alpine/musl toolchain.
+#   - dist/tracee must be built on ALPINE/musl (to match this alpine runtime). The k8s-smoke workflow builds it
+#     in the same alpine container the unit tests use; equivalently `make tracee` in an alpine toolchain.
 #   - The core-flavor eBPF object is EMBEDDED in the tracee binary (go:embed), so copying dist/tracee is
-#     sufficient - the real tracee-core stage copies nothing else BPF-related for the same reason.
+#     sufficient. The operator binary is not included: the smoke test drops it (helm operator.create=false)
+#     and reloads policies with a DaemonSet rollout - tracee reads Policy CRDs itself at boot.
 #
 # Not for release: the official images still come from Dockerfile.alpine-tracee-container (which also
 # validates the build itself). This is a fast PR/smoke shortcut only.
@@ -27,7 +27,6 @@ ENV HOME=/tracee
 WORKDIR /tracee
 
 COPY dist/tracee /tracee/tracee
-COPY dist/tracee-operator /tracee/tracee-operator
 COPY builder/entrypoint.sh /tracee/entrypoint.sh
 
 ENTRYPOINT ["/tracee/entrypoint.sh"]

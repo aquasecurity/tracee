@@ -105,12 +105,15 @@ deploy_chart() {
     log "Phase 3: helm install (ns=${NAMESPACE})"
     cd "${REPO_DIR}"
     local trepo="${TRACEE_IMAGE%:*}" ttag="${TRACEE_IMAGE##*:}"
-    # One image serves both the tracee DaemonSet and the operator Deployment (both use .Values.image).
+    # operator.create=false: the operator's only job is to restart the DaemonSet on a Policy CRD change; this
+    # test does that restart itself (apply_policy), so it doesn't need the operator (and Dockerfile.ci then
+    # carries only the tracee binary). The Policy CRD ships in the chart's crds/ dir, installed regardless.
     KUBECONFIG=/etc/rancher/k3s/k3s.yaml ${HELM} upgrade --install tracee ./deploy/helm/tracee \
         --namespace "${NAMESPACE}" --create-namespace \
         --set image.repository="${trepo}" --set image.tag="${ttag}" --set image.pullPolicy=IfNotPresent \
+        --set operator.create=false \
         --wait --timeout "${READY_TIMEOUT}s" || die "helm install (see: kubectl -n ${NAMESPACE} get pods)"
-    ok "chart installed"
+    ok "chart installed (operator disabled)"
 }
 
 # ------------------------------------------------------------------------------------------------------------
@@ -122,6 +125,13 @@ apply_policy() {
     ${KUBECTL} get crd policies.tracee.aquasec.com >/dev/null 2>&1 || die "Policy CRD not established"
     ${KUBECTL} apply -f "${REPO_DIR}/${POLICY_FILE}" || die "apply policy"
     ok "policy applied"
+
+    # Tracee reads Policy CRDs at boot; with no operator, trigger the reload ourselves (what the operator's
+    # Reconcile does): a rolling restart so the pods re-read the CRDs.
+    ${KUBECTL} -n "${NAMESPACE}" rollout restart ds -l app.kubernetes.io/name=tracee || die "rollout restart"
+    ${KUBECTL} -n "${NAMESPACE}" rollout status ds -l app.kubernetes.io/name=tracee --timeout="${READY_TIMEOUT}s" \
+        || die "tracee not ready after restart"
+    ok "tracee restarted to load the policy"
 }
 
 # ------------------------------------------------------------------------------------------------------------
