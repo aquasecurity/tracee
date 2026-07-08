@@ -3,15 +3,17 @@
 .TH "" "" "" "" ""
 .PP
 \[en] title: TRACEE\-LIST section: 1 header: Tracee List Command Manual
-date: 2025/01 \&...
+date: 2026/07 \&...
 .SS NAME
-tracee \f[B]list\f[R] \- List traceable events, detectors, or policies
+tracee \f[B]list\f[R] \- List traceable events, detectors, or policies;
+inspect filtering and dependencies
 .SS SYNOPSIS
 tracee \f[B]list\f[R] <subcommand> [arguments\&...]
 [options]
 .SS DESCRIPTION
 The \f[B]list\f[R] command displays available events, detectors, or
-policies that can be used with Tracee.
+policies that can be used with Tracee, and inspects where an event\[cq]s
+filters are enforced and how its dependencies resolve.
 .PP
 A subcommand is required.
 .SS SUBCOMMANDS
@@ -27,6 +29,15 @@ See tracee\-list\-detectors(1).
 \f[B]policies\f[R] [paths\&...]
 List policies from directories or files.
 See tracee\-list\-policies(1).
+.TP
+\f[B]filterable\f[R] [event\&... | policy\-path\&...]
+Show which event fields filter in the kernel vs user space, or analyze
+where a policy\[cq]s selected events are filtered.
+See tracee\-list\-filterable(1).
+.TP
+\f[B]deps\f[R] <event\&...>
+Show an event\[cq]s dependency graph (tree, mermaid, or json).
+See tracee\-list\-deps(1).
 .SS EXAMPLES
 .IP \[bu] 2
 List all events:
@@ -55,6 +66,21 @@ List policies:
 tracee list policies
 tracee list policies ./my\-policies
 .EE
+.IP \[bu] 2
+Show where an event\[cq]s fields filter, or analyze a policy:
+.IP
+.EX
+tracee list filterable security_file_open
+tracee list filterable ./my\-policies
+.EE
+.IP \[bu] 2
+Show an event\[cq]s dependency graph:
+.IP
+.EX
+tracee list deps net_packet_icmp
+tracee list deps sched_process_exec \-\-format mermaid
+.EE
 .SS SEE ALSO
 tracee\-list\-events(1), tracee\-list\-detectors(1),
-tracee\-list\-policies(1)
+tracee\-list\-policies(1), tracee\-list\-filterable(1),
+tracee\-list\-deps(1)

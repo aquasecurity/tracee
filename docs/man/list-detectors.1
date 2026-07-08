@@ -3,7 +3,7 @@
 .TH "" "" "" "" ""
 .PP
 \[en] title: TRACEE\-LIST\-DETECTORS section: 1 header: Tracee List
-Detectors Command Manual date: 2026/05 \&...
+Detectors Command Manual date: 2026/07 \&...
 .SS NAME
 tracee \f[B]list detectors\f[R] \- List available detectors and shared
 lists
@@ -114,4 +114,5 @@ List shared list names with jq:
 tracee list detectors \-\-json | jq \[aq].lists[].name\[aq]
 .EE
 .SS SEE ALSO
-tracee\-list(1), tracee\-list\-events(1), tracee\-list\-policies(1)
+tracee\-list(1), tracee\-list\-events(1), tracee\-list\-policies(1),
+tracee\-list\-filterable(1), tracee\-list\-deps(1)
