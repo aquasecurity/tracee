@@ -60,6 +60,12 @@ type Config struct {
 	MetricsEnabled    bool
 	HealthzEnabled    bool
 	DetectorConfig    DetectorConfig
+	// RuntimePolicyChanges pre-loads the shared syscall dispatchers (SyscallEnter/Exit__Internal, which every
+	// syscall event depends on) at init, so a runtime ApplyPolicy can attach a syscall event later - autoload
+	// is a load-time decision and can't be enabled once the BPF object is loaded. Off by default; the idle cost
+	// is just two loaded-but-unattached programs. They are attached (and add per-syscall cost) only when a
+	// syscall event is actually selected, via the normal dependency-driven path.
+	RuntimePolicyChanges bool
 }
 
 // Validate does static validation of the configuration

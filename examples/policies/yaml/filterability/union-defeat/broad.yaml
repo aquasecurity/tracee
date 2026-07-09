@@ -1,0 +1,16 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: broad-openat
+  annotations:
+    description: >
+      The other half of the union-defeat demo: openat selected with no kernel filter. Because Tracee
+      runs one shared event stream, a single broad selector forces the kernel to submit EVERY openat -
+      defeating the kernel scope in scoped.yaml. Analyze the directory together:
+      `tracee list filterable union-defeat/` reports:
+      [user-space] openat  (kernel narrows by: comm; submitted by: broad-openat (no filter))
+spec:
+  scope:
+    - global
+  rules:
+    - event: openat

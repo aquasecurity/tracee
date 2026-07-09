@@ -1,0 +1,30 @@
+# Dockerfile.ci - CI-only image that PACKAGES a prebuilt tracee binary, it does NOT compile.
+#
+# builder/Dockerfile.alpine-tracee-container compiles tracee from scratch inside the image (the `tracee-make`
+# stage - ~10 min, no Go cache). This file skips that: it copies an already-built dist/tracee from the build
+# context into a runtime base, turning the image step into a seconds-long COPY so the k8s-smoke workflow can
+# exercise the CURRENT PR code without a multi-stage rebuild.
+#
+# Notes:
+#   - Base is glibc (ubuntu), matching `make tracee` built on the CI host runner. (The release images are
+#     alpine/musl; this is a smoke-only shortcut, not a release artifact.)
+#   - The core-flavor eBPF object is EMBEDDED in the tracee binary (go:embed), so copying dist/tracee suffices.
+#   - The operator is not included: the smoke test drops it (helm operator.create=false) and reloads policies
+#     with a DaemonSet rollout - tracee reads Policy CRDs itself at boot.
+
+FROM ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
+USER root
+
+# Tracee's runtime shared libs + an empty signatures dir so it finds one.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libelf1 zlib1g libzstd1 ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p /tracee/signatures
+
+ENV HOME=/tracee
+WORKDIR /tracee
+
+COPY dist/tracee /tracee/tracee
+COPY builder/entrypoint.sh /tracee/entrypoint.sh
+
+ENTRYPOINT ["/tracee/entrypoint.sh"]

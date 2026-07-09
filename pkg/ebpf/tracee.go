@@ -137,7 +137,7 @@ type Tracee struct {
 	// Streams
 	streamsManager *streams.StreamsManager
 	// policyManager manages policy state
-	policyManager *policy.Manager
+	policyManager *policy.PolicyManager
 	// The dependencies of events used by Tracee
 	eventsDependencies *dependencies.Manager
 	// A reference to a symbol.KernelSymbolTable that might change at runtime.
@@ -173,7 +173,7 @@ func (t *Tracee) initializeBPFEventsStatsMap() error {
 	}
 
 	evtStatZero := eventStatsValues{}
-	for _, id := range t.policyManager.EventsToSubmit() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		// Only initialize events that we want to track
 		if !t.stats.ShouldTrackEventForBPFStats(id) {
 			continue
@@ -638,6 +638,16 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.WrapError(err)
 	}
 
+	// Phase 2: push each detector's declared per-base-event scope and data filters onto the base
+	// events' dependency rules, then recompute the rule model so they are threaded in before it is
+	// pushed to the kernel. Detector filters are only known after registration (which runs after the
+	// initial policy load), so the recompute happens here rather than at policy-load time.
+	t.policyManager.SetDetectorScopeFilters(t.detectorEngine.GetDetectorBaseScopeFilters())
+	t.policyManager.SetDetectorDataFilters(t.detectorEngine.GetDetectorBaseDataFilters())
+	if err := t.policyManager.RecomputeRules(); err != nil {
+		return errfmt.WrapError(err)
+	}
+
 	// Initialize eBPF programs and maps
 
 	err = capabilities.GetInstance().EBPF(
@@ -807,9 +817,21 @@ func (t *Tracee) uninitTailCall(tailCall events.TailCall) error {
 // initDerivationTable initializes tracee's events.DerivationTable. For each
 // event, represented through its ID, we declare to which other events it can be
 // derived and the corresponding function to derive into that Event.
+//
+// INVARIANT (relied on by the decode-stage drop in events_pipeline.go): every derived event MUST declare
+// its derive-from event as a DEPENDENCY (see the derived events' DependencyStrategy in pkg/events/core.go).
+// Selecting a derived event then pulls its base in as a dependency rule, so the pipeline keeps the base via
+// matchPolicies (scope-aware) rather than a coarse "can this type derive anything?" check. A derivation
+// added WITHOUT that dependency edge would have its base event wrongly dropped at decode before it can be
+// derived.
 func (t *Tracee) initDerivationTable() error {
+	// A derivation must run whenever its derived event is needed by ANY rule - whether a
+	// user selected it directly or it is pulled in only as a dependency (e.g. a derived event
+	// consumed by a detector, or one whose data feeds a datastore). IsEventSelected reports
+	// "has any rule" (the equivalent of main's IsEventToSubmit); ShouldEmitEvent is narrower
+	// (user-selected only) and wrongly disabled dependency-only derivations.
 	shouldSubmit := func(id events.ID) func() bool {
-		return func() bool { return t.policyManager.IsEventToSubmit(id) }
+		return func() bool { return t.policyManager.IsEventSelected(id) }
 	}
 	symbolsCollisions := derive.SymbolsCollision(t.contSymbolsLoader, t.policyManager)
 
@@ -1032,15 +1054,14 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	return cOptVal
 }
 
-// newConfig returns a new Config instance based on the current Tracee state and
-// the given policies config and version.
-func (t *Tracee) newConfig(cfg *policy.PoliciesConfig) *Config {
+// newConfig returns a new Config instance based on the current Tracee state.
+// The per-policy/rules config is no longer embedded here; PolicyManager.UpdateBPF
+// writes the rules-config map directly.
+func (t *Tracee) newConfig() *Config {
 	return &Config{
-		TraceePid:       uint32(os.Getpid()),
-		Options:         t.getOptionsConfig(),
-		CgroupV1Hid:     uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
-		PoliciesVersion: 1, // version will be removed soon
-		PoliciesConfig:  *cfg,
+		TraceePid:   uint32(os.Getpid()),
+		Options:     t.getOptionsConfig(),
+		CgroupV1Hid: uint32(t.cgroups.GetDefaultCgroupHierarchyID()),
 	}
 }
 
@@ -1132,14 +1153,13 @@ func (t *Tracee) initKsymTableRequiredSyms() error {
 		}
 	}
 	if _, err := t.eventsDependencies.GetEvent(events.PrintMemDump); err == nil {
-		for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
-			p := it.Next()
-			// This might break in the future if PrintMemDump will become a dependency of another event.
-			_, isSelected := p.Rules[events.PrintMemDump]
-			if !isSelected {
+		for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
+			// Parameters come from user-selected rules; dependency rules carry another
+			// event's filters and must not be read as PrintMemDump parameters.
+			if rule.IsDependency() {
 				continue
 			}
-			printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
+			printMemDumpFilters := rule.Data.DataFilter.GetFieldFilters()
 			if len(printMemDumpFilters) == 0 {
 				continue
 			}
@@ -1269,6 +1289,22 @@ func (t *Tracee) setProgramsAutoload() {
 		err := t.defaultProbes.Autoload(probeHandle, true)
 		if err != nil {
 			logger.Debugw("Failed to autoload program", "handle", probeHandle, "error", err)
+		}
+	}
+
+	// When runtime policy changes are enabled, pre-load shared programs that an unselected-at-init event may
+	// depend on, so it can be attached at runtime (autoload is a load-time decision: SetAutoload EINVALs once
+	// the object is loaded, so a program left unloaded here can never be attached later). Currently this is
+	// the syscall dispatchers: every syscall event depends on SyscallEnter__Internal/SyscallExit__Internal
+	// (pkg/events/core.go), and with no syscall selected at init they would stay unloaded, so a runtime
+	// ApplyPolicy selecting a syscall could not attach ("can't attach before loaded"). The SubscribeAdd
+	// watcher below still runs Autoload(true) at runtime, but that's a no-op once loaded; the point here is to
+	// load them up front.
+	if t.config.RuntimePolicyChanges {
+		for _, handle := range []probes.Handle{probes.SyscallEnter__Internal, probes.SyscallExit__Internal} {
+			if err := t.defaultProbes.Autoload(handle, true); err != nil {
+				logger.Debugw("Failed to pre-autoload syscall dispatcher for runtime changes", "handle", handle, "error", err)
+			}
 		}
 	}
 
@@ -1421,7 +1457,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize config and filter maps
-	err = t.populateFilterMaps(false)
+	err = t.populateFilterMaps()
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1483,22 +1519,21 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-// populateFilterMaps populates the eBPF maps with the given policies
-func (t *Tracee) populateFilterMaps(updateProcTree bool) error {
-	polCfg, err := t.policyManager.UpdateBPF(
+// populateFilterMaps populates the eBPF maps from the current policies.
+func (t *Tracee) populateFilterMaps() error {
+	// PolicyManager.UpdateBPF writes the rules filter/config maps (and proctree membership)
+	// internally and returns only an error.
+	err := t.policyManager.UpdateBPF(
 		t.bpfModule,
 		t.dataStoreRegistry.GetContainerManager(),
 		t.eventDecodeTypes,
-		true,
-		updateProcTree,
 	)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	// Create new config with updated policies and update eBPF map
-
-	cfg := t.newConfig(polCfg)
+	// Update the (rules-independent) config entry.
+	cfg := t.newConfig()
 	if err := cfg.UpdateBPF(t.bpfModule); err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -1734,8 +1769,8 @@ func (t *Tracee) initBPF() error {
 		return errfmt.WrapError(err)
 	}
 
-	// returned PoliciesConfig is not used here, therefore it's discarded
-	_, err = t.policyManager.UpdateBPF(t.bpfModule, t.dataStoreRegistry.GetContainerManager(), t.eventDecodeTypes, false, true)
+	// PolicyManager.UpdateBPF writes the rules filter/config maps internally.
+	err = t.policyManager.UpdateBPF(t.bpfModule, t.dataStoreRegistry.GetContainerManager(), t.eventDecodeTypes)
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
@@ -2155,45 +2190,45 @@ func (t *Tracee) getSelfLoadedPrograms(kprobesOnly bool) map[string]int {
 // events for the signatures engine/logic. The wg tracks background goroutines that send to out;
 // the caller must wait on wg before closing out.
 func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.PipelineEvent, wg *sync.WaitGroup) {
-	var matchedPolicies uint64
+	var matchedRules []uint64
 
-	setMatchedPolicies := func(event *trace.Event, matchedPolicies uint64) {
-		event.PoliciesVersion = 1 // version will be removed soon
-		event.MatchedPoliciesKernel = matchedPolicies
-		event.MatchedPoliciesUser = matchedPolicies
-		event.MatchedPolicies = t.policyManager.MatchedNames(matchedPolicies)
+	setMatchedRules := func(event *trace.Event, matchedRules []uint64) {
+		event.RulesVersion = 1 // version will be removed soon
+		event.MatchedRulesKernel = matchedRules
+		event.MatchedRulesUser = matchedRules
+		event.MatchedPolicies = t.policyManager.GetMatchedRulesInfo(events.ID(event.EventID), event.MatchedRulesUser)
 	}
 
-	policiesMatch := func(id events.ID) uint64 {
-		return t.policyManager.MatchEventInAnyPolicy(id)
+	rulesMatch := func(id events.ID) []uint64 {
+		return t.policyManager.GetAllMatchedRulesBitmap(id)
 	}
 
 	// Initial namespace events
 
-	matchedPolicies = policiesMatch(events.TraceeInfo)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.TraceeInfo)
+	if !bitwise.IsBitmapArrayEmpty(matchedRules) {
 		traceeDataEvent := events.TraceeInfoEvent(t.bootTime, t.startTime)
-		setMatchedPolicies(&traceeDataEvent, matchedPolicies)
+		setMatchedRules(&traceeDataEvent, matchedRules)
 		out <- events.NewPipelineEvent(&traceeDataEvent)
 		// Note: EventCount is incremented in sinkEvents stage, not here
 	}
 
-	matchedPolicies = policiesMatch(events.InitNamespaces)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.InitNamespaces)
+	if !bitwise.IsBitmapArrayEmpty(matchedRules) {
 		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, matchedPolicies)
+		setMatchedRules(&systemInfoEvent, matchedRules)
 		out <- events.NewPipelineEvent(&systemInfoEvent)
 		// Note: EventCount is incremented in sinkEvents stage, not here
 	}
 
 	// Initial existing containers events (1 event per container)
 
-	matchedPolicies = policiesMatch(events.ExistingContainer)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.ExistingContainer)
+	if !bitwise.IsBitmapArrayEmpty(matchedRules) {
 		existingContainerEvents := events.ExistingContainersEvents(t.dataStoreRegistry.GetContainerManager(), t.config.EnrichmentEnabled)
 		for i := range existingContainerEvents {
 			event := &(existingContainerEvents[i])
-			setMatchedPolicies(event, matchedPolicies)
+			setMatchedRules(event, matchedRules)
 			out <- events.NewPipelineEvent(event)
 			// Note: EventCount is incremented in sinkEvents stage, not here
 		}
@@ -2201,10 +2236,10 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 
 	// Ftrace hook event
 
-	matchedPolicies = policiesMatch(events.FtraceHook)
-	if matchedPolicies > 0 {
+	matchedRules = rulesMatch(events.FtraceHook)
+	if !bitwise.IsBitmapArrayEmpty(matchedRules) {
 		ftraceBaseEvent := events.GetFtraceBaseEvent()
-		setMatchedPolicies(ftraceBaseEvent, matchedPolicies)
+		setMatchedRules(ftraceBaseEvent, matchedRules)
 
 		// TODO: Ideally, this should be inside the goroutine and be computed before each run,
 		// as in the future tracee events may be changed in run time.
@@ -2221,7 +2256,7 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 
 // netEnabled returns true if any base network event is to be traced
 func (t *Tracee) netEnabled() bool {
-	for _, id := range t.policyManager.EventsSelected() {
+	for _, id := range t.policyManager.GetSelectedEvents() {
 		if id >= events.NetPacketBase && id <= events.MaxNetID {
 			return true
 		}
@@ -2247,18 +2282,18 @@ func (t *Tracee) invokeReadyCallback(ctx gocontext.Context) {
 
 // Subscribe returns a stream subscribed to selected policies
 func (t *Tracee) Subscribe(stream config.Stream) (*streams.Stream, error) {
-	policyMask := policy.PolicyAll
+	var policies map[string]struct{} // nil = all policies
 	eventMap := map[int32]struct{}{}
 
 	if len(stream.Filters.Policies) > 0 {
-		policyMask = 0
-
+		policies = make(map[string]struct{}, len(stream.Filters.Policies))
 		for _, policyName := range stream.Filters.Policies {
-			p, err := t.policyManager.LookupByName(policyName)
-			if err != nil {
+			// Validate the policy exists; streams route by policy name (the rule model
+			// has no per-policy integer id).
+			if _, err := t.policyManager.LookupPolicyByName(policyName); err != nil {
 				return nil, err
 			}
-			bitwise.SetBit(&policyMask, uint(p.ID))
+			policies[policyName] = struct{}{}
 		}
 	}
 
@@ -2273,21 +2308,65 @@ func (t *Tracee) Subscribe(stream config.Stream) (*streams.Stream, error) {
 		}
 	}
 
-	return t.subscribe(policyMask, eventMap, stream.Buffer), nil
+	return t.subscribe(policies, eventMap, stream.Buffer), nil
 }
 
-func (t *Tracee) subscribe(policyMask uint64, eventMap map[int32]struct{}, bufferConfig config.StreamBuffer) *streams.Stream {
+func (t *Tracee) subscribe(policies map[string]struct{}, eventMap map[int32]struct{}, bufferConfig config.StreamBuffer) *streams.Stream {
 	// To keep old behavior in case of streams created from GRPC server
 	if bufferConfig.Size <= 0 {
 		bufferConfig.Size = t.config.Buffers.Pipeline
 	}
 
-	return t.streamsManager.Subscribe(policyMask, eventMap, bufferConfig)
+	return t.streamsManager.Subscribe(policies, eventMap, bufferConfig)
 }
 
 // Unsubscribe unsubscribes stream
 func (t *Tracee) Unsubscribe(s *streams.Stream) {
 	t.streamsManager.Unsubscribe(s)
+}
+
+// ListPolicies returns the names of the currently-loaded user-facing policies.
+func (t *Tracee) ListPolicies() []string {
+	return t.policyManager.ListPolicyNames()
+}
+
+// ApplyPolicy adds a policy at runtime, or replaces it if one with the same name already exists (upsert),
+// then re-pushes the kernel filter maps so the change takes effect in kernel space (not just user space).
+// The caller is responsible for parsing/validating the policy (the YAML->*Policy parse lives in the cmd
+// layer, above this package). Returns the policy name.
+//
+// NOTE: populateFilterMaps rewrites the kernel maps while events flow, so there's a brief window where the
+// kernel still filters by the previous maps - acceptable for a rare operator-driven change. Exercised by the
+// Test_Runtime* integration tests.
+func (t *Tracee) ApplyPolicy(p *policy.Policy) (string, error) {
+	if p == nil {
+		return "", errfmt.Errorf("nil policy")
+	}
+	if _, err := t.policyManager.LookupPolicyByName(p.Name); err == nil {
+		if err := t.policyManager.UpdatePolicy(p); err != nil {
+			return "", errfmt.WrapError(err)
+		}
+	} else {
+		if err := t.policyManager.AddPolicy(p); err != nil {
+			return "", errfmt.WrapError(err)
+		}
+	}
+	if err := t.populateFilterMaps(); err != nil {
+		return "", errfmt.WrapError(err)
+	}
+	return p.Name, nil
+}
+
+// RemovePolicy removes a policy by name at runtime and re-pushes the kernel filter maps so the removal
+// takes effect in kernel space. See the ApplyPolicy note on the re-push window.
+func (t *Tracee) RemovePolicy(name string) error {
+	if err := t.policyManager.RemovePolicy(name); err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := t.populateFilterMaps(); err != nil {
+		return errfmt.WrapError(err)
+	}
+	return nil
 }
 
 func (t *Tracee) EnableEvent(eventName string) error {
@@ -2407,13 +2486,10 @@ func (t *Tracee) EnableRule(policyNames []string, ruleId string) error {
 	}
 
 	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
+		if _, err := t.policyManager.LookupPolicyByName(policyName); err != nil {
 			return err
 		}
-
-		err = t.policyManager.EnableRule(p.ID, eventID)
-		if err != nil {
+		if err := t.policyManager.EnableRule(policyName, eventID); err != nil {
 			return err
 		}
 	}
@@ -2429,13 +2505,10 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 	}
 
 	for _, policyName := range policyNames {
-		p, err := t.policyManager.LookupByName(policyName)
-		if err != nil {
+		if _, err := t.policyManager.LookupPolicyByName(policyName); err != nil {
 			return err
 		}
-
-		err = t.policyManager.DisableRule(p.ID, eventID)
-		if err != nil {
+		if err := t.policyManager.DisableRule(policyName, eventID); err != nil {
 			return err
 		}
 	}
@@ -2443,7 +2516,9 @@ func (t *Tracee) DisableRule(policyNames []string, ruleId string) error {
 	return nil
 }
 
-// RegisterEventDerivations allows additional event derivations to be registered
+// RegisterEventDerivations allows additional event derivations to be registered.
+// NOTE: the derived event MUST also declare its derive-from as a dependency (see initDerivationTable's
+// INVARIANT), otherwise the base event is dropped at decode before it can be derived.
 func (t *Tracee) RegisterEventDerivations(eventDerivations derive.Table) {
 	if t.eventDerivations == nil {
 		t.eventDerivations = make(derive.Table)

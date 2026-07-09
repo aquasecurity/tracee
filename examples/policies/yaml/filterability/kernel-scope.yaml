@@ -1,0 +1,14 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: kernel-scope
+  annotations:
+    description: >
+      Policy-level scope (spec.scope) is pushed to the kernel, so non-matching events are dropped
+      before submission. `tracee list filterable kernel-scope.yaml` reports:
+      [kernel] openat  (kernel narrows by: comm)
+spec:
+  scope:
+    - comm=nginx
+  rules:
+    - event: openat

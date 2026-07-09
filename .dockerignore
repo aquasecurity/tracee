@@ -1,4 +1,6 @@
 dist/*
+# builder/Dockerfile.ci packages this prebuilt binary; the release build wipes dist/ via `make clean`, so this is harmless there.
+!dist/tracee
 3rdparty/btfhub
 3rdparty/btfhub/*
 3rdparty/btfhub-archive

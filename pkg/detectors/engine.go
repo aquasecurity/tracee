@@ -5,6 +5,8 @@ import (
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/policy"
 )
 
@@ -17,7 +19,7 @@ type Engine struct {
 }
 
 // NewEngine creates a new detector engine
-func NewEngine(policyManager *policy.Manager, enrichmentOptions *EnrichmentOptions) *Engine {
+func NewEngine(policyManager *policy.PolicyManager, enrichmentOptions *EnrichmentOptions) *Engine {
 	registry := newRegistry(policyManager, enrichmentOptions)
 	metrics := NewMetrics()
 	return &Engine{
@@ -47,6 +49,20 @@ func (e *Engine) RegisterDetector(
 // GetDetectorCount returns the number of registered detectors
 func (e *Engine) GetDetectorCount() int {
 	return e.registry.GetDetectorCount()
+}
+
+// GetDetectorBaseScopeFilters returns each detector's declared per-base-event scope filters, keyed
+// detector output event id -> base event id. Used to wire Phase 2 scope pushdown into the
+// PolicyManager (SetDetectorScopeFilters).
+func (e *Engine) GetDetectorBaseScopeFilters() map[events.ID]map[events.ID]*filters.ScopeFilter {
+	return e.registry.GetDetectorBaseScopeFilters()
+}
+
+// GetDetectorBaseDataFilters returns each detector's declared per-base-event data filters, keyed
+// detector output event id -> base event id. Used to wire Phase 2 data pushdown into the
+// PolicyManager (SetDetectorDataFilters).
+func (e *Engine) GetDetectorBaseDataFilters() map[events.ID]map[events.ID]*filters.DataFilter {
+	return e.registry.GetDetectorBaseDataFilters()
 }
 
 // UnregisterDetector unregisters a detector from the engine

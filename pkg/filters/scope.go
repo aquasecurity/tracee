@@ -34,6 +34,7 @@ type ScopeFilter struct {
 	podUIDFilter               *StringFilter
 	podSandboxFilter           *BoolFilter
 	syscallFilter              *StringFilter
+	binaryFilter               *BinaryFilter
 }
 
 // Compile-time check to ensure that ScopeFilter implements the Cloner interface
@@ -67,6 +68,7 @@ func NewScopeFilter() *ScopeFilter {
 		podUIDFilter:               NewStringFilter(nil),
 		podSandboxFilter:           NewBoolFilter(),
 		syscallFilter:              NewStringFilter(nil),
+		binaryFilter:               NewBinaryFilter(),
 	}
 }
 
@@ -81,6 +83,42 @@ func (f *ScopeFilter) Disable() {
 func (f *ScopeFilter) Enabled() bool {
 	return f.enabled
 }
+
+// The accessors below expose the kernel-representable sub-filters so callers (e.g. the policy
+// manager's Phase 2 detector scope-filter pushdown) can fold a ScopeFilter's dimensions into the
+// per-event kernel filter config. Comm is the process comm (TASK_COMM_LEN), Container/ContainerStarted
+// are the boolean container filters.
+
+// Comm returns the process-name (comm) sub-filter.
+func (f *ScopeFilter) Comm() *StringFilter { return f.processNameFilter }
+
+// Container returns the "is container" boolean sub-filter.
+func (f *ScopeFilter) Container() *BoolFilter { return f.containerFilter }
+
+// ContainerStarted returns the "container started" boolean sub-filter.
+func (f *ScopeFilter) ContainerStarted() *BoolFilter { return f.containerStartedFilter }
+
+// UID returns the user-id sub-filter (values are int64 here; the kernel path narrows to uint32).
+func (f *ScopeFilter) UID() *NumericFilter[int64] { return f.uidFilter }
+
+// PID returns the HOST pid sub-filter, matching the kernel pid_filter (keyed by host pid). A
+// detector's namespace "pid" scope maps to a different sub-filter and is not kernel-representable, so
+// it stays a userland-only filter.
+func (f *ScopeFilter) PID() *NumericFilter[int64] { return f.hostPidFilter }
+
+// MntNS returns the mount-namespace sub-filter.
+func (f *ScopeFilter) MntNS() *NumericFilter[int64] { return f.mntNSFilter }
+
+// PidNS returns the pid-namespace sub-filter.
+func (f *ScopeFilter) PidNS() *NumericFilter[int64] { return f.pidNSFilter }
+
+// UTS returns the uts-namespace host-name sub-filter.
+func (f *ScopeFilter) UTS() *StringFilter { return f.hostNameFilter }
+
+// Binary returns the executable/binary (mount-namespace + path) sub-filter. Like the policy-level
+// binary filter, it is kernel-enforced only (there is no user-space binary evaluation in Filter), so
+// it narrows via the kernel binary_filter map.
+func (f *ScopeFilter) Binary() *BinaryFilter { return f.binaryFilter }
 
 func (f *ScopeFilter) Filter(evt trace.Event) bool {
 	if !f.enabled {
@@ -325,6 +363,8 @@ func (f *ScopeFilter) Parse(field string, operatorAndValues string) error {
 	case "syscall":
 		filter := f.syscallFilter
 		return filter.Parse(operatorAndValues)
+	case "exec", "executable", "bin", "binary":
+		return f.binaryFilter.Parse(operatorAndValues)
 	}
 	return InvalidScopeField(field)
 }
@@ -374,6 +414,7 @@ func (f *ScopeFilter) Clone() *ScopeFilter {
 	n.podUIDFilter = f.podUIDFilter.Clone()
 	n.podSandboxFilter = f.podSandboxFilter.Clone()
 	n.syscallFilter = f.syscallFilter.Clone()
+	n.binaryFilter = f.binaryFilter.Clone()
 
 	return n
 }

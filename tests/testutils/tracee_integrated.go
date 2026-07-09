@@ -105,9 +105,12 @@ func StartTracee(ctx context.Context, t *testing.T, cfg config.Config, output *c
 		Pipeline: 1000,
 	}
 
-	// No process tree in the integration tests
-	cfg.ProcessStore = process.ProcTreeConfig{
-		Source: process.SourceNone,
+	// Process data store defaults OFF in integration tests, but respect a caller that explicitly enabled it
+	// (e.g. tests needing event.Executable.Path for userland executable-scope narrowing).
+	if !cfg.ProcessStore.Enabled {
+		cfg.ProcessStore = process.ProcTreeConfig{
+			Source: process.SourceNone,
+		}
 	}
 
 	// Disable healthz/heartbeat in integration tests

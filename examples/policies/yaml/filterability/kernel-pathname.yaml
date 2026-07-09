@@ -1,0 +1,16 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: kernel-pathname
+  annotations:
+    description: >
+      A `pathname` data filter is the one data filter the kernel can enforce (longest-prefix maps).
+      `tracee list filterable kernel-pathname.yaml` reports:
+      [kernel] security_file_open  (kernel narrows by: data.pathname)
+spec:
+  scope:
+    - global
+  rules:
+    - event: security_file_open
+      filters:
+        - data.pathname=/etc/*

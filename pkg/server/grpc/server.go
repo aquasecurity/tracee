@@ -13,6 +13,7 @@ import (
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 )
 
@@ -21,6 +22,10 @@ type Server struct {
 	protocol   string
 	listenAddr string
 	server     *grpc.Server
+	// PolicyParser, if set, enables the ApplyPolicy RPC by turning a policy-file document into a
+	// *policy.Policy. It is injected by the cmd layer, which owns the parse helpers (this package cannot
+	// import pkg/cmd/flags - that would be an import cycle). Left nil, ApplyPolicy reports Unimplemented.
+	PolicyParser func(doc string) (*policy.Policy, error)
 }
 
 func New(protocol, listenAddr string) *Server {
@@ -84,7 +89,7 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 
 	grpcServer := grpc.NewServer(grpc.KeepaliveParams(keepaliveParams))
 	s.server = grpcServer
-	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{tracee: t})
+	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{tracee: t, policyParser: s.PolicyParser})
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
 	pb.RegisterDataSourceServiceServer(grpcServer, &DataSourceService{sigEngine: e})
 

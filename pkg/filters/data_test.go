@@ -280,3 +280,19 @@ func TestDatasFilter_Filter(t *testing.T) {
 		})
 	}
 }
+
+// TestDataFieldToString verifies the strconv fast-path renders byte-for-byte identically to fmt.Sprint
+// for the fast-pathed types (behavior-preserving), and that other types keep fmt.Sprint semantics.
+func TestDataFieldToString(t *testing.T) {
+	fastPathed := []interface{}{
+		"hello", "", true, false,
+		int(-5), int8(-1), int16(300), int32(-70000), int64(-1 << 40),
+		uint(5), uint8(255), uint16(65535), uint32(4000000000), uint64(1 << 50),
+	}
+	for _, c := range fastPathed {
+		require.Equalf(t, fmt.Sprint(c), dataFieldToString(c), "type %T must match fmt.Sprint", c)
+	}
+	// Fallback types must keep fmt.Sprint semantics (e.g. []byte is NOT string()-decoded).
+	b := []byte{97, 98, 99}
+	require.Equal(t, fmt.Sprint(b), dataFieldToString(b))
+}

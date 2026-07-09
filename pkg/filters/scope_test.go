@@ -26,6 +26,7 @@ func TestScopeFilterClone(t *testing.T) {
 		NumericFilter[uint64]{},
 		BoolFilter{},
 		StringFilter{},
+		BinaryFilter{},
 		sets.PrefixSet{},
 		sets.SuffixSet{},
 	)

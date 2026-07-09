@@ -378,3 +378,108 @@ spec:
       filters:
         - retval!=0
 ```
+
+## The filtering pipeline (where each filter runs)
+
+A selected event passes through up to three filtering stages before it reaches your output.
+Knowing where each filter runs explains both *what gets reported* and *how much work Tracee can
+push into the kernel*:
+
+```mermaid
+flowchart TD
+    E([Event occurs in the kernel]) --> K{"Kernel filter, eBPF:<br/>scope filters (from spec.scope OR a rule's filters)<br/>+ pathname data filters, OR-ed across every selecting rule"}
+    K -- no selecting rule matches --> KD([Dropped in the kernel:<br/>never leaves eBPF, cheapest])
+    K -- any rule matches --> U[Submitted to user space]
+    U --> M{"User space:<br/>return-value and non-pathname data filters,<br/>plus any rule beyond the 64th"}
+    M -- no rule matches --> UD([Dropped in user space])
+    M -- one or more rules match --> A["Attribution:<br/>matchedPolicies = the policies whose rules matched"]
+    A --> OUT([Reported to the output stream])
+    A --> D{"Per-detector dispatch:<br/>each detector re-checks its own<br/>scope_filters / data_filters"}
+    D -- matches --> DET([Detector runs, produces finding / derived event])
+    D -- no match --> SK([Detector not invoked])
+```
+
+Stage 1 (kernel) is a **union across all rules** that select the event: the kernel submits an
+instance if *any* selecting rule's kernel-side filters match (detailed in the next section).
+Stages 2 and 3 are **per rule** and **per detector**, so they always narrow precisely regardless
+of what other policies do.
+
+Scope filters run in the **kernel** whether you write them at policy level (`spec.scope`) or inside a
+single rule's `filters:`, for the common workload dimensions: `comm`, `uid`, `pid`, `mntns`, `pidns`,
+`container`, and `executable`. Where you write one changes *what it applies to* — the whole policy
+versus that one event — not *where it runs*.
+
+A few less common scope keys are kernel-enforced only from `spec.scope`; written inside a rule's
+`filters:` they still narrow correctly but in **user space** (the event is submitted, then filtered):
+
+- `uts` (hostName) — usually redundant with `container`/`mntns`.
+- `tree` — a "process and its descendants" scope, meaningful for a whole policy rather than one event.
+- a **specific** container id (`containerId`/`containerName`) — a container name/id has to be resolved
+  to a kernel identifier when the policy loads, and scoping a *whole policy* to one container is the
+  natural way to express "only this container," so per-event kernel enforcement isn't provided for it.
+  The `container` boolean above (any container) *is* kernel-enforced per rule.
+
+If you need one of these enforced in the kernel, put it in the policy's `spec.scope`.
+
+### Where each filter is enforced
+
+| Filter | Written as | Enforced in |
+|--------|-----------|-------------|
+| Scope filters | `uid`, `pid`, `comm`, `mntns`, `pidns`, `uts`, `cgroupId`, `container`, `tree` | **Kernel** (workload-level; always pushed to eBPF) |
+| Data filter on a path field | `data.pathname=/tmp*` (exact / prefix / suffix) | **Kernel** (longest-prefix maps) |
+| Data filter on any other field | `data.flags=...`, `data.exit_code=0`, ... | **User space** |
+| Return-value filter | `retval!=0` | **User space** |
+
+A kernel-enforced filter can drop non-matching instances before they ever leave eBPF (stage 1) —
+the cheapest possible filtering. A user-space filter still narrows correctly, but only after the
+event has been submitted, so it saves downstream work rather than kernel submission.
+
+!!! note "Many rules on one event (more than 64)"
+    The kernel tracks which rules matched an event in a single 64-bit value. When one event is
+    selected by **more than 64 rules** (counting every policy and detector that selects it), the
+    kernel can no longer represent them all, so it **submits every instance of that event** and
+    lets user space match the rules beyond the 64th. The in-kernel reduction for that event is
+    lost. Reporting stays correct except in one edge case: a rule beyond the 64th that is scoped
+    by *executable* or *tree/follow* is re-checked in user space, so for an event from an
+    already-exited process (which can no longer be re-checked) it may over-report. Uncommon, but
+    worth knowing for very large policy sets.
+
+## How filters compose across policies (performance)
+
+Tracee runs every policy against one shared kernel event stream. For a given event,
+the kernel collects an instance when it matches the filters of **any** rule that selects
+that event — across **all** loaded policies (and any detector that depends on the event).
+Filters on the same event therefore compose as a **union (OR)** in the kernel: an instance
+is dropped in-kernel only when it fails *every* selecting rule's filters.
+
+This is worth designing policies around, because it decides how much work the kernel can
+avoid:
+
+- **A single unfiltered (or broad) selection of a hot event forces full collection for
+  everyone.** If one policy selects `security_file_open` with no data filter, the kernel must
+  submit every `security_file_open`. A second policy — or a detector — selecting the same
+  event with a narrow `data.pathname=/etc/shadow` then gets **no in-kernel reduction**: the
+  event already has to flow because of the first selector.
+
+- **Narrow + narrow composes to the union of the narrows — still a reduction.** If policy A
+  filters `data.pathname=/usr/bin/bash` and policy B filters `data.pathname=/usr/bin/nc`, the
+  kernel submits only `bash` and `nc` matches (their union), not every event.
+
+- **Even when the kernel must submit, per-rule filters are never wasted.** Filtering still
+  applies per rule downstream: a rule whose filter does not match does not match that event
+  (its policy will not report it, and a detector depending on it is not invoked for it). A
+  filter always saves its own rule's processing — it just cannot reduce kernel submission when
+  a broader co-selector keeps the event flowing.
+
+### Composing policies cleverly
+
+- On high-frequency events (`sched_process_exec`, `security_file_open`, `sched_process_fork`,
+  network packets), avoid selecting the event **without** a filter unless you genuinely need
+  every instance — one unfiltered selector defeats in-kernel narrowing for every other policy
+  on that event.
+- Prefer specific filters (`comm`, `uid`, `container`, exact/prefix `data.pathname`) on hot
+  events; many narrow filters across policies still union to a small set.
+- Scope filters (`uid`, `pid`, `comm`, `container`, `tree`, ...) are workload-level and always
+  pushed to the kernel. Data filters are pushed where the kernel supports the field (e.g.
+  `pathname` via longest-prefix maps), otherwise applied in user space — but the union rule
+  above governs kernel submission either way.

@@ -1013,7 +1013,8 @@ test-integration:: \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
-	@$(GO_ENV_EBPF) \
+	@LOG=$$(mktemp); RC_FILE=$$(mktemp); \
+	( $(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
 		-ldflags="$(GO_DEBUG_FLAG) \
@@ -1029,7 +1030,32 @@ test-integration:: \
 		-coverprofile=integration-coverage.txt \
 		-covermode=atomic \
 		$(if $(TEST),-run $(TEST)) \
-		./tests/integration/...
+		./tests/integration/... ; \
+	echo $$? > $$RC_FILE ) 2>&1 | tee $$LOG; \
+	RC=$$(cat $$RC_FILE); rm -f $$RC_FILE; \
+	LEAF_FAILS=$$(grep -E '^[[:space:]]*--- FAIL: ' $$LOG | sed -E 's/^[[:space:]]*--- FAIL: //; s/ \([0-9.]+s\)$$//' | awk '{a[NR]=$$0} END{for(i=1;i<=NR;i++){p=0;for(j=1;j<=NR;j++)if(i!=j&&index(a[j],a[i]"/")==1){p=1;break}if(!p)print a[i]}}'); \
+	LEAF_SKIPS=$$(grep -E '^[[:space:]]*--- SKIP: ' $$LOG | sed -E 's/^[[:space:]]*--- SKIP: //; s/ \([0-9.]+s\)$$//' | awk '{a[NR]=$$0} END{for(i=1;i<=NR;i++){p=0;for(j=1;j<=NR;j++)if(i!=j&&index(a[j],a[i]"/")==1){p=1;break}if(!p)print a[i]}}'); \
+	FAILS=$$(printf '%s' "$$LEAF_FAILS" | grep -c . || true); \
+	SKIPS=$$(printf '%s' "$$LEAF_SKIPS" | grep -c . || true); \
+	echo ""; \
+	echo "================== integration test summary =================="; \
+	if [ "$$FAILS" != "0" ]; then \
+		echo "FAILED ($$FAILS):"; \
+		printf '%s\n' "$$LEAF_FAILS" | sed 's/^/    /'; \
+	fi; \
+	if [ "$$RC" != "0" ] && [ "$$FAILS" = "0" ]; then \
+		echo "RUN FAILED (exit $$RC) with no per-test FAIL line (crash/timeout/build error) - see output above"; \
+	fi; \
+	if [ "$$SKIPS" != "0" ]; then \
+		echo "SKIPPED ($$SKIPS):"; \
+		printf '%s\n' "$$LEAF_SKIPS" | sed 's/^/    /'; \
+	fi; \
+	if [ "$$RC" = "0" ] && [ "$$FAILS" = "0" ] && [ "$$SKIPS" = "0" ]; then \
+		echo "all tests passed, no skips"; \
+	fi; \
+	echo "=============================================================="; \
+	rm -f $$LOG; \
+	exit $$RC
 
 
 .PHONY: test-compatibility

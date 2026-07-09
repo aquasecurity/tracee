@@ -63,7 +63,7 @@ output:
     - name: binary_path
       expression: getEventData("pathname")
     - name: binary_name
-      expression: workload.process.name
+      expression: workload.process.thread.name
 ```
 
 ## Schema Reference
@@ -155,6 +155,19 @@ scope_filters:
   - container=true
 ```
 
+!!! note "How detector filters are enforced"
+    A detector's `scope_filters` on a required event are pushed into the kernel just like a
+    policy's scope filters, so instances that do not match are dropped before the detector's input
+    event is even submitted — the cheapest form of filtering. `data_filters` narrow the input too:
+    path fields (`pathname`) via kernel longest-prefix maps, other fields in user space.
+
+    Because Tracee runs one shared event stream, these filters compose as a **union** with every
+    other policy or detector that selects the same base event. If another selector takes that event
+    unfiltered, the kernel must submit it anyway and the detector's own filters then narrow it in
+    user space (a detector only runs for events matching its own filters). See
+    [the policy filtering pipeline](../policies/rules.md#the-filtering-pipeline-where-each-filter-runs)
+    for the full model.
+
 ### Threat Metadata
 
 For threat detectors, define threat information:
@@ -196,7 +209,7 @@ YAML detectors support dynamic runtime conditions using Common Expression Langua
 conditions:
   - hasData("pathname")  # Check if field exists
   - getEventData("pathname").startsWith("/tmp")  # String operations
-  - workload.process.uid > 1000  # Numeric comparisons
+  - workload.process.real_user.id > 1000  # Numeric comparisons
   - workload.container.id != ""  # Check container context
 ```
 
@@ -257,9 +270,9 @@ output:
 | Extract directory | `dirname(getEventData("pathname"))` |
 | Split path components | `split(getEventData("pathname"), "/")` |
 | Join path components | `join(["usr", "bin", "nc"], "/")` |
-| Normalize case | `lower(workload.process.name)` |
+| Normalize case | `lower(workload.process.thread.name)` |
 | Replace substring | `replace(getEventData("pathname"), "/tmp", "/var/tmp")` |
-| Combine fields | `workload.process.name + ":" + string(workload.process.pid)` |
+| Combine fields | `workload.process.thread.name + ":" + string(workload.process.pid)` |
 
 **Field Semantics:**
 
@@ -305,23 +318,25 @@ Access process, container, and Kubernetes information directly through the `work
 conditions:
   - workload.container.id != ""
   - workload.process.pid > 1000
-  - workload.process.uid == 0
+  - workload.process.real_user.id == 0
 
 output:
   fields:
     - name: container_id
       expression: workload.container.id
     - name: pod_name
-      expression: workload.kubernetes.pod_name
+      expression: workload.k8s.pod.name
     - name: process_name
-      expression: workload.process.name
+      expression: workload.process.thread.name
 ```
 
-**Available variables:**
+**Available variables** (the `workload` object mirrors the event's protobuf schema):
 
-- `workload.process.*` - Process ID, name, uid, gid, etc.
-- `workload.container.*` - Container ID, name, image
-- `workload.kubernetes.*` - Pod name, namespace, labels
+- `workload.process.pid`, `workload.process.host_pid`, `workload.process.unique_id`
+- `workload.process.thread.name` (comm), `workload.process.executable.path` (binary path)
+- `workload.process.real_user.id` (uid)
+- `workload.container.id`, `workload.container.name`, `workload.container.image.*`
+- `workload.k8s.pod.name`, `workload.k8s.pod.uid`, `workload.k8s.namespace.name`
 - `timestamp` - Event timestamp
 
 ### Complete Example
@@ -330,7 +345,7 @@ output:
 conditions:
   - hasData("pathname")                            # Check field exists
   - getEventData("pathname").startsWith("/tmp")    # Event data
-  - workload.process.uid == 0                      # Workload context
+  - workload.process.real_user.id == 0                      # Workload context
   - workload.container.id != ""                    # Container check
 
 output:
@@ -338,7 +353,7 @@ output:
     - name: binary
       expression: getEventData("pathname")
     - name: uid
-      expression: workload.process.uid
+      expression: workload.process.real_user.id
     - name: container
       expression: workload.container.id
 ```
@@ -437,6 +452,28 @@ One of the most powerful features of YAML detectors is the ability to **compose 
 ### How It Works
 
 The detector engine automatically resolves event dependencies. When a detector requires an event that's not a built-in kernel event, the engine checks if another detector produces that event. If found, it creates a subscription chain automatically.
+
+A chain flows one way — a raw kernel event feeds a base detector, whose finding feeds the next
+detector, and so on until the final threat finding:
+
+```mermaid
+flowchart TD
+    RAW([sched_process_exec<br/>happens in the kernel]) --> L1["Base detector<br/>matches suspicious binary paths"]
+    L1 --> SIG([suspicious_binary_execution<br/>— a finding event])
+    SIG --> L2["Composed detector<br/>keeps only container activity"]
+    L2 --> ALERT([Threat finding:<br/>suspicious binary in a container])
+```
+
+The important part for performance runs the *other* way. A `scope_filters` / `data_filters` you
+declare on any detector in the chain is threaded **all the way down** to the raw kernel event and
+enforced in the kernel — so the kernel only ever collects what the whole chain could need. Adding
+a composed detector on top never widens what is collected:
+
+```mermaid
+flowchart LR
+    F["Composed detector declares<br/>scope_filters: container=true"] -->|threaded down the chain| K["Enforced in the kernel<br/>on sched_process_exec"]
+    K --> DROP([Non-container execs dropped<br/>before they leave the kernel])
+```
 
 ### Example: Two-Level Chain
 

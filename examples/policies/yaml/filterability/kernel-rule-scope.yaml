@@ -1,0 +1,17 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: kernel-rule-scope
+  annotations:
+    description: >
+      A scope filter written inside a rule's `filters:` list is ALSO pushed to the kernel for the
+      kernel-representable dimensions (comm, uid, host pid, mntns, pidns) - not just policy-level
+      spec.scope. `tracee list filterable kernel-rule-scope.yaml` reports:
+      [kernel] openat  (kernel narrows by: comm (rule))
+spec:
+  scope:
+    - global
+  rules:
+    - event: openat
+      filters:
+        - comm=nginx

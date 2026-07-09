@@ -1,0 +1,15 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: bootstrap-always-collected
+  annotations:
+    description: >
+      Tracee always collects sched_process_exec/fork/exit internally (the bootstrap policy selects them
+      unfiltered), so scoping them does NOT reduce kernel submission - your comm scope is enforced only in
+      user space. `tracee list filterable bootstrap-always-collected.yaml` reports:
+      [user-space] sched_process_exec  (kernel narrows by: comm; submitted by: Tracee always collects this (bootstrap))
+spec:
+  scope:
+    - comm=bash
+  rules:
+    - event: sched_process_exec

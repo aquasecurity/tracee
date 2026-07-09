@@ -320,7 +320,7 @@ func Test_EventsDependencies(t *testing.T) {
 
 			// test events
 			testCmdEvents = createCmdEvents(testCaseInst.expectedEvents, testCaseInst.unexpectedEvents)
-			err = ExpectAtLeastOneForEach(t, testCmdEvents, buf, false)
+			err = ExpectAtLeastOneForEach(t, testCmdEvents, buf, false, false)
 			if err != nil {
 				t.Logf("Test %s failed: %v", t.Name(), err)
 				failed = true

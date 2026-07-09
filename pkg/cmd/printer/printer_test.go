@@ -16,7 +16,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/cmd/printer"
 	"github.com/aquasecurity/tracee/pkg/config"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -229,7 +228,7 @@ func TestPrinterFromStream(t *testing.T) {
 	t.Parallel()
 
 	sm := streams.NewStreamsManager()
-	stream := sm.Subscribe(policy.PolicyAll, map[int32]struct{}{}, config.StreamBuffer{})
+	stream := sm.Subscribe(nil, map[int32]struct{}{}, config.StreamBuffer{})
 	outPath := path.Join(t.TempDir(), "file1")
 
 	file, err := flags.CreateOutputFile(outPath)
@@ -254,13 +253,13 @@ func TestPrinterFromStream(t *testing.T) {
 	}()
 
 	pbEvent, err := events.ConvertTraceeEventToProto(trace.Event{
-		ProcessName:         "process_from_stream",
-		EventName:           "event_from_stream",
-		MatchedPoliciesUser: 0b1,
+		ProcessName:      "process_from_stream",
+		EventName:        "event_from_stream",
+		MatchedRulesUser: []uint64{0b1},
 	})
 	require.NoError(t, err)
 
-	sm.Publish(pbEvent, 0b1)
+	sm.Publish(pbEvent, []string{"test-policy"})
 
 	time.Sleep(time.Millisecond * 10)
 

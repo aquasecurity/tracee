@@ -20,6 +20,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/k8s"
 	"github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/policy"
+	policyv1beta1 "github.com/aquasecurity/tracee/pkg/policy/v1beta1"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/pkg/signatures/signature"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -360,9 +361,37 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	runner.HTTP = serverConfig.GetHTTPServer()
 	runner.GRPC = serverConfig.GetGRPCServer()
 
+	// Wire the gRPC ApplyPolicy parser: parse a policy document into a *policy.Policy through the same path
+	// the CLI uses (PolicyFileFromBytes -> CreatePolicies with the loaded detectors). Injected here because
+	// pkg/server/grpc cannot import the parse helpers (import cycle via pkg/cmd/flags).
+	if runner.GRPC != nil {
+		dets := allDetectors
+		runner.GRPC.PolicyParser = func(doc string) (*policy.Policy, error) {
+			pf, err := policyv1beta1.PolicyFileFromBytes([]byte(doc), false)
+			if err != nil {
+				return nil, err
+			}
+			ps, err := createPoliciesFromK8SPolicy([]v1beta1.PolicyInterface{pf}, dets)
+			if err != nil {
+				return nil, err
+			}
+			if len(ps) != 1 {
+				return nil, errfmt.Errorf("expected exactly one policy, got %d", len(ps))
+			}
+			return ps[0], nil
+		}
+	}
+
 	if runner.HTTP != nil {
 		cfg.MetricsEnabled = runner.HTTP.IsMetricsEnabled()
 		cfg.HealthzEnabled = runner.HTTP.IsHealthzEnabled()
+	}
+
+	// The gRPC server exposes runtime policy changes (ApplyPolicy/RemovePolicy). Enable the capability that
+	// pre-loads the shared syscall dispatchers at init, so syscall events (not just dedicated-probe events)
+	// can be selected at runtime.
+	if runner.GRPC != nil {
+		cfg.RuntimePolicyChanges = true
 	}
 
 	runner.TraceeConfig = cfg

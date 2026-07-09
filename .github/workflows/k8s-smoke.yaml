@@ -1,0 +1,80 @@
+#
+# k8s-smoke - k8s/CRD smoke test of the CURRENT PR code, as part of PR CI.
+#
+# One self-contained job. The repo passes no artifacts between jobs (upload/download-artifact are disallowed),
+# so build and smoke run together on a host runner that has the tracee build toolchain + a real kernel: compile
+# `make tracee`, package it into a COPY-only image (builder/Dockerfile.ci - a seconds-long COPY, not the
+# ~10-min multi-stage build), then run tests/cluster/incluster.sh (installs k3s, helm-deploys the chart,
+# applies a Policy CRD, verifies). k3s runs directly on the runner so the DaemonSet's node kernel is the runner
+# kernel and eBPF attaches.
+#
+# Only `tracee` is built - the operator is not deployed (the test does its DaemonSet restart itself). Set
+# `use_released` (manual runs) to smoke the released image instead (deploy mechanics only, no build).
+#
+name: k8s-smoke
+
+on:
+  pull_request:
+    paths: # heavy job: only when code, chart, or the smoke harness changes
+      - 'pkg/**'
+      - 'cmd/**'
+      - 'deploy/helm/**'
+      - 'builder/Dockerfile.ci'
+      - 'tests/cluster/**'
+      - '.github/workflows/k8s-smoke.yaml'
+  workflow_dispatch:
+    inputs:
+      use_released:
+        description: "Smoke the released image instead of building the PR code"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: k8s smoke (build + k3s + Policy CRD + verify)
+    if: ${{ !cancelled() && !failure() }}
+    # Host runner with the tracee build toolchain + kernel, same class as the integration-tests job (go and
+    # docker pre-installed, real kernel for eBPF). Adjust the runner label to your infra.
+    runs-on:
+      - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
+      - INSTANCE_TYPE=MEDIUM
+    permissions:
+      contents: read
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+    steps:
+      - name: Prepare Environment
+        run: mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Cache Go modules
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-k8s-smoke-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-k8s-smoke-
+      - name: Build tracee (PR code)
+        if: ${{ !inputs.use_released }}
+        run: PATH="${PATH}:${GOROOT}/bin" make tracee
+      - name: Build COPY-only image (PR code)
+        if: ${{ !inputs.use_released }}
+        run: docker build -f builder/Dockerfile.ci -t tracee:pr .
+      - name: Cluster smoke test
+        run: |
+          if [ "${{ inputs.use_released }}" = "true" ]; then
+            sudo -E USE_RELEASED=1 tests/cluster/incluster.sh
+          else
+            sudo -E SKIP_BUILD=1 TRACEE_IMAGE=tracee:pr tests/cluster/incluster.sh
+          fi

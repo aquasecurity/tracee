@@ -49,12 +49,40 @@ message StreamEventsResponse {
     Event event = 1;
 }
 
+message ListPoliciesRequest {
+}
+
+message ListPoliciesResponse {
+    repeated string policy_names = 1;
+}
+
+message ApplyPolicyRequest {
+    // policy is a single policy definition in the YAML/JSON policy-file format. It is added if new, or
+    // replaced if a policy with the same name already exists (upsert).
+    string policy = 1;
+}
+
+message ApplyPolicyResponse {
+    string policy_name = 1;
+}
+
+message RemovePolicyRequest {
+    string name = 1;
+}
+
+message RemovePolicyResponse {
+}
+
 service TraceeService {
     rpc GetEventDefinitions(GetEventDefinitionsRequest) returns (GetEventDefinitionsResponse);
     rpc StreamEvents(StreamEventsRequest) returns (stream StreamEventsResponse);
 
     rpc EnableEvent(EnableEventRequest) returns (EnableEventResponse);
     rpc DisableEvent(DisableEventRequest) returns (DisableEventResponse);
+
+    rpc ListPolicies(ListPoliciesRequest) returns (ListPoliciesResponse);
+    rpc ApplyPolicy(ApplyPolicyRequest) returns (ApplyPolicyResponse);
+    rpc RemovePolicy(RemovePolicyRequest) returns (RemovePolicyResponse);
 
     rpc GetVersion(GetVersionRequest) returns (GetVersionResponse);
 }
