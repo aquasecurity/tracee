@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/keepalive"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/common/logger"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
@@ -87,6 +88,11 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 	pb.RegisterTraceeServiceServer(grpcServer, &TraceeService{tracee: t})
 	pb.RegisterDiagnosticServiceServer(grpcServer, &DiagnosticService{tracee: t})
 	pb.RegisterDataSourceServiceServer(grpcServer, &DataSourceService{sigEngine: e})
+	if t != nil {
+		if runtimes := t.DatastoreRuntimes(); len(runtimes) > 0 {
+			datastores.RegisterDataStoreServiceServer(grpcServer, NewDataStoreService(runtimes...))
+		}
+	}
 
 	// Tracee might be nil in unit tests
 	if t != nil {

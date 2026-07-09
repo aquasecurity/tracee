@@ -2,9 +2,11 @@ package ebpf
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
+	"github.com/aquasecurity/tracee/api/v1beta1/datastores"
 	"github.com/aquasecurity/tracee/common/errfmt"
 )
 
@@ -70,11 +72,40 @@ func RegisterExtension(ext Extension) {
 }
 
 // Extensions manages the lifecycle of Tracee extensions
-type Extensions struct{}
+type Extensions struct {
+	// Extension-provided adapters that back the gRPC DataStoreService.
+	// Each runtime owns one or more writable stores and handles external
+	// write/delete/clear/list RPCs for them; registered during Run().
+	datastoreRuntimesMu sync.RWMutex
+	datastoreRuntimes   []datastores.Runtime
+}
 
 // NewExtensions creates a new Extensions manager
 func NewExtensions() *Extensions {
 	return &Extensions{}
+}
+
+// RegisterDatastoreRuntime registers a gRPC datastore runtime built by an extension.
+func (e *Extensions) RegisterDatastoreRuntime(runtime datastores.Runtime) error {
+	if runtime == nil {
+		return errors.New("nil datastore runtime")
+	}
+	e.datastoreRuntimesMu.Lock()
+	defer e.datastoreRuntimesMu.Unlock()
+	e.datastoreRuntimes = append(e.datastoreRuntimes, runtime)
+	return nil
+}
+
+// DatastoreRuntimes returns extension-provided datastore runtimes.
+func (e *Extensions) DatastoreRuntimes() []datastores.Runtime {
+	e.datastoreRuntimesMu.RLock()
+	defer e.datastoreRuntimesMu.RUnlock()
+	if len(e.datastoreRuntimes) == 0 {
+		return nil
+	}
+	out := make([]datastores.Runtime, len(e.datastoreRuntimes))
+	copy(out, e.datastoreRuntimes)
+	return out
 }
 
 // GetRegisteredExtensions returns all registered extensions from the global registry
