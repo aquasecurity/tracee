@@ -8,10 +8,12 @@ import (
 
 // Common errors for datastores
 var (
-	ErrNotFound        = errors.New("entity not found")
-	ErrStoreUnhealthy  = errors.New("datastore is unhealthy")
-	ErrNotImplemented  = errors.New("operation not implemented")
-	ErrInvalidArgument = errors.New("invalid argument")
+	ErrNotFound             = errors.New("entity not found")
+	ErrStoreUnhealthy       = errors.New("datastore is unhealthy")
+	ErrNotImplemented       = errors.New("operation not implemented")
+	ErrInvalidArgument      = errors.New("invalid argument")
+	ErrRuntimeUnsupported   = errors.New("datastore runtime support is unavailable")
+	ErrRuntimeStoreNotFound = errors.New("datastore not found")
 )
 
 // StoreError wraps an error with additional context about the store
@@ -202,4 +204,40 @@ type WritableStore interface {
 	// ListSources returns all source identifiers that have data in this store
 	// Returns empty slice if no sources exist
 	ListSources() ([]string, error)
+}
+
+// Runtime is implemented by extension-provided services that back the gRPC
+// DataStoreService. Each runtime owns one or more writable stores by name.
+type Runtime interface {
+	// Stores returns the names of the writable stores this runtime owns
+	// Returns empty slice if the runtime owns no stores
+	Stores() []string
+
+	// WriteData writes a single key-value entry from a source to the named store
+	// Returns ErrRuntimeStoreNotFound if the store is not owned by this runtime
+	// Returns error if the key/data types are invalid or the write fails
+	WriteData(storeName, source string, entry *DataEntry) error
+
+	// WriteBatchData writes multiple entries from a source to the named store in one operation
+	// All entries are written atomically per-source (all succeed or all fail)
+	// Returns ErrRuntimeStoreNotFound if the store is not owned by this runtime
+	// Returns error if any entry is invalid or the batch write fails
+	WriteBatchData(storeName, source string, entries []*DataEntry) error
+
+	// DeleteData removes a specific key from a source in the named store
+	// Returns ErrRuntimeStoreNotFound if the store is not owned by this runtime
+	// Returns error if the key type is invalid or the delete fails
+	// Returns nil if the key doesn't exist (idempotent)
+	DeleteData(storeName, source string, key *anypb.Any) error
+
+	// ClearSource removes all data from a specific source in the named store
+	// Returns ErrRuntimeStoreNotFound if the store is not owned by this runtime
+	// Returns error if the clear operation fails
+	// Returns nil if the source doesn't exist (idempotent)
+	ClearSource(storeName, source string) error
+
+	// ListSources returns all source identifiers that have data in the named store
+	// Returns ErrRuntimeStoreNotFound if the store is not owned by this runtime
+	// Returns empty slice if no sources exist
+	ListSources(storeName string) ([]string, error)
 }

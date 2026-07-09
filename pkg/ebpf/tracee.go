@@ -193,6 +193,22 @@ func (t *Tracee) Engine() *engine.Engine {
 	return t.sigEngine
 }
 
+// RegisterDatastoreRuntime lets an extension register a gRPC datastore runtime.
+func (t *Tracee) RegisterDatastoreRuntime(runtime dsapi.Runtime) error {
+	if t.extensions == nil {
+		return errfmt.Errorf("extensions manager not initialized")
+	}
+	return t.extensions.RegisterDatastoreRuntime(runtime)
+}
+
+// DatastoreRuntimes returns extension-provided datastore runtimes, if any.
+func (t *Tracee) DatastoreRuntimes() []dsapi.Runtime {
+	if t.extensions == nil {
+		return nil
+	}
+	return t.extensions.DatastoreRuntimes()
+}
+
 func (t *Tracee) getKernelSymbols() *symbol.KernelSymbolTable {
 	return t.kernelSymbols.Load()
 }
