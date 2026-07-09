@@ -150,17 +150,18 @@ verify() {
     pod=$(${KUBECTL} -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=tracee -o jsonpath='{.items[0].metadata.name}')
     [ -n "${pod}" ] || die "no tracee pod found"
 
-    # Generate activity the policy should catch (openat by 'ls'), on the node.
-    for _ in $(seq 1 5); do ls / >/dev/null 2>&1; sleep 0.3; done
-
+    # Drive activity the policy should catch (openat by 'ls') INSIDE the poll loop: tracee's stdout is
+    # block-buffered, so a one-shot burst can sit unflushed for the whole poll - continuous activity keeps
+    # events flowing so they reach `kubectl logs`. Match either output schema ("name" or legacy "eventName").
     log "scanning tracee output for policy events (pod ${pod})"
     local deadline=$(( $(date +%s) + READY_TIMEOUT ))
     while [ "$(date +%s)" -lt "${deadline}" ]; do
-        if ${KUBECTL} -n "${NAMESPACE}" logs "${pod}" --tail=2000 2>/dev/null | grep -qiE '"eventName":\s*"openat"|openat'; then
+        for _ in $(seq 1 5); do ls / >/dev/null 2>&1; done
+        if ${KUBECTL} -n "${NAMESPACE}" logs "${pod}" --tail=2000 2>/dev/null | grep -qiE '"(eventName|name)":\s*"openat"'; then
             ok "observed openat events in tracee output - policy is active"
             return 0
         fi
-        sleep 3
+        sleep 2
     done
     ${KUBECTL} -n "${NAMESPACE}" logs "${pod}" --tail=40 || true
     die "no policy events observed within ${READY_TIMEOUT}s"
