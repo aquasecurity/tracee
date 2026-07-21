@@ -94,11 +94,6 @@ func (s *Server) Start(ctx context.Context, t *tracee.Tracee, e *engine.Engine) 
 		}
 	}
 
-	// Tracee might be nil in unit tests
-	if t != nil {
-		t.RegisterE2eGrpcServices(grpcServer)
-	}
-
 	go func() {
 		logger.Debugw("Starting grpc server", "protocol", s.protocol, "address", s.listenAddr)
 		if err := grpcServer.Serve(s.listener); err != nil {
