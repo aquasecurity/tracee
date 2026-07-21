@@ -12,7 +12,6 @@ import (
 	"time"
 	"unsafe"
 
-	"google.golang.org/grpc"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -127,8 +126,8 @@ type Tracee struct {
 	dataStoreRegistry datastores.RegistryManager
 	// E2e datastore registration function (set by build-tagged files via populateE2eRegistrations)
 	registerE2eDatastoresFn func(dsapi.Registry) error
-	// E2e gRPC service registration function (set by build-tagged files via populateE2eRegistrations)
-	registerE2eGrpcServicesFn func(*grpc.Server, *Tracee)
+	// E2e datastore runtime registration function (set by build-tagged files via populateE2eRegistrations)
+	registerE2eRuntimeFn func(*Tracee) error
 	// Detector Engine
 	detectorEngine *detectors.Engine
 	// Specific Events Needs
@@ -220,13 +219,6 @@ func (t *Tracee) setKernelSymbols(kernelSymbols *symbol.KernelSymbolTable) {
 // DataStores returns the datastore registry for accessing system state information
 func (t *Tracee) DataStores() dsapi.Registry {
 	return t.dataStoreRegistry.Registry()
-}
-
-// RegisterE2eGrpcServices calls the e2e gRPC service registration function if set
-func (t *Tracee) RegisterE2eGrpcServices(grpcServer *grpc.Server) {
-	if t.registerE2eGrpcServicesFn != nil {
-		t.registerE2eGrpcServicesFn(grpcServer, t)
-	}
 }
 
 // New creates a new Tracee instance based on a given valid Config. It is expected that it won't
@@ -633,6 +625,12 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 
 	if t.registerE2eDatastoresFn != nil {
 		if err := t.registerE2eDatastoresFn(t.dataStoreRegistry.Registry()); err != nil {
+			return errfmt.WrapError(err)
+		}
+	}
+
+	if t.registerE2eRuntimeFn != nil {
+		if err := t.registerE2eRuntimeFn(t); err != nil {
 			return errfmt.WrapError(err)
 		}
 	}
