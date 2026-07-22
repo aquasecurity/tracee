@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"go.yaml.in/yaml/v3"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
