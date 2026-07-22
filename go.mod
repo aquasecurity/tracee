@@ -21,10 +21,10 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/urfave/cli/v2 v2.27.6
 	go.uber.org/goleak v1.3.0
+	go.yaml.in/yaml/v3 v3.0.4
 	golang.org/x/sys v0.45.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.10
-	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.32.4
 	k8s.io/apimachinery v0.32.4
