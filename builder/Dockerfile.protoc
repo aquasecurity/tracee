@@ -1,14 +1,34 @@
 FROM golang:1.26.5@sha256:d52df9c279840adf958d017ebb275651ed8338b953d39817bc3633a2e6b1bbcc
 
-ARG PROTOC_VERSION="29.0" # v5.29.0
+# Release tag (shared minor.patch): the per-language major is not part of it,
+# e.g. release 35.1 is C++ 7.35.1 - https://protobuf.dev/support/version-support
+ARG PROTOC_VERSION="35.1"
 ARG PROTOC_ZIP="protoc-${PROTOC_VERSION}-linux-x86_64.zip"
 
 RUN apt update -y && apt install -y unzip 
 RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP} && \
 	unzip ${PROTOC_ZIP} -d /usr/local
 
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@c72053a9062dd4bc86a75c21f5d8134136ccbf2e # v1.35.2
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@acba4d3e9d537eb5adc09947ebc7cfb85ec774cc # protoc-gen-go-grpc v1.68.0
-RUN go install github.com/mitchellh/protoc-gen-go-json@49905733154f04e47d685de62c2cc2b72613b69e # master
+# Update guide for the codegen plugins below:
+#
+# - protoc-gen-go is part of the google.golang.org/protobuf module and shares
+#   its version: pin the commit of the tag matching the protobuf version in
+#   go.mod (https://github.com/protocolbuffers/protobuf-go/releases).
+#
+# - protoc-gen-go-grpc is a nested module of grpc-go versioned independently
+#   from grpc itself (tags cmd/protoc-gen-go-grpc/vX.Y.Z): pin the commit of
+#   the plugin release shipped with the grpc version in go.mod - see the
+#   `version` constant in cmd/protoc-gen-go-grpc/main.go at that grpc tag.
+#   Do not pin grpc release commits: they resolve to pseudo-versions that
+#   fail sum.golang.org verification.
+#
+# - protoc-gen-go-json (mfridman fork, continuation of the archived mitchellh
+#   plugin): pin the commit of the latest release
+#   (https://github.com/mfridman/protoc-gen-go-json/releases).
+#
+# After bumping, regenerate with: make -f builder/Makefile.protoc
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@96a179180f0ad6bba9b1e7b6e38d0affb0168e9a # v1.36.11
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1c63fa5f5492fb6cb4cabf9847999ce469505f49 # protoc-gen-go-grpc v1.6.2
+RUN go install github.com/mfridman/protoc-gen-go-json@d4d13d829d9034a255ae5ab0568876d5da33f6ef # v1.6.0
 
 WORKDIR /tracee
