@@ -1,17 +1,30 @@
 {
   "_readme": [
     "Scanning index for version-pinned tools that Trivy CANNOT see because they are",
-    "hand-unpacked / built from source (no package-manager identity). This file does",
-    "NOT drive any build - the authoritative pins still live in the 'source' file of",
-    "each entry. scan-pinned-tools.py mirrors them here only so their versions can be",
-    "queried against a CVE database (OSV / NVD).",
+    "hand-unpacked / built from source / installed outside a package manager (no",
+    "package-manager identity). This file does NOT drive any build - the authoritative",
+    "pins still live in the 'source' file of each entry. scan-pinned-tools.py mirrors",
+    "them here only so their versions can be queried against a CVE database (OSV/NVD).",
     "",
     "Invariant (enforced by --verify): for every entry, 'match' must be found verbatim",
     "in 'source'. If someone bumps the real pin without updating this file, verify fails.",
     "",
-    "Identity: give ONE of 'osv' {ecosystem,name} (preferred) or 'cpe' (for standalone",
-    "tools OSV doesn't index). 'covered_elsewhere' documents entries kept only for",
-    "completeness because another scanner already sees them."
+    "Identity: give ONE of 'osv' {ecosystem,name} (preferred; reliable version match) or",
+    "'cpe' (for standalone tools OSV does not index; verify vendor:product against NVD).",
+    "",
+    "EXTENSIBILITY: an optional 'pinned-tools.extended.json' (gitignored; provided by a",
+    "downstream/private repo, template in pinned-tools.extended.json.example) is merged",
+    "on top of this file - its 'tools' are appended. See scan-pinned-tools.py.",
+    "",
+    "COVERED ELSEWHERE (intentionally NOT listed as entries):",
+    "- protoc-gen-go / protoc-gen-go-grpc: identical to the google.golang.org/protobuf",
+    "  and google.golang.org/grpc modules already in go.mod (Trivy + govulncheck).",
+    "- Go module dependencies at large: go.mod/go.sum (Trivy fs scan + govulncheck).",
+    "",
+    "NOT TRACKABLE BY VERSION (see _disabled entries): tools installed as 'latest' with",
+    "no version pin (AWS CLI v2, gh CLI) or built from source with no advisory identity",
+    "(bpftool). Integrity of pinned downloads (go, actions-runner) is covered separately",
+    "by the sha256 files in scripts/installation/checksums/."
   ],
 
   "tools": [
@@ -21,7 +34,7 @@
       "source": "builder/Dockerfile.protoc",
       "match": "PROTOC_VERSION=\"35.1\"",
       "cpe": "cpe:2.3:a:google:protobuf:35.1:*:*:*:*:*:*:*",
-      "note": "Unzipped to /usr/local -> invisible to Trivy. Its Go runtime/codegen identity (google.golang.org/protobuf v1.36.11) is already in go.mod and scanned; this catches compiler-specific advisories."
+      "note": "Unzipped to /usr/local -> invisible to Trivy. protobuf runtime/codegen (google.golang.org/protobuf v1.36.11) is already in go.mod; this catches compiler-specific advisories."
     },
     {
       "name": "pandoc",
@@ -37,7 +50,7 @@
       "source": "scripts/installation/install-clang.sh",
       "match": "LLVM_FULL_VERSION=\"19.1.7\"",
       "cpe": "cpe:2.3:a:llvm:clang:19.1.7:*:*:*:*:*:*:*",
-      "covered_elsewhere": "Installed via apk/apt -> visible as OS packages in the tracee-make images. Kept here as a cross-check.",
+      "covered_elsewhere": "Installed via apk/apt (or an llvm-project release tarball) -> visible as OS packages in the tracee-make images. Cross-check.",
       "note": "NVD product for the compiler is llvm:clang; LLVM library-level advisories may also appear under cpe:2.3:a:llvm:llvm."
     },
     {
@@ -46,23 +59,102 @@
       "source": "scripts/installation/install-golang.sh",
       "match": "GOLANG_VERSION=\"1.26.5\"",
       "osv": { "ecosystem": "Go", "name": "stdlib" },
-      "covered_elsewhere": "govulncheck (pr.yaml) already covers Go stdlib with reachability. Kept as a belt-and-suspenders example of an OSV-backed entry."
+      "covered_elsewhere": "govulncheck (pr.yaml) already covers the Go stdlib with reachability. Integrity pinned by scripts/installation/checksums/go1.26.5.*.sha256."
+    },
+    {
+      "name": "staticcheck",
+      "version": "2025.1",
+      "source": "scripts/installation/install-go-tools.sh",
+      "match": "STATICCHECK_VERSION=\"5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c\"",
+      "osv": { "ecosystem": "Go", "name": "honnef.co/go/tools" }
+    },
+    {
+      "name": "revive",
+      "version": "1.7.0",
+      "source": "scripts/installation/install-go-tools.sh",
+      "match": "REVIVE_VERSION=\"8ece20b0789c517bd3a6742db0daa4dd5928146d\"",
+      "osv": { "ecosystem": "Go", "name": "github.com/mgechev/revive" }
+    },
+    {
+      "name": "goimports-reviser",
+      "version": "3.12.6",
+      "source": "scripts/installation/install-go-tools.sh",
+      "match": "GOIMPORTS_REVISER_VERSION=\"fa5587e51ba33c58734984cb41370a5b2582d5b7\"",
+      "osv": { "ecosystem": "Go", "name": "github.com/incu6us/goimports-reviser/v3" }
+    },
+    {
+      "name": "errcheck",
+      "version": "1.9.0",
+      "source": "scripts/installation/install-go-tools.sh",
+      "match": "ERRCHECK_VERSION=\"11c27a7ce69d583465d80d808817d22d6653ee34\"",
+      "osv": { "ecosystem": "Go", "name": "github.com/kisielk/errcheck" }
     },
     {
       "name": "govulncheck (dev tool)",
       "version": "1.1.4",
       "source": "scripts/installation/install-go-tools.sh",
       "match": "GOVULNCHECK_VERSION=\"d1f380186385b4f64e00313f31743df8e4b89a77\"",
-      "osv": { "ecosystem": "Go", "name": "golang.org/x/vuln" },
-      "note": "Pinned by commit; the semver in the trailing comment (v1.1.4) is what OSV matches."
-    }
+      "osv": { "ecosystem": "Go", "name": "golang.org/x/vuln" }
+    },
+    {
+      "name": "controller-gen",
+      "version": "0.17.0",
+      "source": "builder/Dockerfile.k8s",
+      "match": "controller-gen@c71f90318f2c818b93a4458e42f7c4da416d5368",
+      "osv": { "ecosystem": "Go", "name": "sigs.k8s.io/controller-tools" }
+    },
+    {
+      "name": "protoc-gen-go-json",
+      "version": "1.6.0",
+      "source": "builder/Dockerfile.protoc",
+      "match": "protoc-gen-go-json@d4d13d829d9034a255ae5ab0568876d5da33f6ef",
+      "osv": { "ecosystem": "Go", "name": "github.com/mfridman/protoc-gen-go-json" }
+    },
+    {
+      "name": "mike (mkdocs versioning)",
+      "version": "2.1.3",
+      "source": "builder/Dockerfile.mkdocs",
+      "match": "mike.git@6b876a40892f6d16d984247821d5a3ae85745e36",
+      "osv": { "ecosystem": "PyPI", "name": "mike" },
+      "covered_elsewhere": "Installed via pip into the mkdocs image -> also visible to Trivy's image scan via pip metadata."
+    },
+    {
+      "name": "mkdocs-macros-plugin",
+      "version": "1.3.7",
+      "source": "builder/Dockerfile.mkdocs",
+      "match": "mkdocs-macros-plugin.git@b906a368ecfd5cd25abcbea0a37f7a23944a8355",
+      "osv": { "ecosystem": "PyPI", "name": "mkdocs-macros-plugin" },
+      "covered_elsewhere": "Installed via pip into the mkdocs image -> also visible to Trivy's image scan via pip metadata."
+    },
+    {
+      "name": "actions/runner (CI runner binary)",
+      "version": "2.330.0",
+      "source": "scripts/installation/install-ami-tooling.sh",
+      "match": "ACTIONS_RUNNER_VERSION=\"2.330.0\"",
+      "cpe": "cpe:2.3:a:github:runner:2.330.0:*:*:*:*:*:*:*",
+      "note": "Downloaded onto the CI AMI; not present in any Trivy-scanned image, so this is the only signal for it. Integrity pinned by scripts/installation/checksums/actions-runner-*.sha256."
+    },
 
-    ,{
+    {
       "_disabled": true,
       "name": "bpftool (from btfhub)",
       "version": "n/a",
       "source": "builder/Dockerfile.alpine-tracee-make",
       "note": "Built from source via btfhub bpftool.sh with no version pin and no advisory-backed identity. No scanner can match it. Track via upstream libbpf/bpftool GitHub Security Advisories instead."
+    },
+    {
+      "_disabled": true,
+      "name": "AWS CLI v2",
+      "version": "latest",
+      "source": "scripts/installation/install-ami-tooling.sh",
+      "note": "Downloaded as awscli-exe-linux-*.zip (always latest, GPG-verified). No version pin, so nothing to query; it auto-updates. Left disabled as documentation."
+    },
+    {
+      "_disabled": true,
+      "name": "gh CLI",
+      "version": "latest",
+      "source": "scripts/installation/install-ami-tooling.sh",
+      "note": "Installed via apt from cli.github.com (latest). No version pin; covered by OS package scanning only if the host is scanned. Documentation only."
     }
   ]
 }

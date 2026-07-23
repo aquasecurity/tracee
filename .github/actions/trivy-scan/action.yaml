@@ -1,9 +1,12 @@
 name: Trivy Scan
 description: |
   Scan an image or the filesystem with Trivy once, then convert the single result
-  to SARIF (uploaded to the GitHub Security tab under a distinct category) and to a
-  human-readable table printed in the job log. Scanning once and converting avoids
-  running Trivy twice per target.
+  to SARIF (uploaded to the Security tab under a distinct category) and to a table
+  (job log + job summary). Scanning once and converting avoids running Trivy twice.
+
+  Policy is fixed (all callers want the same): findings fail the job on pull_request
+  events and are report-only otherwise; SARIF upload is skipped on fork PRs where the
+  token is read-only.
 
 inputs:
   scan-type:
@@ -27,12 +30,6 @@ inputs:
   skip-dirs:
     description: "Comma-separated directories to skip."
     default: ""
-  exit-code:
-    description: "Set to '1' to fail the job when findings exist (e.g. on PRs), '0' otherwise."
-    default: "0"
-  upload:
-    description: "Whether to upload SARIF (set false for fork PRs where the token is read-only)."
-    default: "true"
 
 runs:
   using: composite
@@ -71,9 +68,10 @@ runs:
     # (category, ref) and each upload would overwrite the previous one. The SARIF is
     # the file-referenced view: it carries file:line for filesystem findings, which
     # the Security tab and PR annotations link directly.
+    # Skip on fork PRs (read-only token can't write security-events); still scans + gates.
     - name: Upload SARIF to Security tab (${{ inputs.name }})
-      if: ${{ always() && inputs.upload == 'true' }}
-      uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
+      if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+      uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
       with:
         sarif_file: "trivy-${{ inputs.name }}.sarif"
         category: "trivy-${{ inputs.name }}"
@@ -86,7 +84,8 @@ runs:
       shell: bash
       env:
         NAME: ${{ inputs.name }}
-        EXIT_CODE: ${{ inputs.exit-code }}
+        # Gate on pull_request events only; report-only otherwise.
+        IS_PR: ${{ github.event_name == 'pull_request' }}
       run: |
         set -euo pipefail
 
@@ -97,7 +96,7 @@ runs:
         {
             echo "### Trivy: ${NAME} (${count} findings)"
             echo ""
-            if [ "${count}" -gt 0 ]; then
+            if ((count > 0)); then
                 echo "<details><summary>Show findings table</summary>"
                 echo ""
                 echo '```'
@@ -115,7 +114,7 @@ runs:
         echo "${table}"
         echo "::endgroup::"
 
-        if [ "${EXIT_CODE}" = "1" ] && [ "${count}" -gt 0 ]; then
+        if [[ "${IS_PR}" == "true" ]] && ((count > 0)); then
             echo "::error::${count} finding(s) for ${NAME} - failing (pull request gate)"
             exit 1
         fi

@@ -46,6 +46,10 @@ dist
 # release files
 release_notes.txt
 
+# Security scan - private/extended pinned-tools overlay
+# (template: scripts/security/pinned-tools.extended.json.example)
+scripts/security/pinned-tools.extended.json
+
 # Cursor rules - development configuration files
 .cursor/rules/**
 !.cursor/rules/commit-pr-conventions.mdc

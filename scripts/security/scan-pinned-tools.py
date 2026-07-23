@@ -27,7 +27,11 @@ import urllib.parse
 import urllib.request
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-MANIFEST = os.path.join(ROOT, "scripts", "security", "pinned-tools.json")
+SECURITY_DIR = os.path.join(ROOT, "scripts", "security")
+MANIFEST = os.path.join(SECURITY_DIR, "pinned-tools.json")
+# Optional overlay: a downstream/private repo drops in this gitignored file to add
+# its own pinned tools (mirrors tests/e2e/lib-extended.sh). Loaded if present.
+EXTENDED_MANIFEST = os.path.join(SECURITY_DIR, "pinned-tools.extended.json")
 
 OSV_URL = "https://api.osv.dev/v1/query"
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
@@ -35,10 +39,18 @@ NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 NVD_KEY = os.environ.get("NVD_API_KEY", "")
 
 
+def _read_tools(path):
+    with open(path) as fh:
+        return json.load(fh).get("tools", [])
+
+
 def load_tools():
-    with open(MANIFEST) as fh:
-        data = json.load(fh)
-    return [t for t in data.get("tools", []) if not t.get("_disabled")]
+    """Core tools plus the optional extended overlay (if present), disabled removed."""
+    tools = _read_tools(MANIFEST)
+    if os.path.isfile(EXTENDED_MANIFEST):
+        print(f"loading extended manifest: {os.path.relpath(EXTENDED_MANIFEST, ROOT)}")
+        tools += _read_tools(EXTENDED_MANIFEST)
+    return [t for t in tools if not t.get("_disabled")]
 
 
 def verify_drift(tools):
@@ -77,6 +89,13 @@ def query_nvd(cpe):
     return [i["cve"]["id"] for i in items]
 
 
+def status_str(ids):
+    """Human-readable finding status: None -> query failed, [] -> clean, else CVE ids."""
+    if ids is None:
+        return "query failed"
+    return ", ".join(ids) if ids else "clean"
+
+
 def scan(tools):
     """Query each tool; return a list of result rows (with source file and CVE ids)."""
     results = []
@@ -96,13 +115,7 @@ def scan(tools):
             {"name": t["name"], "version": t["version"], "source": t.get("source", "?"), "ids": ids}
         )
         loc = f" [{t.get('source', '?')}]"
-        if ids is None:
-            status = "query failed"
-        elif ids:
-            status = ", ".join(ids)
-        else:
-            status = "clean"
-        print(f"  {t['name']} {t['version']}{loc}: {status}")
+        print(f"  {t['name']} {t['version']}{loc}: {status_str(ids)}")
     return results
 
 
@@ -113,13 +126,7 @@ def render_summary(results):
         return "\n".join(lines) + "\n"
     lines += ["| Tool | Version | Pinned in | Findings |", "|------|---------|-----------|----------|"]
     for r in results:
-        if r["ids"] is None:
-            found = "query failed"
-        elif r["ids"]:
-            found = ", ".join(r["ids"])
-        else:
-            found = "clean"
-        lines.append(f"| {r['name']} | `{r['version']}` | `{r['source']}` | {found} |")
+        lines.append(f"| {r['name']} | `{r['version']}` | `{r['source']}` | {status_str(r['ids'])} |")
     lines.append("")
     return "\n".join(lines) + "\n"
 

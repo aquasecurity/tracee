@@ -1,0 +1,26 @@
+{
+  "_readme": [
+    "EXTENDED overlay for pinned-tools scanning (mirrors tests/e2e/lib-extended.sh).",
+    "",
+    "HOW TO USE (in a downstream/private repo):",
+    "  1. Copy this file to: scripts/security/pinned-tools.extended.json (drop .example).",
+    "     The real file is gitignored, so it never lands in the public repo.",
+    "  2. Add your private version-pinned tools to 'tools' below, same schema as",
+    "     scripts/security/pinned-tools.json.",
+    "  3. scan-pinned-tools.py loads it automatically if present and appends its 'tools'",
+    "     to the core set (--verify drift-checks them too).",
+    "",
+    "Each entry: name, version, source (file that owns the real pin), match (verbatim",
+    "string to find in source), and ONE identity: osv {ecosystem,name} or cpe."
+  ],
+
+  "tools": [
+    {
+      "name": "example-private-tool",
+      "version": "1.2.3",
+      "source": "path/in/private/repo/Dockerfile.example",
+      "match": "EXAMPLE_TOOL_VERSION=\"1.2.3\"",
+      "osv": { "ecosystem": "Go", "name": "example.com/org/tool" }
+    }
+  ]
+}
