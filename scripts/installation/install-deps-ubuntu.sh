@@ -87,6 +87,63 @@ install_docker() {
     info "Docker installed successfully"
 }
 
+# containerd CLI (ctr) version for the container-runtime enrichment
+# integration test. We install ONLY the static `ctr` client from the
+# containerd release - no containerd daemon and no systemd unit - so it never
+# conflicts with the containerd instance the pre-baked Docker daemon already
+# runs. The test drives that existing containerd in a dedicated namespace.
+#
+# Kept aligned with the github.com/containerd/containerd/v2 module version in
+# go.mod so the CLI matches the client library the enricher links against.
+#
+# When changing CONTAINERD_CLI_VERSION, update the checksum files in:
+#   scripts/installation/checksums/containerd-${CONTAINERD_CLI_VERSION}-linux-amd64.tar.gz.sha256
+#   scripts/installation/checksums/containerd-${CONTAINERD_CLI_VERSION}-linux-arm64.tar.gz.sha256
+# Checksums come from the release asset <tarball>.sha256sum. containerd does not
+# publish detached GPG signatures for its release assets (it relies on GitHub
+# artifact attestations), so the pinned SHA256 is the integrity anchor here.
+CONTAINERD_CLI_VERSION="2.3.3"
+
+install_containerd_cli() {
+    info "Installing containerd CLI (ctr ${CONTAINERD_CLI_VERSION})"
+    require_cmds curl tar
+
+    local arch goarch
+    arch=$(uname -m)
+    case "${arch}" in
+        x86_64) goarch="amd64" ;;
+        aarch64) goarch="arm64" ;;
+        *) die "Unsupported architecture: ${arch}" ;;
+    esac
+
+    local tarball_name="containerd-${CONTAINERD_CLI_VERSION}-linux-${goarch}.tar.gz"
+    local checksum_file="${SCRIPT_DIR}/checksums/${tarball_name}.sha256"
+    local download_url="https://github.com/containerd/containerd/releases/download/v${CONTAINERD_CLI_VERSION}/${tarball_name}"
+
+    if [[ ! -f "${checksum_file}" ]]; then
+        die "containerd checksum file not found: ${checksum_file}"
+    fi
+
+    info "Downloading containerd static release..."
+    if ! curl -fsSL -o "/tmp/${tarball_name}" "${download_url}"; then
+        die "Failed to download containerd tarball from ${download_url}"
+    fi
+
+    if ! verify_sha256_checksum "/tmp/${tarball_name}" "${checksum_file}" "containerd ${CONTAINERD_CLI_VERSION}"; then
+        rm -f "/tmp/${tarball_name}"
+        die "Aborting ctr installation due to checksum verification failure"
+    fi
+
+    # Extract ONLY the ctr client (no daemon, no shims, no service) so Docker's
+    # own containerd is left untouched.
+    info "Installing ctr to /usr/local/bin..."
+    tar -C /usr/local -xzf "/tmp/${tarball_name}" bin/ctr
+    rm -f "/tmp/${tarball_name}"
+
+    ctr --version
+    info "containerd CLI (ctr) installed successfully"
+}
+
 verify_installation() {
     info "Verifying installation"
 
@@ -107,6 +164,13 @@ verify_installation() {
         info "Docker not available (might be installed but not accessible)"
     fi
 
+    # Check ctr availability (optional)
+    if command -v ctr > /dev/null 2>&1; then
+        ctr --version
+    else
+        info "ctr not available (containerd enrichment test will be skipped)"
+    fi
+
     info "All tools verified successfully"
 }
 
@@ -118,6 +182,7 @@ main() {
     install_clang
     install_go_tools
     install_docker
+    install_containerd_cli
     verify_installation
 
     info "=== Tracee dependencies installation completed successfully! ==="

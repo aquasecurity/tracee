@@ -2,12 +2,13 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"strings"
 
-	"github.com/containerd/containerd"
-	"github.com/containerd/containerd/containers"
-	"github.com/containerd/containerd/images"
-	"github.com/containerd/containerd/namespaces"
+	"github.com/containerd/containerd/v2/client"
+	"github.com/containerd/containerd/v2/core/containers"
+	"github.com/containerd/containerd/v2/core/images"
+	"github.com/containerd/containerd/v2/pkg/namespaces"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	cri "k8s.io/cri-api/pkg/apis/runtime/v1"
@@ -17,7 +18,8 @@ import (
 )
 
 type containerdEnricher struct {
-	client     *containerd.Client
+	conn       *grpc.ClientConn
+	client     *client.Client
 	containers containers.Store
 	images     images.Store
 	images_cri cri.ImageServiceClient
@@ -30,24 +32,25 @@ func ContainerdEnricher(socket string) (ContainerEnricher, error) {
 	// avoid duplicate unix:// prefix
 	unixSocket := "unix://" + strings.TrimPrefix(socket, "unix://")
 
-	client, err := containerd.New(socket)
+	cdClient, err := client.New(socket)
 	if err != nil {
 		return nil, errfmt.WrapError(err)
 	}
 
 	conn, err := grpc.NewClient(unixSocket, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		if errC := client.Close(); errC != nil {
+		if errC := cdClient.Close(); errC != nil {
 			logger.Errorw("Closing containerd connection", "error", errC)
 		}
 		return nil, errfmt.WrapError(err)
 	}
 
-	enricher.client = client
+	enricher.conn = conn
+	enricher.client = cdClient
 	enricher.images_cri = cri.NewImageServiceClient(conn)
-	enricher.containers = client.ContainerService()
-	enricher.namespaces = client.NamespaceService()
-	enricher.images = client.ImageService()
+	enricher.containers = cdClient.ContainerService()
+	enricher.namespaces = cdClient.NamespaceService()
+	enricher.images = cdClient.ImageService()
 
 	return &enricher, nil
 }
@@ -169,5 +172,12 @@ func (e *containerdEnricher) getImageInfoCri(ctx context.Context, image string) 
 // revive:enable:confusing-results
 
 func (e *containerdEnricher) Close() error {
-	return e.client.Close()
+	var errs []error
+	if e.client != nil {
+		errs = append(errs, e.client.Close())
+	}
+	if e.conn != nil {
+		errs = append(errs, e.conn.Close())
+	}
+	return errors.Join(errs...)
 }
