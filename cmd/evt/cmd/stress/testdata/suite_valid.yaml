@@ -1,0 +1,14 @@
+name: test-suite
+description: Valid suite for unit tests
+
+scenarios:
+  - name: smoke
+    description: Smoke scenario
+    events:
+      - security_file_open
+      - ptrace
+  - name: filesystem
+    groups:
+      - name: file-ops
+        events:
+          - magic_write:instances=2
