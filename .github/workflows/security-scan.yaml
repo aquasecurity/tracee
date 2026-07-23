@@ -47,7 +47,9 @@ concurrency:
 jobs:
   generate-matrix-custom-images:
     name: Generate Custom Images Matrix
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
     outputs:
@@ -120,7 +122,9 @@ jobs:
 
   generate-matrix-dashboard-images:
     name: Generate Dashboard Images Matrix
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
     outputs:
@@ -176,7 +180,9 @@ jobs:
 
   scan-custom-images:
     name: Scan Image (${{ matrix.display_name }})
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
       security-events: write # upload SARIF to the Security tab
@@ -214,7 +220,9 @@ jobs:
 
   scan-dashboard-images:
     name: Scan Image (${{ matrix.service }})
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
       security-events: write # upload SARIF to the Security tab
@@ -256,7 +264,9 @@ jobs:
 
   scan-filesystem:
     name: Scan Repository (vuln, secret, misconfig)
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
       security-events: write # upload SARIF to the Security tab
@@ -277,7 +287,9 @@ jobs:
 
   scan-pinned-tools:
     name: Scan Pinned Hand-Unpacked Tools
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
     # Covers version-pinned tools Trivy cannot see (hand-unpacked / source-built
@@ -314,7 +326,9 @@ jobs:
 
   generate-sbom:
     name: Generate Software Bill of Materials
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
     needs:
@@ -349,7 +363,9 @@ jobs:
 
   summary:
     name: Security Scan Summary
-    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    runs-on:
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=SHORT
     permissions: {} # writes only to GITHUB_STEP_SUMMARY; no token scope needed
     needs:
       [
