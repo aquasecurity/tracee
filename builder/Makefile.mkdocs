@@ -65,7 +65,7 @@ help:
 # mkdocs dev server
 #
 
-MKDOCS_CONTNAME = tracee-mkdocs:latest
+MKDOCS_CONTNAME ?= tracee-mkdocs:latest
 
 .PHONY: mkdocs-build
 mkdocs-build: \

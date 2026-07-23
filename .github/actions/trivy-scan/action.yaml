@@ -1,0 +1,121 @@
+name: Trivy Scan
+description: |
+  Scan an image or the filesystem with Trivy once, then convert the single result
+  to SARIF (uploaded to the GitHub Security tab under a distinct category) and to a
+  human-readable table printed in the job log. Scanning once and converting avoids
+  running Trivy twice per target.
+
+inputs:
+  scan-type:
+    description: "Trivy scan type: 'image' or 'fs'."
+    default: "image"
+  image-ref:
+    description: "Image reference to scan (for scan-type: image)."
+    default: ""
+  scan-ref:
+    description: "Path to scan (for scan-type: fs)."
+    default: "."
+  name:
+    description: "Unique slug used for the SARIF category and output filenames."
+    required: true
+  scanners:
+    description: "Comma-separated Trivy scanners (e.g. 'vuln' or 'vuln,secret,misconfig')."
+    default: "vuln"
+  severity:
+    description: "Comma-separated severities to report."
+    default: "CRITICAL,HIGH,MEDIUM"
+  skip-dirs:
+    description: "Comma-separated directories to skip."
+    default: ""
+  exit-code:
+    description: "Set to '1' to fail the job when findings exist (e.g. on PRs), '0' otherwise."
+    default: "0"
+  upload:
+    description: "Whether to upload SARIF (set false for fork PRs where the token is read-only)."
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    # Single scan -> JSON. exit-code is forced to 0 here so the SARIF is always
+    # produced and uploaded; gating happens on the convert step below.
+    - name: Trivy scan (${{ inputs.name }})
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0 (Trivy v0.70.0)
+      with:
+        scan-type: ${{ inputs.scan-type }}
+        image-ref: ${{ inputs.image-ref }}
+        scan-ref: ${{ inputs.scan-ref }}
+        scanners: ${{ inputs.scanners }}
+        severity: ${{ inputs.severity }}
+        skip-dirs: ${{ inputs.skip-dirs }}
+        ignore-unfixed: true
+        format: "json"
+        output: "trivy-${{ inputs.name }}.json"
+        exit-code: "0"
+        # cache: true is the action default; the DB is cached across runs via
+        # actions/cache, which mitigates GHCR rate limits (TOOMANYREQUESTS).
+        cache: "true"
+
+    # Offline conversion of the single JSON result to SARIF (no re-scan, no DB pull).
+    - name: Convert results to SARIF (${{ inputs.name }})
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+      run: |
+        set -euo pipefail
+        trivy convert --format sarif \
+            --output "trivy-${NAME}.sarif" \
+            "trivy-${NAME}.json"
+
+    # Distinct category per target: without this, code scanning keys results by
+    # (category, ref) and each upload would overwrite the previous one. The SARIF is
+    # the file-referenced view: it carries file:line for filesystem findings, which
+    # the Security tab and PR annotations link directly.
+    - name: Upload SARIF to Security tab (${{ inputs.name }})
+      if: ${{ always() && inputs.upload == 'true' }}
+      uses: github/codeql-action/upload-sarif@3e6af16ff035267728e2ebc35df5d4c4cf249f81 # v3.30.3
+      with:
+        sarif_file: "trivy-${{ inputs.name }}.sarif"
+        category: "trivy-${{ inputs.name }}"
+
+    # Append a findings table to the job summary, log it, then gate. Runs last so the
+    # SARIF is already uploaded before any failure. The table's Target column names
+    # the file for filesystem findings; image findings map to a package (no repo file).
+    - name: Report findings and gate (${{ inputs.name }})
+      if: ${{ always() }}
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        EXIT_CODE: ${{ inputs.exit-code }}
+      run: |
+        set -euo pipefail
+
+        json="trivy-${NAME}.json"
+        table=$(trivy convert --format table "${json}")
+        count=$(jq '[.Results[]? | ((.Vulnerabilities // []) + (.Secrets // []) + (.Misconfigurations // [])) | length] | add // 0' "${json}")
+
+        {
+            echo "### Trivy: ${NAME} (${count} findings)"
+            echo ""
+            if [ "${count}" -gt 0 ]; then
+                echo "<details><summary>Show findings table</summary>"
+                echo ""
+                echo '```'
+                echo "${table}"
+                echo '```'
+                echo ""
+                echo "</details>"
+            else
+                echo "No findings."
+            fi
+            echo ""
+        } >> "${GITHUB_STEP_SUMMARY}"
+
+        echo "::group::Trivy results (${NAME})"
+        echo "${table}"
+        echo "::endgroup::"
+
+        if [ "${EXIT_CODE}" = "1" ] && [ "${count}" -gt 0 ]; then
+            echo "::error::${count} finding(s) for ${NAME} - failing (pull request gate)"
+            exit 1
+        fi

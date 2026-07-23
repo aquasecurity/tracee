@@ -1,0 +1,406 @@
+name: Security Scan
+#
+# Continuous vulnerability / secret / misconfiguration scanning.
+#
+# Coverage split (kept intentionally to avoid redundant, expensive work):
+#   - Filesystem scan (Trivy): repo dependency vulns, secrets, and IaC/Dockerfile
+#     misconfigurations across the whole tree.
+#   - Custom build/tooling images (Trivy): image-layer CVEs for images that are NOT
+#     published or scanned elsewhere (build envs + docs/codegen tooling).
+#   - Dashboard compose images (Trivy): the third-party images we ship in
+#     performance/dashboard (already digest-pinned in docker-compose.yml).
+#   - Pinned hand-unpacked tools (OSV/NVD): version-pinned binaries Trivy cannot see
+#     because they have no package identity. See scripts/security/pinned-tools.json.
+#   - The shipped `tracee` image is intentionally NOT rebuilt here: it is built and
+#     Trivy-scanned daily by release-snapshot.yaml. Rebuilding it (a full source
+#     compile) only to re-scan it would be redundant and slow. Its Dockerfile
+#     misconfigurations are still covered by the filesystem scan below.
+#
+# Trivy scans run once and convert the single result to SARIF (Security tab) + a
+# table (job log) via the local ./.github/actions/trivy-scan composite action.
+
+on:
+  # Run daily at 2 AM UTC
+  schedule:
+    - cron: "0 2 * * *"
+  # Manual trigger
+  workflow_dispatch:
+  # Test trigger for use-trivy-action branch (TODO: remove before merging)
+  push:
+    branches:
+      - use-trivy-action
+  # Run on PRs that modify Dockerfiles or the dashboard compose file
+  pull_request:
+    paths:
+      - "builder/Dockerfile*"
+      - "performance/dashboard/docker-compose.yml"
+
+# Least privilege: deny all by default; each job grants only what it needs.
+permissions: {}
+
+# Avoid overlapping runs for the same ref (e.g. rapid pushes or a push racing a
+# scheduled run); cancel the older in-progress run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate-matrix-custom-images:
+    name: Generate Custom Images Matrix
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has-changes: ${{ steps.set-matrix.outputs.has-changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Generate matrix based on changed files
+        id: set-matrix
+        env:
+          # Pass event context via env (not inline ${{ }}) to avoid shell injection.
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # Dockerfiles to build and image-scan, with their build config.
+          # The shipped tracee container (Dockerfile.alpine-tracee-container) is
+          # deliberately excluded - see the header comment: release-snapshot.yaml
+          # already builds and scans it daily.
+          declare -A dockerfiles=(
+              ["Dockerfile.alpine-tracee-make"]="make -f builder/Makefile.tracee-make alpine-prepare ALPINE_MAKE_CONTNAME=alpine-tracee-make:scan|alpine-tracee-make:scan"
+              ["Dockerfile.ubuntu-tracee-make"]="make -f builder/Makefile.tracee-make ubuntu-prepare UBUNTU_MAKE_CONTNAME=ubuntu-tracee-make:scan|ubuntu-tracee-make:scan"
+              ["Dockerfile.mkdocs"]="make -f builder/Makefile.mkdocs mkdocs-build MKDOCS_CONTNAME=tracee-mkdocs:scan|tracee-mkdocs:scan"
+              ["Dockerfile.protoc"]="make -f builder/Makefile.protoc protoc-build PROTOC_CONTNAME=tracee-protoc:scan|tracee-protoc:scan"
+              ["Dockerfile.man"]="make -f builder/Makefile.man man-build MAN_CONTNAME=tracee-man:scan|tracee-man:scan"
+              ["Dockerfile.k8s"]="make -f builder/Makefile.k8s build K8S_CONTNAME=tracee-k8s:scan|tracee-k8s:scan"
+          )
+
+          # Get changed files for PRs, or all files for scheduled/manual runs
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+              CHANGED_FILES=$(git diff --name-only "${BASE_SHA}" HEAD | grep "^builder/Dockerfile" || true)
+              echo "Changed Dockerfiles: ${CHANGED_FILES}"
+          else
+              echo "Running scheduled/manual scan - including all Dockerfiles"
+              CHANGED_FILES=$(printf '%s\n' "${!dockerfiles[@]}")
+          fi
+
+          # Build matrix JSON
+          matrix_json="["
+          first=true
+          has_changes=false
+
+          for dockerfile in "${!dockerfiles[@]}"; do
+              # For PRs, check if the full path (builder/Dockerfile.xxx) changed
+              full_path="builder/${dockerfile}"
+              if [ "${EVENT_NAME}" != "pull_request" ] || echo "${CHANGED_FILES}" | grep -q "${full_path}"; then
+                  IFS='|' read -r build_command image_name <<< "${dockerfiles[$dockerfile]}"
+                  clean_name="${image_name//:/-}"
+                  display_name="${image_name%:scan}"
+
+                  if [ "${first}" = false ]; then
+                      matrix_json+=","
+                  fi
+
+                  matrix_json+="{\"dockerfile\":\"${dockerfile}\",\"build_command\":\"${build_command}\",\"image_name\":\"${image_name}\",\"clean_name\":\"${clean_name}\",\"display_name\":\"${display_name}\"}"
+                  first=false
+                  has_changes=true
+              fi
+          done
+
+          matrix_json+="]"
+
+          echo "Generated matrix: ${matrix_json}"
+          echo "matrix=${matrix_json}" >> "${GITHUB_OUTPUT}"
+          echo "has-changes=${has_changes}" >> "${GITHUB_OUTPUT}"
+
+  generate-matrix-dashboard-images:
+    name: Generate Dashboard Images Matrix
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      has-changes: ${{ steps.set-matrix.outputs.has-changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Generate matrix based on docker-compose changes
+        id: set-matrix
+        env:
+          # Pass event context via env (not inline ${{ }}) to avoid shell injection.
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # Dashboard services defined in performance/dashboard/docker-compose.yml
+          dashboard_services=(node-exporter prometheus grafana pyroscope)
+
+          # Check if docker-compose file changed for PRs, or include all for scheduled/manual runs
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+              COMPOSE_CHANGED=$(git diff --name-only "${BASE_SHA}" HEAD | grep "^performance/dashboard/docker-compose.yml" || true)
+              echo "Docker-compose file changed: ${COMPOSE_CHANGED:-false}"
+          else
+              echo "Running scheduled/manual scan - including all dashboard images"
+              COMPOSE_CHANGED="performance/dashboard/docker-compose.yml"
+          fi
+
+          # Build matrix JSON
+          matrix_json="["
+          first=true
+          has_changes=false
+
+          if [ -n "${COMPOSE_CHANGED}" ]; then
+              for service in "${dashboard_services[@]}"; do
+                  if [ "${first}" = false ]; then
+                      matrix_json+=","
+                  fi
+                  matrix_json+="{\"service\":\"${service}\"}"
+                  first=false
+                  has_changes=true
+              done
+          fi
+
+          matrix_json+="]"
+
+          echo "Generated dashboard matrix: ${matrix_json}"
+          echo "matrix=${matrix_json}" >> "${GITHUB_OUTPUT}"
+          echo "has-changes=${has_changes}" >> "${GITHUB_OUTPUT}"
+
+  scan-custom-images:
+    name: Scan Image (${{ matrix.display_name }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to the Security tab
+      actions: read
+    needs: generate-matrix-custom-images
+    if: needs.generate-matrix-custom-images.outputs.has-changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-matrix-custom-images.outputs.matrix) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Build image
+        env:
+          # matrix values are repo-defined; passed via env for clean, injection-safe shell.
+          BUILD_COMMAND: ${{ matrix.build_command }}
+          IMAGE_NAME: ${{ matrix.image_name }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
+        run: |
+          set -euo pipefail
+          echo "Building ${IMAGE_NAME} from ${DOCKERFILE}"
+          echo "Build command: ${BUILD_COMMAND}"
+          eval "${BUILD_COMMAND}"
+
+      - name: Scan image with Trivy
+        uses: ./.github/actions/trivy-scan
+        with:
+          scan-type: "image"
+          image-ref: ${{ matrix.image_name }}
+          name: ${{ matrix.clean_name }}
+          scanners: "vuln"
+          exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+          # Skip SARIF upload on fork PRs (read-only token); still scans + gates.
+          upload: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+  scan-dashboard-images:
+    name: Scan Image (${{ matrix.service }})
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to the Security tab
+      actions: read
+    needs: generate-matrix-dashboard-images
+    if: needs.generate-matrix-dashboard-images.outputs.has-changes == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-matrix-dashboard-images.outputs.matrix) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Resolve pinned image reference
+        id: image_info
+        working-directory: performance/dashboard
+        env:
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          # Resolve the digest-pinned image from the compose config (robust JSON parse).
+          IMAGE_REF=$(docker compose config --format json | jq -r --arg s "${SERVICE}" '.services[$s].image')
+          if [ -z "${IMAGE_REF}" ] || [ "${IMAGE_REF}" = "null" ]; then
+              echo "Could not resolve image for service ${SERVICE}" >&2
+              exit 1
+          fi
+          echo "ref=${IMAGE_REF}" >> "${GITHUB_OUTPUT}"
+          echo "Image reference that will be scanned: ${IMAGE_REF}"
+
+      - name: Scan image with Trivy
+        uses: ./.github/actions/trivy-scan
+        with:
+          scan-type: "image"
+          image-ref: ${{ steps.image_info.outputs.ref }}
+          name: ${{ matrix.service }}
+          scanners: "vuln"
+          exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+          upload: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+  scan-filesystem:
+    name: Scan Repository (vuln, secret, misconfig)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write # upload SARIF to the Security tab
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Scan filesystem with Trivy
+        uses: ./.github/actions/trivy-scan
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          name: "filesystem"
+          scanners: "vuln,secret,misconfig"
+          skip-dirs: "dist,3rdparty"
+          exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+          upload: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+
+  scan-pinned-tools:
+    name: Scan Pinned Hand-Unpacked Tools
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    # Covers version-pinned tools Trivy cannot see (hand-unpacked / source-built
+    # binaries with no package identity). See scripts/security/pinned-tools.json.
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Verify manifest matches real pins
+        # Offline drift check: fails if a real pin was bumped without updating the
+        # manifest. Deterministic, so it gates like the other scans.
+        run: |
+          set -euo pipefail
+          python3 scripts/security/scan-pinned-tools.py --verify
+
+      - name: Query CVE databases (OSV / NVD)
+        env:
+          # Not set in this repo -> the job runs keyless. OSV needs no auth; NVD is
+          # free and the key only raises the rate limit (5->50 req/30s), so without
+          # it the script just sleeps between CPE lookups. Add the secret to speed up.
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+          # Gate on PRs (a found CVE fails the check), report-only on schedule/push.
+          # CPE matching can be noisy; to relax, flip GATE to 'false' or suppress a
+          # specific finding at its source. Findings still show in the job summary.
+          GATE: ${{ github.event_name == 'pull_request' }}
+        run: |
+          set -euo pipefail
+          if [ "${GATE}" = "true" ]; then
+              python3 scripts/security/scan-pinned-tools.py
+          else
+              python3 scripts/security/scan-pinned-tools.py || true
+          fi
+
+  generate-sbom:
+    name: Generate Software Bill of Materials
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    needs:
+      [
+        generate-matrix-custom-images,
+        generate-matrix-dashboard-images,
+        scan-custom-images,
+        scan-dashboard-images,
+        scan-filesystem,
+      ]
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Generate SBOM for repository
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0 (Trivy v0.70.0)
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "spdx-json"
+          output: "tracee-sbom.spdx.json"
+          scanners: "vuln"
+
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tracee-sbom
+          path: tracee-sbom.spdx.json
+          retention-days: 30
+
+  summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-24.04
+    permissions: {} # writes only to GITHUB_STEP_SUMMARY; no token scope needed
+    needs:
+      [
+        generate-matrix-custom-images,
+        generate-matrix-dashboard-images,
+        scan-custom-images,
+        scan-dashboard-images,
+        scan-filesystem,
+        scan-pinned-tools,
+      ]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        env:
+          CUSTOM_HAS_CHANGES: ${{ needs.generate-matrix-custom-images.outputs.has-changes }}
+          CUSTOM_RESULT: ${{ needs.scan-custom-images.result }}
+          DASHBOARD_HAS_CHANGES: ${{ needs.generate-matrix-dashboard-images.outputs.has-changes }}
+          DASHBOARD_RESULT: ${{ needs.scan-dashboard-images.result }}
+          FS_RESULT: ${{ needs.scan-filesystem.result }}
+          PINNED_RESULT: ${{ needs.scan-pinned-tools.result }}
+        run: |
+          set -euo pipefail
+          {
+              echo "## Security Scan Summary"
+              echo ""
+              echo "### Job results"
+              if [ "${CUSTOM_HAS_CHANGES}" = "true" ]; then
+                  echo "- Custom images: ${CUSTOM_RESULT}"
+              else
+                  echo "- Custom images: skipped (no changes)"
+              fi
+              if [ "${DASHBOARD_HAS_CHANGES}" = "true" ]; then
+                  echo "- Dashboard images: ${DASHBOARD_RESULT}"
+              else
+                  echo "- Dashboard images: skipped (no changes)"
+              fi
+              echo "- Repository filesystem: ${FS_RESULT}"
+              echo "- Pinned hand-unpacked tools: ${PINNED_RESULT}"
+              echo ""
+              echo "> The shipped \`tracee\` image is scanned separately by release-snapshot.yaml."
+              echo ""
+              echo "### Where to see findings"
+              echo "- Per-scan findings tables: each scan job's own summary."
+              echo "- File-referenced detail (file:line): the Security tab and PR annotations."
+              echo "- Pinned-tools findings link to the source file that owns each pin."
+          } >> "${GITHUB_STEP_SUMMARY}"

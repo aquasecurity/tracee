@@ -1,0 +1,68 @@
+{
+  "_readme": [
+    "Scanning index for version-pinned tools that Trivy CANNOT see because they are",
+    "hand-unpacked / built from source (no package-manager identity). This file does",
+    "NOT drive any build - the authoritative pins still live in the 'source' file of",
+    "each entry. scan-pinned-tools.py mirrors them here only so their versions can be",
+    "queried against a CVE database (OSV / NVD).",
+    "",
+    "Invariant (enforced by --verify): for every entry, 'match' must be found verbatim",
+    "in 'source'. If someone bumps the real pin without updating this file, verify fails.",
+    "",
+    "Identity: give ONE of 'osv' {ecosystem,name} (preferred) or 'cpe' (for standalone",
+    "tools OSV doesn't index). 'covered_elsewhere' documents entries kept only for",
+    "completeness because another scanner already sees them."
+  ],
+
+  "tools": [
+    {
+      "name": "protoc (protobuf compiler)",
+      "version": "35.1",
+      "source": "builder/Dockerfile.protoc",
+      "match": "PROTOC_VERSION=\"35.1\"",
+      "cpe": "cpe:2.3:a:google:protobuf:35.1:*:*:*:*:*:*:*",
+      "note": "Unzipped to /usr/local -> invisible to Trivy. Its Go runtime/codegen identity (google.golang.org/protobuf v1.36.11) is already in go.mod and scanned; this catches compiler-specific advisories."
+    },
+    {
+      "name": "pandoc",
+      "version": "3.2",
+      "source": "builder/Dockerfile.man",
+      "match": "PANDOC_VERSION=\"3.2\"",
+      "cpe": "cpe:2.3:a:pandoc:pandoc:3.2:*:*:*:*:*:*:*",
+      "covered_elsewhere": "Installed via 'dpkg -i' -> also visible in the man image's dpkg DB when Trivy scans that image. Kept here as a cross-check."
+    },
+    {
+      "name": "clang / llvm",
+      "version": "19.1.7",
+      "source": "scripts/installation/install-clang.sh",
+      "match": "LLVM_FULL_VERSION=\"19.1.7\"",
+      "cpe": "cpe:2.3:a:llvm:clang:19.1.7:*:*:*:*:*:*:*",
+      "covered_elsewhere": "Installed via apk/apt -> visible as OS packages in the tracee-make images. Kept here as a cross-check.",
+      "note": "NVD product for the compiler is llvm:clang; LLVM library-level advisories may also appear under cpe:2.3:a:llvm:llvm."
+    },
+    {
+      "name": "go toolchain",
+      "version": "1.26.5",
+      "source": "scripts/installation/install-golang.sh",
+      "match": "GOLANG_VERSION=\"1.26.5\"",
+      "osv": { "ecosystem": "Go", "name": "stdlib" },
+      "covered_elsewhere": "govulncheck (pr.yaml) already covers Go stdlib with reachability. Kept as a belt-and-suspenders example of an OSV-backed entry."
+    },
+    {
+      "name": "govulncheck (dev tool)",
+      "version": "1.1.4",
+      "source": "scripts/installation/install-go-tools.sh",
+      "match": "GOVULNCHECK_VERSION=\"d1f380186385b4f64e00313f31743df8e4b89a77\"",
+      "osv": { "ecosystem": "Go", "name": "golang.org/x/vuln" },
+      "note": "Pinned by commit; the semver in the trailing comment (v1.1.4) is what OSV matches."
+    }
+
+    ,{
+      "_disabled": true,
+      "name": "bpftool (from btfhub)",
+      "version": "n/a",
+      "source": "builder/Dockerfile.alpine-tracee-make",
+      "note": "Built from source via btfhub bpftool.sh with no version pin and no advisory-backed identity. No scanner can match it. Track via upstream libbpf/bpftool GitHub Security Advisories instead."
+    }
+  ]
+}

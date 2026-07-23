@@ -61,7 +61,7 @@ help:
 		exit 1
 	fi
 
-PROTOC_CONTNAME = tracee-protoc:latest
+PROTOC_CONTNAME ?= tracee-protoc:latest
 
 .PHONY: protoc-build
 protoc-build: \

@@ -120,7 +120,9 @@ UID = $(shell id -u)
 GID = $(shell id -g)
 PWD = $(shell pwd)
 
-ALPINE_MAKE_CONTNAME = alpine-tracee-make
+TAG ?= latest
+
+ALPINE_MAKE_CONTNAME ?= alpine-tracee-make:$(TAG)
 ALPINE_MAKE_DOCKERFILE = $(abspath $(shell find -name Dockerfile.alpine-tracee-make))
 
 .PHONY: alpine-prepare
@@ -131,12 +133,12 @@ alpine-prepare: \
 	$(CMD_DOCKER) build \
 		--network host \
 		-f $(ALPINE_MAKE_DOCKERFILE) \
-		-t $(ALPINE_MAKE_CONTNAME):latest \
+		-t $(ALPINE_MAKE_CONTNAME) \
 		--build-arg uid=$(UID) \
 		--build-arg gid=$(GID) \
 		.
 
-UBUNTU_MAKE_CONTNAME = ubuntu-tracee-make
+UBUNTU_MAKE_CONTNAME ?= ubuntu-tracee-make:$(TAG)
 UBUNTU_MAKE_DOCKERFILE = $(abspath $(shell find -name Dockerfile.ubuntu-tracee-make))
 
 .PHONY: ubuntu-prepare
@@ -147,7 +149,7 @@ ubuntu-prepare: \
 	$(CMD_DOCKER) build \
 		--network host \
 		-f $(UBUNTU_MAKE_DOCKERFILE) \
-		-t $(UBUNTU_MAKE_CONTNAME):latest \
+		-t $(UBUNTU_MAKE_CONTNAME) \
 		--build-arg uid=$(UID) \
 		--build-arg gid=$(GID) \
 		.
