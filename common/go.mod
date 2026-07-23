@@ -1,6 +1,6 @@
 module github.com/aquasecurity/tracee/common
 
-go 1.26.0
+go 1.26.3
 
 toolchain go1.26.5
 
@@ -9,12 +9,12 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/minio/sha256-simd v1.0.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/arch v0.27.0
 	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a
-	golang.org/x/sys v0.45.0
+	golang.org/x/sys v0.46.0
 	gotest.tools v2.2.0+incompatible
 	kernel.org/pub/linux/libs/security/libcap/cap v1.2.78
 )
