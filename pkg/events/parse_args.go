@@ -169,18 +169,85 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 				parseOpenFlagArgument(flagsField, uint64(flagsVal.Int32))
 			}
 		}
-	case Mknod, Mknodat, SecurityInodeMknod, Chmod, Fchmod, Fchmodat, ChmodCommon:
+	case Mknod, Mknodat, SecurityInodeMknod, Chmod, Fchmod, Fchmodat, Fchmodat2, ChmodCommon:
 		if modeField := GetFieldValue(data, "mode"); modeField != nil {
 			// mode is UInt32 (widened from uint16)
 			if modeVal, ok := modeField.Value.(*pb.EventValue_UInt32); ok {
 				parseInodeMode(modeField, uint64(modeVal.UInt32))
 			}
 		}
-		if evtID == Fchmodat {
+		if evtID == Fchmodat || evtID == Fchmodat2 {
 			if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
 				if flagsVal, ok := flagsField.Value.(*pb.EventValue_Int32); ok {
 					parseFchmodatFlag(flagsField, uint64(flagsVal.Int32))
+				} else if flagsVal, ok := flagsField.Value.(*pb.EventValue_UInt32); ok {
+					parseFchmodatFlag(flagsField, uint64(flagsVal.UInt32))
 				}
+			}
+		}
+	case FutexWake, FutexWait:
+		if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
+			if flagsVal, ok := flagsField.Value.(*pb.EventValue_UInt32); ok {
+				parseFutex2Flag(flagsField, uint64(flagsVal.UInt32))
+			}
+		}
+		if evtID == FutexWait {
+			if clockField := GetFieldValue(data, "clockid"); clockField != nil {
+				if clockVal, ok := clockField.Value.(*pb.EventValue_Int32); ok {
+					parseClockId(clockField, uint64(uint32(clockVal.Int32)))
+				}
+			}
+		}
+	case MapShadowStack:
+		if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
+			if flagsVal, ok := flagsField.Value.(*pb.EventValue_UInt32); ok {
+				parseMapShadowStackFlag(flagsField, uint64(flagsVal.UInt32))
+			}
+		}
+	case FutexWaitv:
+		if clockField := GetFieldValue(data, "clockid"); clockField != nil {
+			if clockVal, ok := clockField.Value.(*pb.EventValue_Int32); ok {
+				parseClockId(clockField, uint64(uint32(clockVal.Int32)))
+			}
+		}
+	case FutexRequeue, SetMempolicyHomeNode, Cachestat, LsmListModules, Mseal, Listns:
+		// NOTE: kernel APIs currently require flags to be zero for these syscalls.
+		// Keep the numeric value as-is; parse stringification when non-zero flags are defined.
+	case Statmount:
+		if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
+			if flagsVal, ok := flagsField.Value.(*pb.EventValue_UInt32); ok {
+				parseStatmountFlag(flagsField, uint64(flagsVal.UInt32))
+			}
+		}
+	case Listmount:
+		if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
+			if flagsVal, ok := flagsField.Value.(*pb.EventValue_UInt32); ok {
+				parseListmountFlag(flagsField, uint64(flagsVal.UInt32))
+			}
+		}
+	case LsmGetSelfAttr, LsmSetSelfAttr:
+		if attrField := GetFieldValue(data, "attr"); attrField != nil {
+			if attrVal, ok := attrField.Value.(*pb.EventValue_UInt32); ok {
+				parseLsmAttr(attrField, uint64(attrVal.UInt32))
+			}
+		}
+		if evtID == LsmGetSelfAttr {
+			if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
+				if flagsVal, ok := flagsField.Value.(*pb.EventValue_UInt32); ok {
+					parseLsmGetSelfAttrFlag(flagsField, uint64(flagsVal.UInt32))
+				}
+			}
+		}
+	case Setxattrat, Getxattrat, Listxattrat, Removexattrat, FileGetattr, FileSetattr:
+		if atFlagsField := GetFieldValue(data, "at_flags"); atFlagsField != nil {
+			if atFlagsVal, ok := atFlagsField.Value.(*pb.EventValue_UInt32); ok {
+				parseAtPathFlag(atFlagsField, uint64(atFlagsVal.UInt32))
+			}
+		}
+	case OpenTreeAttr:
+		if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
+			if flagsVal, ok := flagsField.Value.(*pb.EventValue_UInt32); ok {
+				parseOpenTreeFlag(flagsField, uint64(flagsVal.UInt32))
 			}
 		}
 	case Clone:
@@ -289,6 +356,9 @@ func ParseDataFieldsFDs(data []*pb.EventValue, origTimestamp uint64, fdArgPathMa
 	if fdField := GetFieldValue(data, "fd"); fdField != nil {
 		if fdVal, ok := fdField.Value.(*pb.EventValue_Int32); ok {
 			fd := fdVal.Int32
+			if fd < 0 {
+				return nil
+			}
 			ts := origTimestamp
 			bs, err := fdArgPathMap.GetValue(unsafe.Pointer(&ts))
 			if err != nil {
@@ -303,6 +373,12 @@ func ParseDataFieldsFDs(data []*pb.EventValue, origTimestamp uint64, fdArgPathMa
 	if dirfdField := GetFieldValue(data, "dirfd"); dirfdField != nil {
 		if dirfdVal, ok := dirfdField.Value.(*pb.EventValue_Int32); ok {
 			parseDirfdAt(dirfdField, uint64(dirfdVal.Int32))
+		}
+	}
+
+	if dfdField := GetFieldValue(data, "dfd"); dfdField != nil {
+		if dfdVal, ok := dfdField.Value.(*pb.EventValue_Int32); ok {
+			parseDirfdAt(dfdField, uint64(dfdVal.Int32))
 		}
 	}
 

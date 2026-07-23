@@ -7,8 +7,8 @@ of files and directories
 .SS DESCRIPTION
 The \f[B]chmod_common\f[R] event captures any changes to file and
 directory access permissions, typically triggered by the
-\f[CR]chmod\f[R], \f[CR]fchmod\f[R], and \f[CR]fchmodat\f[R] system
-calls.
+\f[CR]chmod\f[R], \f[CR]fchmod\f[R], \f[CR]fchmodat\f[R], and
+\f[CR]fchmodat2\f[R] system calls.
 This event provides visibility into permission modifications that could
 be security\-relevant.
 .SS EVENT SETS
@@ -44,3 +44,6 @@ descriptor
 .IP \[bu] 2
 \f[B]fchmodat\f[R]: System call to change permissions relative to
 directory file descriptor
+.IP \[bu] 2
+\f[B]fchmodat2\f[R]: System call to change permissions relative to
+directory file descriptor with flags
