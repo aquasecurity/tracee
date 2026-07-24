@@ -112,8 +112,8 @@ ifeq ($(SNAPSHOT),1)
 	TAG=dev
 endif
 
-TRACEE_CONT_NAME = tracee:$(TAG)
-TRACEE_CONT_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
+TRACEE_CONT_NAME ?= tracee:$(TAG)
+TRACEE_CONT_DOCKERFILE = $(abspath $(shell find -name Dockerfile.alpine-tracee-container))
 
 .PHONY: build-tracee
 build-tracee: \

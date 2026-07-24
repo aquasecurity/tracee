@@ -67,7 +67,7 @@ help:
 		exit 1
 	fi
 
-K8S_CONTNAME = tracee-k8s:latest
+K8S_CONTNAME ?= tracee-k8s:latest
 
 .PHONY: build
 build: \

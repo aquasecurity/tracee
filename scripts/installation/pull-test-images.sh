@@ -19,6 +19,10 @@ require_cmds docker
 
 # List of container images required for tests
 # Using ECR Public mirrors where possible to avoid Docker Hub rate limits
+#
+# This list is the single source of truth for the Trivy "Scan Image" jobs in
+# .github/workflows/security-scan.yaml (it parses the @sha256-pinned refs below), so
+# any image added/bumped here is scanned automatically - no workflow change needed.
 IMAGES="
 public.ecr.aws/docker/library/busybox:1.37.0@sha256:e3652a00a2fabd16ce889f0aa32c38eec347b997e73bd09e69c962ec7f8732ee
 public.ecr.aws/docker/library/ubuntu:jammy-20240911.1@sha256:0e5e4a57c2499249aafc3b40fcd541e9a456aab7296681a3994d631587203f97

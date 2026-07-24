@@ -20,6 +20,7 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 # corresponding checksum files in scripts/installation/checksums/:
 #   - actions-runner-linux-x64-{VERSION}.sha256
 #   - actions-runner-linux-arm64-{VERSION}.sha256
+# Also mirrored in scripts/security/pinned-tools.json (OSV/NVD CVE scan) - bump there too.
 readonly ACTIONS_RUNNER_VERSION="2.330.0"
 
 # Path to AWS CLI GPG public key for signature verification

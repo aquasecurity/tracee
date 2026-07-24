@@ -6,6 +6,7 @@ ENV DEBCONF_NOWARNINGS="yes"
 RUN apt-get update -y && \
     apt-get install -y make wget
 
+# Also mirrored in scripts/security/pinned-tools.json (OSV/NVD CVE scan) - bump there too.
 ARG PANDOC_VERSION="3.2"
 ARG PANDOC_DEB="pandoc-${PANDOC_VERSION}-1-amd64.deb"
 

@@ -12,6 +12,8 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 . "${__LIB_DIR}/lib.sh"
 
 # Pinned versions (commit hashes) - do not allow external overrides
+# The versions below are mirrored in scripts/security/pinned-tools.json (OSV/NVD CVE
+# scan) - bump there too.
 STATICCHECK_VERSION="5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c" # 2025.1
 REVIVE_VERSION="8ece20b0789c517bd3a6742db0daa4dd5928146d" # v1.7.0
 GOIMPORTS_REVISER_VERSION="fa5587e51ba33c58734984cb41370a5b2582d5b7" # v3.12.6

@@ -16,6 +16,7 @@ __LIB_DIR="${SCRIPT_DIR}/.."
 #   scripts/installation/checksums/go${GOLANG_VERSION}.linux-amd64.tar.gz.sha256
 #   scripts/installation/checksums/go${GOLANG_VERSION}.linux-arm64.tar.gz.sha256
 # Get checksums from: https://go.dev/dl/ (click "Show checksum" for each file)
+# Also mirrored in scripts/security/pinned-tools.json (OSV/NVD CVE scan) - bump there too.
 GOLANG_VERSION="1.26.5"
 
 install_golang() {

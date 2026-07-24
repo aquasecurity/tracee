@@ -16,8 +16,15 @@ __LIB_DIR="${0%/*}/.."
 # to match the latest point release available at:
 #   https://github.com/llvm/llvm-project/releases
 #
+# Also mirrored in scripts/security/pinned-tools.json (OSV/NVD CVE scan) - bump there too.
 CLANG_VERSION=19
 LLVM_FULL_VERSION="19.1.7"
+
+# apt.llvm.org publishes a repo per Ubuntu codename but lags brand-new releases (e.g.
+# resolute / 26.04 has none yet). add_llvm_apt_repo() probes the codename's repo and,
+# only when it is genuinely missing, falls back to this LTS (safe because in practice
+# only newer-than-LTS releases hit the fallback).
+CLANG_APT_FALLBACK_CODENAME="noble"
 
 # Path to LLVM release signing GPG key for signature verification
 # Official source: https://llvm.org/release-keys.asc
@@ -164,6 +171,16 @@ add_llvm_apt_repo() {
     fi
 
     info "Detected Ubuntu codename: ${codename}"
+
+    # Use this codename's own apt.llvm.org repo when it exists; only fall back when it
+    # is genuinely missing. Probing (rather than a static allowlist) avoids rerouting a
+    # codename that DOES have a repo (e.g. lunar/mantic) onto an LTS whose libc it can't
+    # satisfy.
+    local llvm_release_url="https://apt.llvm.org/${codename}/dists/llvm-toolchain-${codename}-${CLANG_VERSION}/Release"
+    if ! wget -q --spider "${llvm_release_url}"; then
+        warn "apt.llvm.org has no clang-${CLANG_VERSION} repo for '${codename}'; falling back to '${CLANG_APT_FALLBACK_CODENAME}'"
+        codename="${CLANG_APT_FALLBACK_CODENAME}"
+    fi
 
     # Add LLVM repository
     echo "deb http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main" > /etc/apt/sources.list.d/llvm.list

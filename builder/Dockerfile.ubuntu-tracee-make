@@ -20,11 +20,18 @@ COPY scripts/ /tmp/scripts/
 RUN /tmp/scripts/installation/install-clang.sh
 
 # install bpftool from btfhub
-
+#
+# EXTRA_CFLAGS relaxes -Werror for this build only: btfhub's pinned libbpf predates
+# glibc 2.43's const-preserving strstr/strchr overloads, which the newer toolchain now
+# flags. bpftool builds libbpf twice - the main copy with clang and a bootstrap copy
+# with the host gcc - so a clang-specific -Wno-error=<name> breaks the gcc pass (gcc
+# hard-errors on the unknown option name). Bare -Wno-error is understood by both and,
+# appended after -Werror in libbpf's ALL_CFLAGS, demotes the errors to warnings without
+# patching the pinned source.
 RUN cd /tmp && \
     git clone https://github.com/aquasecurity/btfhub.git && \
     cd ./btfhub && \
-    ./3rdparty/bpftool.sh
+    EXTRA_CFLAGS="-Wno-error" ./3rdparty/bpftool.sh
 
 # extra tools for testing things
 

@@ -1,0 +1,138 @@
+name: Trivy Scan
+description: |
+  Scan an image or the filesystem with Trivy once and report findings as a table in
+  the job log and job summary. Findings fail the job on pull_request events and are
+  report-only otherwise.
+
+  SARIF upload to the Security tab is OPT-IN via 'upload-sarif' (default off): enable it
+  only for codebase scans (the filesystem scan). Tooling/test image scans stay
+  report-only so code-scanning alerts are not flooded with un-actionable upstream CVEs.
+  When enabled, upload is still skipped on fork PRs (read-only token).
+
+inputs:
+  scan-type:
+    description: "Trivy scan type: 'image' or 'fs'."
+    default: "image"
+  image-ref:
+    description: "Image reference to scan (for scan-type: image)."
+    default: ""
+  scan-ref:
+    description: "Path to scan (for scan-type: fs)."
+    default: "."
+  name:
+    description: "Unique slug used for the SARIF category and output filenames."
+    required: true
+  scanners:
+    description: "Comma-separated Trivy scanners (e.g. 'vuln' or 'vuln,secret,misconfig')."
+    default: "vuln"
+  severity:
+    description: "Comma-separated severities to report."
+    default: "CRITICAL,HIGH,MEDIUM"
+  skip-dirs:
+    description: "Comma-separated directories to skip."
+    default: ""
+  upload-sarif:
+    description: "Upload SARIF to the Security tab. Enable only for codebase (filesystem) scans; leave off for tooling/test image scans."
+    default: "false"
+  gate-on-pr:
+    description: "Fail the job on a pull_request when findings exist. Off = report-only (findings still shown in the job summary). Enable only for actionable codebase scans."
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    # Single scan -> JSON. exit-code is forced to 0 here so results are always produced;
+    # gating happens on the report step below.
+    - name: Trivy scan (${{ inputs.name }})
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # 0.36.0 (Trivy v0.70.0)
+      with:
+        scan-type: ${{ inputs.scan-type }}
+        image-ref: ${{ inputs.image-ref }}
+        scan-ref: ${{ inputs.scan-ref }}
+        scanners: ${{ inputs.scanners }}
+        severity: ${{ inputs.severity }}
+        skip-dirs: ${{ inputs.skip-dirs }}
+        ignore-unfixed: true
+        format: "json"
+        output: "trivy-${{ inputs.name }}.json"
+        exit-code: "0"
+        # cache: true is the action default; the DB is cached across runs via
+        # actions/cache, which mitigates GHCR rate limits (TOOMANYREQUESTS).
+        cache: "true"
+
+    # Offline conversion to SARIF (no re-scan) - only when uploading to the Security tab.
+    - name: Convert results to SARIF (${{ inputs.name }})
+      if: ${{ inputs.upload-sarif == 'true' }}
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+      run: |
+        set -euo pipefail
+        trivy convert --format sarif \
+            --output "trivy-${NAME}.sarif" \
+            "trivy-${NAME}.json"
+
+    # Opt-in (upload-sarif) and only for codebase scans, so tooling CVEs don't flood
+    # code-scanning alerts. Distinct category per target so one analysis doesn't
+    # overwrite another. Skipped on fork PRs (read-only token); the scan + gate still run.
+    - name: Upload SARIF to Security tab (${{ inputs.name }})
+      if: ${{ always() && inputs.upload-sarif == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+      uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
+      with:
+        sarif_file: "trivy-${{ inputs.name }}.sarif"
+        category: "trivy-${{ inputs.name }}"
+
+    # Append a findings table to the job summary, log it, then gate. Runs last so the
+    # SARIF is already uploaded before any failure. The table's Target column names
+    # the file for filesystem findings; image findings map to a package (no repo file).
+    - name: Report findings and gate (${{ inputs.name }})
+      if: ${{ always() }}
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        # Gate only when the caller opts in (gate-on-pr) AND this is a pull request;
+        # otherwise report-only (findings are still shown in the summary + log).
+        IS_PR: ${{ github.event_name == 'pull_request' }}
+        GATE_ON_PR: ${{ inputs.gate-on-pr }}
+      run: |
+        set -euo pipefail
+
+        json="trivy-${NAME}.json"
+        table=$(trivy convert --format table "${json}")
+        count=$(jq '[.Results[]? | ((.Vulnerabilities // []) + (.Secrets // []) + (.Misconfigurations // [])) | length] | add // 0' "${json}")
+
+        # The job summary has a 1024k limit; large image tables (many OS-package CVEs)
+        # blow past it. Only embed the table in the summary when it is small; the full
+        # table always goes to the job log below, which has no such limit.
+        table_bytes=$(printf '%s' "${table}" | wc -c)
+        summary_max=800000
+
+        {
+            echo "### Trivy: ${NAME} (${count} findings)"
+            echo ""
+            if ((count == 0)); then
+                echo "No findings."
+            elif ((table_bytes > summary_max)); then
+                echo "Findings table is too large for the job summary (${table_bytes} bytes); see this job's log for the full table."
+            else
+                echo "<details><summary>Show findings table</summary>"
+                echo ""
+                echo '```'
+                printf '%s\n' "${table}"
+                echo '```'
+                echo ""
+                echo "</details>"
+            fi
+            echo ""
+        } >> "${GITHUB_STEP_SUMMARY}"
+
+        echo "::group::Trivy results (${NAME})"
+        printf '%s\n' "${table}"
+        echo "::endgroup::"
+
+        if ((count > 0)) && [[ "${GATE_ON_PR}" == "true" && "${IS_PR}" == "true" ]]; then
+            echo "::error::${count} finding(s) for ${NAME} - failing (pull request gate)"
+            exit 1
+        elif ((count > 0)); then
+            echo "::warning::${count} finding(s) for ${NAME} (report-only - see the job summary)"
+        fi

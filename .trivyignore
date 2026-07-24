@@ -1,0 +1,13 @@
+# Trivy ignore file - accepted / triaged findings.
+#
+# Trivy auto-detects this file at the repository root. List one finding ID per
+# line to suppress it from scans (vulnerabilities, secrets, and misconfigurations).
+# Always add a comment explaining WHY a finding is accepted and, where possible, an
+# expiry so suppressions are revisited.
+#
+# Examples:
+#   CVE-2024-12345   # no fixed version; not reachable from our code paths - review 2026-Q1
+#   AVD-DS-0002      # Dockerfile misconfig accepted for the build-only image
+#
+# Prefer fixing over ignoring. Keep this file empty unless a finding is genuinely
+# accepted.
