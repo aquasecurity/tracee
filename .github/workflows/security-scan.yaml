@@ -48,7 +48,7 @@ jobs:
   generate-matrix-custom-images:
     name: Generate Custom Images Matrix
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}1
       - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
@@ -95,6 +95,7 @@ jobs:
           matrix_json="["
           first=true
           has_changes=false
+          runner_id=100 # unique per-entry suffix appended to the runner label
 
           for dockerfile in "${!dockerfiles[@]}"; do
               # For PRs, check if the full path (builder/Dockerfile.xxx) changed
@@ -108,9 +109,10 @@ jobs:
                       matrix_json+=","
                   fi
 
-                  matrix_json+="{\"dockerfile\":\"${dockerfile}\",\"build_command\":\"${build_command}\",\"image_name\":\"${image_name}\",\"clean_name\":\"${clean_name}\",\"display_name\":\"${display_name}\"}"
+                  matrix_json+="{\"dockerfile\":\"${dockerfile}\",\"build_command\":\"${build_command}\",\"image_name\":\"${image_name}\",\"clean_name\":\"${clean_name}\",\"display_name\":\"${display_name}\",\"id\":${runner_id}}"
                   first=false
                   has_changes=true
+                  runner_id=$((runner_id + 1))
               fi
           done
 
@@ -123,7 +125,7 @@ jobs:
   generate-matrix-dashboard-images:
     name: Generate Dashboard Images Matrix
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}2
       - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
@@ -160,15 +162,17 @@ jobs:
           matrix_json="["
           first=true
           has_changes=false
+          runner_id=200 # unique per-entry suffix appended to the runner label
 
           if [[ -n "${COMPOSE_CHANGED}" ]]; then
               for service in "${dashboard_services[@]}"; do
                   if [[ "${first}" == false ]]; then
                       matrix_json+=","
                   fi
-                  matrix_json+="{\"service\":\"${service}\"}"
+                  matrix_json+="{\"service\":\"${service}\",\"id\":${runner_id}}"
                   first=false
                   has_changes=true
+                  runner_id=$((runner_id + 1))
               done
           fi
 
@@ -181,7 +185,7 @@ jobs:
   scan-custom-images:
     name: Scan Image (${{ matrix.display_name }})
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}${{ matrix.id }}
       - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
@@ -221,7 +225,7 @@ jobs:
   scan-dashboard-images:
     name: Scan Image (${{ matrix.service }})
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}${{ matrix.id }}
       - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
@@ -265,7 +269,7 @@ jobs:
   scan-filesystem:
     name: Scan Repository (vuln, secret, misconfig)
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}3
       - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
@@ -288,7 +292,7 @@ jobs:
   scan-pinned-tools:
     name: Scan Pinned Hand-Unpacked Tools
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}4
       - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
@@ -327,7 +331,7 @@ jobs:
   generate-sbom:
     name: Generate Software Bill of Materials
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}5
       - EXECUTION_TYPE=SHORT
     permissions:
       contents: read
@@ -364,7 +368,7 @@ jobs:
   summary:
     name: Security Scan Summary
     runs-on:
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}6
       - EXECUTION_TYPE=SHORT
     permissions: {} # writes only to GITHUB_STEP_SUMMARY; no token scope needed
     needs:
