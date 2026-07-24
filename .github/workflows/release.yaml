@@ -8,20 +8,34 @@ on:
       ref:
         description: The tag to be released, e.g. v0.0.1
         required: true
+
+# Serialize releases of the same tag; never cancel an in-progress release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.inputs.ref || github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  release-x86_64:
-    name: Release (x86_64)
+  release-build:
+    name: Release (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            ami: 0cdf7ad6d9627da45 # release-amd64-big-3
+            instance: 2XLARGE
+          - arch: aarch64
+            ami: 07740487fa433aa54 # release-arm64-big-3
+            instance: LARGE
     env:
       GH_TOKEN: ${{ github.token }}
     runs-on:
-      # release-amd64-big-3
-      - graas_ami-0cdf7ad6d9627da45_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - graas_ami-${{ matrix.ami }}_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
       - EXECUTION_TYPE=LONG
-      - INSTANCE_TYPE=2XLARGE
+      - INSTANCE_TYPE=${{ matrix.instance }}
     permissions:
-      contents: write
-      packages: write
-      id-token: write
+      contents: write # `make release` runs `gh release create/upload`
+      id-token: write # cosign keyless (OIDC) image signing
     steps:
       - name: Checkout Code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -46,77 +60,26 @@ jobs:
         env:
           REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo "$REF" | sed -e "s/v//gI")
+          TAG="${REF#[vV]}" # strip a single leading v/V, e.g. v0.1.2 -> 0.1.2
           ARCH=$(uname -m)
-          docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
-          docker image push aquasec/tracee:${ARCH}-${TAG}
+          docker image tag tracee:latest "aquasec/tracee:${ARCH}-${TAG}"
+          docker image push "aquasec/tracee:${ARCH}-${TAG}"
         shell: bash
       - name: Sign Docker image
         env:
           REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo "$REF" | sed -e "s/v//gI")
+          TAG="${REF#[vV]}" # strip a single leading v/V, e.g. v0.1.2 -> 0.1.2
           ARCH=$(uname -m)
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
-        shell: bash
-  release-aarch64:
-    name: Release (aarch64)
-    env:
-      GH_TOKEN: ${{ github.token }}
-    runs-on:
-      # release-arm64-big-3
-      - graas_ami-07740487fa433aa54_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
-      - EXECUTION_TYPE=LONG
-      - INSTANCE_TYPE=LARGE
-    permissions:
-      contents: write
-      packages: write
-      id-token: write
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: ${{ github.event.inputs.ref }}
-          submodules: true
-          fetch-depth: 0
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
-        with:
-          cosign-release: 'v2.2.4'
-      - name: Login to docker.io registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build
-        run: |
-          make -f builder/Makefile.release release
-        shell: bash
-      - name: Publish to docker.io registry
-        env:
-          REF: ${{ github.event.inputs.ref }}
-        run: |
-          TAG=$(echo "$REF" | sed -e "s/v//gI")
-          ARCH=$(uname -m)
-          docker image tag tracee:latest aquasec/tracee:${ARCH}-${TAG}
-          docker image push aquasec/tracee:${ARCH}-${TAG}
-        shell: bash
-      - name: Sign Docker image
-        env:
-          REF: ${{ github.event.inputs.ref }}
-        run: |
-          TAG=$(echo "$REF" | sed -e "s/v//gI")
-          ARCH=$(uname -m)
-          cosign sign -y $(docker inspect --format='{{index .RepoDigests 0}}' aquasec/tracee:${ARCH}-${TAG})
+          cosign sign -y "$(docker inspect --format='{{index .RepoDigests 0}}' "aquasec/tracee:${ARCH}-${TAG}")"
         shell: bash
   release:
     name: Release
-    needs: [release-x86_64, release-aarch64]
+    needs: [release-build]
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     permissions:
       contents: read
-      packages: write
-      id-token: write
+      id-token: write # cosign keyless (OIDC) manifest signing
     steps:
       - name: Checkout Code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -137,22 +100,22 @@ jobs:
         env:
           REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo "$REF" | sed -e "s/v//gI")
+          TAG="${REF#[vV]}" # strip a single leading v/V, e.g. v0.1.2 -> 0.1.2
           export DOCKER_CLI_EXPERIMENTAL=enabled
           docker manifest create aquasec/tracee:latest \
-            aquasec/tracee:x86_64-${TAG} \
-            aquasec/tracee:aarch64-${TAG}
-          docker manifest create aquasec/tracee:${TAG} \
-            aquasec/tracee:x86_64-${TAG} \
-            aquasec/tracee:aarch64-${TAG}
+            "aquasec/tracee:x86_64-${TAG}" \
+            "aquasec/tracee:aarch64-${TAG}"
+          docker manifest create "aquasec/tracee:${TAG}" \
+            "aquasec/tracee:x86_64-${TAG}" \
+            "aquasec/tracee:aarch64-${TAG}"
           docker manifest push aquasec/tracee:latest
-          docker manifest push aquasec/tracee:${TAG}
+          docker manifest push "aquasec/tracee:${TAG}"
         shell: bash
       - name: Sign the latest manifest with Cosign
         env:
           REF: ${{ github.event.inputs.ref }}
         run: |
-          TAG=$(echo "$REF" | sed -e "s/v//gI")
+          TAG="${REF#[vV]}" # strip a single leading v/V, e.g. v0.1.2 -> 0.1.2
           cosign sign -y aquasec/tracee:latest
-          cosign sign -y aquasec/tracee:${TAG}
+          cosign sign -y "aquasec/tracee:${TAG}"
         shell: bash
