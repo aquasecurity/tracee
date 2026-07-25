@@ -60,11 +60,44 @@ runs:
             exit 1
         fi
       shell: sh
+    - name: Collect Kernel Diagnostics
+      id: kernel-diag
+      if: always()
+      run: |
+        {
+            echo "=== uname -a";                   uname -a
+            echo "=== nproc";                      nproc
+            echo "=== kernel taint";               cat /proc/sys/kernel/tainted || true
+            echo "=== unprivileged_bpf_disabled";  sysctl -n kernel.unprivileged_bpf_disabled || true
+            echo "=== dmesg (tail 300)";           dmesg | tail -300 || true
+            echo "=== registered kprobes";         cat /sys/kernel/debug/kprobes/list 2> /dev/null || true
+        } > /tmp/e2e-kernel-diag.log 2>&1
+        # A kernel crash on the runner can invalidate test results in ways the tests
+        # themselves cannot see, so make it loud: emit a workflow warning and upload
+        # the diagnostics even when every test passed.
+        #
+        # Example (the bug that motivated this step): on kernels missing the
+        # strncpy_from_kernel_nofault() fix linked below, a page fault while tracee
+        # copied a string could oops the kernel inside a kprobe handler. The dying
+        # task leaked the per-CPU bpf_prog_active counter, which silently disabled
+        # every kprobe-attached BPF program on that CPU until reboot - events simply
+        # vanished with no error reported anywhere, and tests kept passing whenever
+        # their trigger happened to run on a healthy CPU (seen on EOL Ubuntu 5.13
+        # arm64, which never received the fix).
+        # Kernel fix: https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=8678ea06852c
+        if dmesg | grep -qE "Internal error: Oops|Kernel panic|BUG:|Unable to handle kernel"; then
+            echo "oops=true" >> "${GITHUB_OUTPUT}"
+            echo "::warning title=Kernel oops detected on runner::dmesg contains a kernel oops/BUG - eBPF events may have been silently lost on one or more CPUs. See e2e-kernel-diag.log in the uploaded artifacts."
+        else
+            echo "oops=false" >> "${GITHUB_OUTPUT}"
+        fi
+      shell: bash
+      continue-on-error: true
     - name: Upload E2E Test Artifacts
-      if: always() && steps.failed-test.outputs.name != ''
+      if: always() && (steps.failed-test.outputs.name != '' || steps.kernel-diag.outputs.oops == 'true')
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: e2e-${{ steps.failed-test.outputs.name }}-artifacts-${{ inputs.job-name }}-${{ inputs.run-id }}-${{ inputs.run-attempt }}
+        name: e2e-${{ steps.failed-test.outputs.name || 'kernel-oops' }}-artifacts-${{ inputs.job-name }}-${{ inputs.run-id }}-${{ inputs.run-attempt }}
         path: |
           /tmp/tracee-log-*
           /tmp/tracee-output-*
@@ -93,6 +126,7 @@ runs:
         echo "- Log file: Full debug-level logs from all E2E tests (tracee-log-*)"
         echo "- Output file: JSON events captured during all E2E tests (tracee-output-*)"
         echo "- Pipeline log: Complete stdout/stderr from the failed test (e2e-*.log)"
+        echo "- Kernel diagnostics: dmesg tail, taint, kprobes list (e2e-kernel-diag.log)"
         echo ""
         echo "Note: Artifacts are available for 7 days from upload"
       shell: sh
