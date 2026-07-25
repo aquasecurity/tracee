@@ -250,12 +250,27 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 		},
 	)
 
-	// Update kallsyms asynchronously to avoid blocking the events pipeline.
-	// On some platforms (ARM64/kernel 5.13), BPF map updates can block indefinitely
-	// during do_init_module context. Running asynchronously without capabilities.EBPF()
-	// wrapper prevents holding any locks while blocked.
+	// Refresh kallsyms in the background so the events pipeline never waits on it.
+	// UpdateKallsyms uses a TryLock internally, so concurrent triggers collapse
+	// into a single refresh.
+	//
+	// The refresh must run with raised capabilities (capabilities.EBPF()): modern
+	// kernels ship with unprivileged BPF disabled (Ubuntu since 5.13), which makes
+	// the whole bpf(2) syscall fail with EPERM for a thread without capabilities.
+	// Without the wrapper this refresh always failed silently, leaving the
+	// ksymbols map stale after module loads and bpf attachments.
+	//
+	// History: commit 48000577 dropped the wrapper because, on ARM64/5.13, BPF map
+	// updates could block forever during module loading, and a stuck callback here
+	// would hold the global capabilities lock, freezing every other capability
+	// user. That hang was a symptom of a kernel oops killing tasks while they held
+	// kernel locks - the same bug now neutralized by the buf[0] hardening in
+	// pkg/ebpf/c/common/filesystem.h - so holding the lock here is safe again.
 	go func() {
-		if updateErr := t.UpdateKallsyms(); updateErr != nil {
+		updateErr := capabilities.GetInstance().EBPF(func() error {
+			return t.UpdateKallsyms()
+		})
+		if updateErr != nil {
 			logger.Warnw("async UpdateKallsyms failed", "error", updateErr)
 		}
 	}()

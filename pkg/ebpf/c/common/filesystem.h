@@ -251,7 +251,26 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         off = buf_off - len;
         // Is string buffer big enough for dentry name?
         sz = 0;
-        if (off <= buf_off) { // verify no wrap occurred
+
+        // NOTE: never use buf[0] as the destination of a string read.
+        //
+        // Some kernels (5.8 up to 6.1 when unpatched - EOL Ubuntu 5.13 being one)
+        // have a bug in strncpy_from_kernel_nofault(): if the source faults on the
+        // very first byte, the error path writes a '\0' one byte BEFORE the
+        // destination buffer. This per-CPU buffer starts on a page boundary, so
+        // that stray byte lands on whatever memory precedes the buffer - and when
+        // that page is unmapped, the kernel oopses right inside the kprobe handler.
+        // The dying task leaks the per-CPU bpf_prog_active counter, and from that
+        // moment on every kprobe-attached BPF program on that CPU is silently
+        // skipped until the machine reboots.
+        //
+        // Keeping the destination at buf[1] or later makes the stray write land
+        // harmlessly inside our own buffer instead.
+        // Kernel fix:
+        // https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=8678ea06852c
+        // Discussion:
+        // https://lore.kernel.org/bpf/20221110085614.111213-2-albancrequy@linux.microsoft.com
+        if (off <= buf_off && (off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)) != 0) {
             len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
             sz = bpf_probe_read_kernel_str(
                 &(out_buf->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
@@ -269,9 +288,10 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
     }
     if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
         // memfd files have no path in the filesystem -> extract their name
-        buf_off = 0;
+        // (into buf[1], never buf[0] - see the dst[-1] note above)
+        buf_off = 1;
         d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_kernel_str(&(out_buf->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
+        bpf_probe_read_kernel_str(&(out_buf->buf[1]), MAX_STRING_SIZE, (void *) d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
@@ -357,7 +377,8 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
         unsigned int off = buf_off - len;
         // Is string buffer big enough for dentry name?
         int sz = 0;
-        if (off <= buf_off) { // verify no wrap occurred
+        // Destination must never be buf[0] (see the dst[-1] note in get_path_str_buf).
+        if (off <= buf_off && (off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)) != 0) {
             len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
             sz = bpf_probe_read_kernel_str(
                 &(out_buf->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
@@ -376,9 +397,10 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
 
     if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
         // memfd files have no path in the filesystem -> extract their name
-        buf_off = 0;
+        // (into buf[1], never buf[0] - see the dst[-1] note in get_path_str_buf)
+        buf_off = 1;
         struct qstr d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_kernel_str(&(out_buf->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
+        bpf_probe_read_kernel_str(&(out_buf->buf[1]), MAX_STRING_SIZE, (void *) d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
