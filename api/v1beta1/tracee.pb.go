@@ -446,6 +446,256 @@ func (x *StreamEventsResponse) GetEvent() *Event {
 	return nil
 }
 
+type ListPoliciesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPoliciesRequest) Reset() {
+	*x = ListPoliciesRequest{}
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPoliciesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPoliciesRequest) ProtoMessage() {}
+
+func (x *ListPoliciesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPoliciesRequest.ProtoReflect.Descriptor instead.
+func (*ListPoliciesRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1beta1_tracee_proto_rawDescGZIP(), []int{10}
+}
+
+type ListPoliciesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PolicyNames   []string               `protobuf:"bytes,1,rep,name=policy_names,json=policyNames,proto3" json:"policy_names,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPoliciesResponse) Reset() {
+	*x = ListPoliciesResponse{}
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPoliciesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPoliciesResponse) ProtoMessage() {}
+
+func (x *ListPoliciesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPoliciesResponse.ProtoReflect.Descriptor instead.
+func (*ListPoliciesResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1beta1_tracee_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListPoliciesResponse) GetPolicyNames() []string {
+	if x != nil {
+		return x.PolicyNames
+	}
+	return nil
+}
+
+type ApplyPolicyRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// policy is a single policy definition in the YAML/JSON policy-file format. It is added if new, or
+	// replaced if a policy with the same name already exists (upsert).
+	Policy        string `protobuf:"bytes,1,opt,name=policy,proto3" json:"policy,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyPolicyRequest) Reset() {
+	*x = ApplyPolicyRequest{}
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyPolicyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyPolicyRequest) ProtoMessage() {}
+
+func (x *ApplyPolicyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyPolicyRequest.ProtoReflect.Descriptor instead.
+func (*ApplyPolicyRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1beta1_tracee_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ApplyPolicyRequest) GetPolicy() string {
+	if x != nil {
+		return x.Policy
+	}
+	return ""
+}
+
+type ApplyPolicyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PolicyName    string                 `protobuf:"bytes,1,opt,name=policy_name,json=policyName,proto3" json:"policy_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ApplyPolicyResponse) Reset() {
+	*x = ApplyPolicyResponse{}
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ApplyPolicyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ApplyPolicyResponse) ProtoMessage() {}
+
+func (x *ApplyPolicyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ApplyPolicyResponse.ProtoReflect.Descriptor instead.
+func (*ApplyPolicyResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1beta1_tracee_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ApplyPolicyResponse) GetPolicyName() string {
+	if x != nil {
+		return x.PolicyName
+	}
+	return ""
+}
+
+type RemovePolicyRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemovePolicyRequest) Reset() {
+	*x = RemovePolicyRequest{}
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemovePolicyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemovePolicyRequest) ProtoMessage() {}
+
+func (x *RemovePolicyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemovePolicyRequest.ProtoReflect.Descriptor instead.
+func (*RemovePolicyRequest) Descriptor() ([]byte, []int) {
+	return file_api_v1beta1_tracee_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *RemovePolicyRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type RemovePolicyResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemovePolicyResponse) Reset() {
+	*x = RemovePolicyResponse{}
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemovePolicyResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemovePolicyResponse) ProtoMessage() {}
+
+func (x *RemovePolicyResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_v1beta1_tracee_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemovePolicyResponse.ProtoReflect.Descriptor instead.
+func (*RemovePolicyResponse) Descriptor() ([]byte, []int) {
+	return file_api_v1beta1_tracee_proto_rawDescGZIP(), []int{15}
+}
+
 var File_api_v1beta1_tracee_proto protoreflect.FileDescriptor
 
 const file_api_v1beta1_tracee_proto_rawDesc = "" +
@@ -469,13 +719,27 @@ const file_api_v1beta1_tracee_proto_rawDesc = "" +
 	"\bpolicies\x18\x01 \x03(\tR\bpolicies\x12.\n" +
 	"\x04mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\x04mask\"C\n" +
 	"\x14StreamEventsResponse\x12+\n" +
-	"\x05event\x18\x01 \x01(\v2\x15.tracee.v1beta1.EventR\x05event2\xd4\x04\n" +
+	"\x05event\x18\x01 \x01(\v2\x15.tracee.v1beta1.EventR\x05event\"\x15\n" +
+	"\x13ListPoliciesRequest\"9\n" +
+	"\x14ListPoliciesResponse\x12!\n" +
+	"\fpolicy_names\x18\x01 \x03(\tR\vpolicyNames\",\n" +
+	"\x12ApplyPolicyRequest\x12\x16\n" +
+	"\x06policy\x18\x01 \x01(\tR\x06policy\"6\n" +
+	"\x13ApplyPolicyResponse\x12\x1f\n" +
+	"\vpolicy_name\x18\x01 \x01(\tR\n" +
+	"policyName\")\n" +
+	"\x13RemovePolicyRequest\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\"\x16\n" +
+	"\x14RemovePolicyResponse2\xe2\x06\n" +
 	"\rTraceeService\x12n\n" +
 	"\x13GetEventDefinitions\x12*.tracee.v1beta1.GetEventDefinitionsRequest\x1a+.tracee.v1beta1.GetEventDefinitionsResponse\x12n\n" +
 	"\x13GetDetectorsCatalog\x12*.tracee.v1beta1.GetDetectorsCatalogRequest\x1a+.tracee.v1beta1.GetDetectorsCatalogResponse\x12[\n" +
 	"\fStreamEvents\x12#.tracee.v1beta1.StreamEventsRequest\x1a$.tracee.v1beta1.StreamEventsResponse0\x01\x12V\n" +
 	"\vEnableEvent\x12\".tracee.v1beta1.EnableEventRequest\x1a#.tracee.v1beta1.EnableEventResponse\x12Y\n" +
-	"\fDisableEvent\x12#.tracee.v1beta1.DisableEventRequest\x1a$.tracee.v1beta1.DisableEventResponse\x12S\n" +
+	"\fDisableEvent\x12#.tracee.v1beta1.DisableEventRequest\x1a$.tracee.v1beta1.DisableEventResponse\x12Y\n" +
+	"\fListPolicies\x12#.tracee.v1beta1.ListPoliciesRequest\x1a$.tracee.v1beta1.ListPoliciesResponse\x12V\n" +
+	"\vApplyPolicy\x12\".tracee.v1beta1.ApplyPolicyRequest\x1a#.tracee.v1beta1.ApplyPolicyResponse\x12Y\n" +
+	"\fRemovePolicy\x12#.tracee.v1beta1.RemovePolicyRequest\x1a$.tracee.v1beta1.RemovePolicyResponse\x12S\n" +
 	"\n" +
 	"GetVersion\x12!.tracee.v1beta1.GetVersionRequest\x1a\".tracee.v1beta1.GetVersionResponseB+Z)github.co/aquasecurity/tracee/api/v1beta1b\x06proto3"
 
@@ -491,7 +755,7 @@ func file_api_v1beta1_tracee_proto_rawDescGZIP() []byte {
 	return file_api_v1beta1_tracee_proto_rawDescData
 }
 
-var file_api_v1beta1_tracee_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_api_v1beta1_tracee_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_api_v1beta1_tracee_proto_goTypes = []any{
 	(*GetVersionRequest)(nil),           // 0: tracee.v1beta1.GetVersionRequest
 	(*GetVersionResponse)(nil),          // 1: tracee.v1beta1.GetVersionResponse
@@ -503,30 +767,42 @@ var file_api_v1beta1_tracee_proto_goTypes = []any{
 	(*DisableEventResponse)(nil),        // 7: tracee.v1beta1.DisableEventResponse
 	(*StreamEventsRequest)(nil),         // 8: tracee.v1beta1.StreamEventsRequest
 	(*StreamEventsResponse)(nil),        // 9: tracee.v1beta1.StreamEventsResponse
-	(*EventDefinition)(nil),             // 10: tracee.v1beta1.EventDefinition
-	(*fieldmaskpb.FieldMask)(nil),       // 11: google.protobuf.FieldMask
-	(*Event)(nil),                       // 12: tracee.v1beta1.Event
-	(*GetDetectorsCatalogRequest)(nil),  // 13: tracee.v1beta1.GetDetectorsCatalogRequest
-	(*GetDetectorsCatalogResponse)(nil), // 14: tracee.v1beta1.GetDetectorsCatalogResponse
+	(*ListPoliciesRequest)(nil),         // 10: tracee.v1beta1.ListPoliciesRequest
+	(*ListPoliciesResponse)(nil),        // 11: tracee.v1beta1.ListPoliciesResponse
+	(*ApplyPolicyRequest)(nil),          // 12: tracee.v1beta1.ApplyPolicyRequest
+	(*ApplyPolicyResponse)(nil),         // 13: tracee.v1beta1.ApplyPolicyResponse
+	(*RemovePolicyRequest)(nil),         // 14: tracee.v1beta1.RemovePolicyRequest
+	(*RemovePolicyResponse)(nil),        // 15: tracee.v1beta1.RemovePolicyResponse
+	(*EventDefinition)(nil),             // 16: tracee.v1beta1.EventDefinition
+	(*fieldmaskpb.FieldMask)(nil),       // 17: google.protobuf.FieldMask
+	(*Event)(nil),                       // 18: tracee.v1beta1.Event
+	(*GetDetectorsCatalogRequest)(nil),  // 19: tracee.v1beta1.GetDetectorsCatalogRequest
+	(*GetDetectorsCatalogResponse)(nil), // 20: tracee.v1beta1.GetDetectorsCatalogResponse
 }
 var file_api_v1beta1_tracee_proto_depIdxs = []int32{
-	10, // 0: tracee.v1beta1.GetEventDefinitionsResponse.definitions:type_name -> tracee.v1beta1.EventDefinition
-	11, // 1: tracee.v1beta1.StreamEventsRequest.mask:type_name -> google.protobuf.FieldMask
-	12, // 2: tracee.v1beta1.StreamEventsResponse.event:type_name -> tracee.v1beta1.Event
+	16, // 0: tracee.v1beta1.GetEventDefinitionsResponse.definitions:type_name -> tracee.v1beta1.EventDefinition
+	17, // 1: tracee.v1beta1.StreamEventsRequest.mask:type_name -> google.protobuf.FieldMask
+	18, // 2: tracee.v1beta1.StreamEventsResponse.event:type_name -> tracee.v1beta1.Event
 	2,  // 3: tracee.v1beta1.TraceeService.GetEventDefinitions:input_type -> tracee.v1beta1.GetEventDefinitionsRequest
-	13, // 4: tracee.v1beta1.TraceeService.GetDetectorsCatalog:input_type -> tracee.v1beta1.GetDetectorsCatalogRequest
+	19, // 4: tracee.v1beta1.TraceeService.GetDetectorsCatalog:input_type -> tracee.v1beta1.GetDetectorsCatalogRequest
 	8,  // 5: tracee.v1beta1.TraceeService.StreamEvents:input_type -> tracee.v1beta1.StreamEventsRequest
 	4,  // 6: tracee.v1beta1.TraceeService.EnableEvent:input_type -> tracee.v1beta1.EnableEventRequest
 	6,  // 7: tracee.v1beta1.TraceeService.DisableEvent:input_type -> tracee.v1beta1.DisableEventRequest
-	0,  // 8: tracee.v1beta1.TraceeService.GetVersion:input_type -> tracee.v1beta1.GetVersionRequest
-	3,  // 9: tracee.v1beta1.TraceeService.GetEventDefinitions:output_type -> tracee.v1beta1.GetEventDefinitionsResponse
-	14, // 10: tracee.v1beta1.TraceeService.GetDetectorsCatalog:output_type -> tracee.v1beta1.GetDetectorsCatalogResponse
-	9,  // 11: tracee.v1beta1.TraceeService.StreamEvents:output_type -> tracee.v1beta1.StreamEventsResponse
-	5,  // 12: tracee.v1beta1.TraceeService.EnableEvent:output_type -> tracee.v1beta1.EnableEventResponse
-	7,  // 13: tracee.v1beta1.TraceeService.DisableEvent:output_type -> tracee.v1beta1.DisableEventResponse
-	1,  // 14: tracee.v1beta1.TraceeService.GetVersion:output_type -> tracee.v1beta1.GetVersionResponse
-	9,  // [9:15] is the sub-list for method output_type
-	3,  // [3:9] is the sub-list for method input_type
+	10, // 8: tracee.v1beta1.TraceeService.ListPolicies:input_type -> tracee.v1beta1.ListPoliciesRequest
+	12, // 9: tracee.v1beta1.TraceeService.ApplyPolicy:input_type -> tracee.v1beta1.ApplyPolicyRequest
+	14, // 10: tracee.v1beta1.TraceeService.RemovePolicy:input_type -> tracee.v1beta1.RemovePolicyRequest
+	0,  // 11: tracee.v1beta1.TraceeService.GetVersion:input_type -> tracee.v1beta1.GetVersionRequest
+	3,  // 12: tracee.v1beta1.TraceeService.GetEventDefinitions:output_type -> tracee.v1beta1.GetEventDefinitionsResponse
+	20, // 13: tracee.v1beta1.TraceeService.GetDetectorsCatalog:output_type -> tracee.v1beta1.GetDetectorsCatalogResponse
+	9,  // 14: tracee.v1beta1.TraceeService.StreamEvents:output_type -> tracee.v1beta1.StreamEventsResponse
+	5,  // 15: tracee.v1beta1.TraceeService.EnableEvent:output_type -> tracee.v1beta1.EnableEventResponse
+	7,  // 16: tracee.v1beta1.TraceeService.DisableEvent:output_type -> tracee.v1beta1.DisableEventResponse
+	11, // 17: tracee.v1beta1.TraceeService.ListPolicies:output_type -> tracee.v1beta1.ListPoliciesResponse
+	13, // 18: tracee.v1beta1.TraceeService.ApplyPolicy:output_type -> tracee.v1beta1.ApplyPolicyResponse
+	15, // 19: tracee.v1beta1.TraceeService.RemovePolicy:output_type -> tracee.v1beta1.RemovePolicyResponse
+	1,  // 20: tracee.v1beta1.TraceeService.GetVersion:output_type -> tracee.v1beta1.GetVersionResponse
+	12, // [12:21] is the sub-list for method output_type
+	3,  // [3:12] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -546,7 +822,7 @@ func file_api_v1beta1_tracee_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_v1beta1_tracee_proto_rawDesc), len(file_api_v1beta1_tracee_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

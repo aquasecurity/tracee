@@ -2,15 +2,19 @@ package grpc
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/mennanov/fmutils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/config"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/streams"
 	"github.com/aquasecurity/tracee/pkg/version"
 )
@@ -18,6 +22,10 @@ import (
 type TraceeService struct {
 	pb.UnimplementedTraceeServiceServer
 	tracee *tracee.Tracee
+	// policyParser turns a policy-file document (YAML/JSON) into a *policy.Policy for ApplyPolicy. It is
+	// injected from the cmd layer, which owns the parse helpers (pkg/cmd/flags) - this package cannot import
+	// them (pkg/cmd/flags imports pkg/server/grpc). Nil until wired; ApplyPolicy then reports Unimplemented.
+	policyParser func(doc string) (*policy.Policy, error)
 }
 
 func (s *TraceeService) StreamEvents(in *pb.StreamEventsRequest, grpcStream pb.TraceeService_StreamEventsServer) error {
@@ -75,6 +83,52 @@ func (s *TraceeService) DisableEvent(ctx context.Context, in *pb.DisableEventReq
 	}
 
 	return &pb.DisableEventResponse{}, nil
+}
+
+func (s *TraceeService) ListPolicies(ctx context.Context, in *pb.ListPoliciesRequest) (*pb.ListPoliciesResponse, error) {
+	return &pb.ListPoliciesResponse{PolicyNames: s.tracee.ListPolicies()}, nil
+}
+
+func (s *TraceeService) ApplyPolicy(ctx context.Context, in *pb.ApplyPolicyRequest) (*pb.ApplyPolicyResponse, error) {
+	if s.policyParser == nil {
+		return nil, status.Error(codes.Unimplemented, "runtime policy parsing is not configured")
+	}
+	if len(in.Policy) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "policy document is empty")
+	}
+	p, err := s.policyParser(in.Policy)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "parse policy: %v", err)
+	}
+	name, err := s.tracee.ApplyPolicy(p)
+	if err != nil {
+		return nil, policyStatusError(err, p.Name)
+	}
+	return &pb.ApplyPolicyResponse{PolicyName: name}, nil
+}
+
+func (s *TraceeService) RemovePolicy(ctx context.Context, in *pb.RemovePolicyRequest) (*pb.RemovePolicyResponse, error) {
+	if in.Name == "" {
+		return nil, status.Error(codes.InvalidArgument, "policy name is empty")
+	}
+	if err := s.tracee.RemovePolicy(in.Name); err != nil {
+		return nil, policyStatusError(err, in.Name)
+	}
+	return &pb.RemovePolicyResponse{}, nil
+}
+
+// policyStatusError maps runtime policy errors onto meaningful gRPC status codes (a raw Go
+// error would surface as codes.Unknown to every client).
+func policyStatusError(err error, policyName string) error {
+	switch {
+	case errors.Is(err, policy.PolicyNotFoundByNameError(policyName)):
+		return status.Errorf(codes.NotFound, "%v", err)
+	case errors.Is(err, policy.PolicyAlreadyExistsError(policyName)):
+		return status.Errorf(codes.AlreadyExists, "%v", err)
+	case errors.Is(err, policy.PolicyNilError()):
+		return status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	return status.Errorf(codes.Internal, "%v", err)
 }
 
 func (s *TraceeService) GetEventDefinitions(ctx context.Context, in *pb.GetEventDefinitionsRequest) (*pb.GetEventDefinitionsResponse, error) {
