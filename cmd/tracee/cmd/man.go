@@ -63,6 +63,8 @@ func init() {
 		manListEventsCmd,
 		manListDetectorsCmd,
 		manListPoliciesCmd,
+		manListFilterableCmd,
+		manListDepsCmd,
 		loggingCmd,
 		outputCmd,
 		policyCmd,
@@ -264,6 +266,24 @@ var manListPoliciesCmd = &cobra.Command{
 	Short:   "Show manual page for the list policies command",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return runManForFlag("list-policies")
+	},
+}
+
+var manListFilterableCmd = &cobra.Command{
+	Use:     "list-filterable",
+	Aliases: []string{},
+	Short:   "Show manual page for the list filterable command",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("list-filterable")
+	},
+}
+
+var manListDepsCmd = &cobra.Command{
+	Use:     "list-deps",
+	Aliases: []string{},
+	Short:   "Show manual page for the list deps command",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return runManForFlag("list-deps")
 	},
 }
 
