@@ -10,8 +10,8 @@ import (
 
 // Stream is a stream of events
 type Stream struct {
-	// policy mask is a bitmap of policies that this stream is interested in
-	policyMask uint64
+	// policies is the set of policy names this stream is interested in (nil/empty = all)
+	policies map[string]struct{}
 	// event to filter
 	eventMap map[int32]struct{}
 	// true if there is at least one element in the eventMap
@@ -29,8 +29,8 @@ func (s *Stream) ReceiveEvents() <-chan *pb.Event {
 // Publish publishes an event to the stream,
 // but first check if this stream is interested in this event,
 // by checking the event's policy mask against the stream's policy mask.
-func (s *Stream) publish(event *pb.Event, policyBitmap uint64) {
-	if s.shouldIgnorePolicy(policyBitmap) {
+func (s *Stream) publish(event *pb.Event, matched []string) {
+	if s.shouldIgnore(matched) {
 		return
 	}
 
@@ -66,9 +66,18 @@ func (s *Stream) dropPublish(event *pb.Event) {
 	}
 }
 
-// shouldIgnorePolicy checks if the stream should ignore the event
-func (s *Stream) shouldIgnorePolicy(policyBitmap uint64) bool {
-	return s.policyMask&policyBitmap == 0
+// shouldIgnore reports whether the stream should drop the event, given the names of the
+// (user-selected) policies that matched it. A stream with no policy filter accepts all.
+func (s *Stream) shouldIgnore(matched []string) bool {
+	if len(s.policies) == 0 {
+		return false // subscribed to all policies
+	}
+	for _, name := range matched {
+		if _, ok := s.policies[name]; ok {
+			return false // at least one matched policy is of interest
+		}
+	}
+	return true
 }
 
 // close closes the stream
@@ -91,12 +100,12 @@ func NewStreamsManager() *StreamsManager {
 }
 
 // Subscribe adds a stream to the manager
-func (sm *StreamsManager) Subscribe(policyMask uint64, eventMap map[int32]struct{}, bufferConfig config.StreamBuffer) *Stream {
+func (sm *StreamsManager) Subscribe(policies map[string]struct{}, eventMap map[int32]struct{}, bufferConfig config.StreamBuffer) *Stream {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
 	stream := &Stream{
-		policyMask:  policyMask,
+		policies:    policies,
 		events:      make(chan *pb.Event, bufferConfig.Size),
 		eventMap:    eventMap,
 		eventFilter: len(eventMap) > 0,
@@ -126,14 +135,14 @@ func (sm *StreamsManager) Unsubscribe(stream *Stream) {
 	}
 }
 
-// Publish publishes an event to all streams.
-// The event is a pb.Event pointer and the policyBitmap indicates which policies matched.
-func (sm *StreamsManager) Publish(event *pb.Event, policyBitmap uint64) {
+// Publish publishes an event to all interested streams. matched is the list of
+// (user-selected) policy names that matched the event; streams filter on it by name.
+func (sm *StreamsManager) Publish(event *pb.Event, matched []string) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 
 	for stream := range sm.subscribers {
-		stream.publish(event, policyBitmap)
+		stream.publish(event, matched)
 	}
 }
 

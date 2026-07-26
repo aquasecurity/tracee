@@ -134,7 +134,7 @@ func buildDerivedEvent(baseEvent *trace.Event, skeleton deriveBase, argsValues [
 		return trace.Event{}, unexpectedArgCountError(skeleton.Name, len(skeleton.Fields), len(argsValues))
 	}
 	de := *baseEvent // shallow copy
-	de.PoliciesVersion = baseEvent.PoliciesVersion
+	de.RulesVersion = baseEvent.RulesVersion
 	de.EventID = skeleton.ID
 	de.EventName = skeleton.Name
 	de.ReturnValue = 0

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -19,6 +20,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/datastores/process"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/policy"
 	"github.com/aquasecurity/tracee/pkg/signatures/engine"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -246,6 +249,13 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			evt.ProcessName = commStr
 			evt.HostName = utsNameStr
 			evt.CgroupID = uint(eCtx.CgroupID)
+			// Clear the binary path on the recycled pooled event: decode does not repopulate it
+			// (the proctree processor sets it later, and only for resolvable processes - not
+			// threads or absent-from-tree pids). A stale path from the slot's previous event
+			// would make narrowOverflowBinaryScope enforce the WRONG binary, and on net events
+			// (word 0) clear legitimate bits - a drop. Empty => the "unresolvable" guard fires
+			// => over-attribute rather than mis-narrow.
+			evt.Executable = trace.File{}
 			// Intern container and Kubernetes metadata strings. These repeat for
 			// every event from the same cgroup/pod but are re-assigned per event.
 			containerId := intern.String(containerInfo.ContainerId)
@@ -262,9 +272,9 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 				PodUID:       intern.String(containerInfo.Pod.UID),
 			}
 			evt.EventName = evtName
-			evt.PoliciesVersion = eCtx.PoliciesVersion
-			evt.MatchedPoliciesKernel = eCtx.MatchedPolicies
-			evt.MatchedPoliciesUser = 0
+			evt.RulesVersion = eCtx.PoliciesVersion
+			evt.MatchedRulesKernel = []uint64{eCtx.MatchedPolicies}
+			evt.MatchedRulesUser = nil
 			evt.MatchedPolicies = []string{}
 			evt.ArgsNum = int(argnum)
 
@@ -287,23 +297,47 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			}
 			evt.ParentEntityId = process.HashTaskID(eCtx.HostPpid, timeutil.BootToEpochNS(eCtx.ParentStartTime))
 
-			// Set internal bitmap from kernel-matched policies
-			evt.MatchedPoliciesBitmap = eCtx.MatchedPolicies
+			// Set the internal working bitmap from the kernel-matched rules.
+			// The kernel emits a single u64 of rule bits (IDs 0-63); rule IDs >= 64
+			// are evaluated in userland by matchOverflowRules below.
+			// Net base events (IDs < MaxNetID) carry a socket-bound kernel bitmap keyed by the socket-creation
+			// event's rule IDs, not this event's - unreliable here, only a coarse submit gate. Recompute in
+			// userland: seed every rule as a candidate and let matchOverflowRules + matchPolicies narrow by the
+			// event's own workload scope; deriveEvents then remaps to the derived net events.
+			// Capture one policy read snapshot for this event and carry it on the event, so every
+			// matched-rules read across all stages resolves against a single consistent version even if a
+			// runtime policy change publishes a newer snapshot mid-flight. The held pointer also keeps that
+			// version alive (GC-based retention) until the event drains.
+			snap := t.policyManager.LoadSnapshot()
+			evt.RulesSnapshot = snap
 
-			// If there aren't any policies that need filtering in userland, tracee **may** skip
-			// this event, as long as there aren't any derivatives or signatures that depend on it.
-			// Some base events (derivative and signatures) might not have set related policy bit,
-			// thus the need to continue with those within the pipeline.
-			if t.matchPolicies(evt) == 0 {
-				_, hasDerivation := t.eventDerivations[eventId]
-				reqBySig := t.policyManager.IsRequiredBySignature(eventId)
+			if eventId >= events.NetPacketBase && eventId < events.MaxNetID {
+				evt.MatchedRulesBitmap = snap.GetAllRulesBitmap(eventId)
+				// The kernel never scope-filtered THIS bitmap (the socket-bound one was
+				// discarded above), so re-run the kernel scope-filter formula in userland
+				// across all words - otherwise policy-level scopes (comm/uid/...) would be
+				// silently unenforced for net events.
+				t.narrowNetBaseEventScope(evt, snap)
+			} else {
+				evt.MatchedRulesBitmap = []uint64{eCtx.MatchedPolicies}
+				// Evaluate scope filters for overflow rules (ID >= 64) that the kernel's
+				// single-u64 bitmap can't represent. Kernel-origin events only (this is the
+				// decode stage); derived/finding events keep their mapped bitmap.
+				t.matchOverflowRules(evt)
+			}
 
-				if !hasDerivation && !reqBySig {
-					_ = t.stats.EventsFiltered.Increment()
-					t.eventsPool.Put(evt)
-					decoderPool.Put(ebpfMsgDecoder)
-					continue
-				}
+			// Apply userland rule filtering. A base event needed to derive an event a policy wants
+			// carries a scope-filtered DEPENDENCY rule: every derived event declares its derive-from as
+			// a dependency (pkg/events/core.go), and every derivation is gated on the derived event being
+			// selected (initDerivationTable Enabled = IsEventSelected), so matchPolicies already keeps
+			// exactly those bases - and only when the workload scope matches. If nothing (user or
+			// dependency rule) matched, the event feeds nothing wanted, so drop it here. (The old coarse
+			// per-event-type eventDerivations keep - and before it requiredBySignature - are both gone.)
+			if !t.matchPolicies(evt) {
+				_ = t.stats.EventsFiltered.Increment()
+				t.eventsPool.Put(evt)
+				decoderPool.Put(ebpfMsgDecoder)
+				continue
 			}
 
 			out <- evt
@@ -315,46 +349,60 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 	return out, errc
 }
 
-// matchPolicies does the userland filtering (policy matching) for events. It iterates through all
-// existing policies, that were set by the kernel in the event bitmap. Some of those policies might
-// not match the event after userland filters are applied. In those cases, the policy bit is cleared
-// (so the event is "filtered" for that policy). This may be called in different stages of the
-// pipeline (decode, derive, engine).
-func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
+// clearDisabledRules removes, in place, the bits of rules disabled at runtime (DisableRule)
+// from the event's working bitmap. No-op (and no allocation) when nothing is disabled.
+func (t *Tracee) clearDisabledRules(snap *policy.Snapshot, eventID events.ID, bitmap []uint64) {
+	if !t.policyManager.AnyRulesDisabled() { // lock-free fast path: nothing ever disabled
+		return
+	}
+	disabled := snap.GetDisabledRules(eventID)
+	for i := 0; i < len(bitmap) && i < len(disabled); i++ {
+		bitmap[i] &^= disabled[i]
+	}
+}
+
+// snapshotOf returns the policy read snapshot captured for the event at decode. Threading one snapshot per
+// event keeps all matched-rules reads consistent across a concurrent runtime policy change. Falls back to the
+// latest snapshot if the event was constructed without one (never worse than reading latest at each stage).
+func (t *Tracee) snapshotOf(event *events.PipelineEvent) *policy.Snapshot {
+	if s, ok := event.RulesSnapshot.(*policy.Snapshot); ok && s != nil {
+		return s
+	}
+	return t.policyManager.LoadSnapshot()
+}
+
+// matchPolicies does the userland filtering (rule matching) for events. The kernel
+// sets a bitmap of matched rule IDs; here each userland-filterable rule for this
+// event is re-checked, and its bit is cleared when a userland filter rejects the
+// event. Rules whose policy/event has no userland filters are left untouched (their
+// kernel match stands). Returns true if any rule still matches. May be called in
+// different stages of the pipeline (decode, derive, engine).
+func (t *Tracee) matchPolicies(event *events.PipelineEvent) bool {
 	if event == nil || event.Event == nil {
-		return 0
+		return false
 	}
 
 	eventID := event.EventID
-	bitmap := event.MatchedPoliciesBitmap
+	snap := t.snapshotOf(event)
 
-	// Short circuit if there are no policies in userland that need filtering.
-	if !t.policyManager.FilterableInUserland() {
-		event.MatchedPoliciesUser = bitmap // store untouched bitmap to be used in sink stage
-		return bitmap
-	}
+	// NOTE: rules with ID >= 64 (overflow) are evaluated by the caller via matchOverflowRules,
+	// for KERNEL-origin events only (the kernel's single-u64 bitmap can't represent them).
+	// Derived and finding events arrive with their bitmap already mapped from the base event,
+	// so their overflow bits must NOT be recomputed here - the loop below only narrows them.
+	bitmap := event.MatchedRulesBitmap // working copy (copied from the kernel bitmap in NewPipelineEvent)
+
+	// Drop rules disabled at runtime (DisableRule).
+	t.clearDisabledRules(snap, eventID, bitmap)
 
 	// Cache frequently accessed event fields
 	eventUID := uint32(event.UserID)
 	eventPID := uint32(event.HostProcessID)
 	eventRetVal := int64(event.ReturnValue)
 
-	// range through each userland filterable policy
-	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
-		p := it.Next()
-		// Policy ID is the bit offset in the bitmap.
-		bitOffset := uint(p.ID)
-
-		if !bitwise.HasBit(bitmap, bitOffset) { // event does not match this policy
-			continue
-		}
-
-		// The event might have this policy bit set, but the policy might not have this
-		// event ID. This happens whenever the event submitted by the kernel is going to
-		// derive an event that this policy is interested in. In this case, don't do
-		// anything and let the derivation stage handle this event.
-		rule, ok := p.Rules[eventID]
-		if !ok {
+	// range through each userland-filterable rule for this event
+	for _, rule := range snap.GetUserlandRules(eventID) {
+		// Rule bit may live beyond word 0, so use the array-aware accessor.
+		if !bitwise.HasBitInArray(bitmap, rule.ID) { // event does not match this rule
 			continue
 		}
 
@@ -363,29 +411,49 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
 		//
 
 		// 1. UID/PID range checks (very fast)
-		if p.UIDFilter.Enabled() {
-			if !p.UIDFilter.InMinMaxRange(eventUID) {
-				bitwise.ClearBit(&bitmap, bitOffset)
+		if rule.Policy.UIDFilter.Enabled() {
+			if !rule.Policy.UIDFilter.InMinMaxRange(eventUID) {
+				bitwise.ClearBitInArray(&bitmap, rule.ID)
 				continue
 			}
 		}
 
-		if p.PIDFilter.Enabled() {
-			if !p.PIDFilter.InMinMaxRange(eventPID) {
-				bitwise.ClearBit(&bitmap, bitOffset)
+		if rule.Policy.PIDFilter.Enabled() {
+			if !rule.Policy.PIDFilter.InMinMaxRange(eventPID) {
+				bitwise.ClearBitInArray(&bitmap, rule.ID)
 				continue
 			}
 		}
 
-		// 2. event return value filters (fast)
-		if !rule.RetFilter.Filter(eventRetVal) {
-			bitwise.ClearBit(&bitmap, bitOffset)
+		// 2. event scope filters (medium cost). Scope filters are workload-level
+		// (uid/pid/comm/container/tree/...) and valid on every event in a dependency
+		// chain, so they apply to dependency rules too.
+		if !rule.Data.ScopeFilter.Filter(*event.Event) {
+			bitwise.ClearBitInArray(&bitmap, rule.ID)
 			continue
 		}
 
-		// 3. event scope filters (medium cost)
-		if !rule.ScopeFilter.Filter(*event.Event) {
-			bitwise.ClearBit(&bitmap, bitOffset)
+		// Phase 2: an optional detector-declared scope filter pushed onto this (base) dependency
+		// rule from the detector's Requirements.Events[]. It is workload-level like the policy scope
+		// above and is ANDed with it (nil for ordinary rules).
+		if rule.DetectorScopeFilter != nil && !rule.DetectorScopeFilter.Filter(*event.Event) {
+			bitwise.ClearBitInArray(&bitmap, rule.ID)
+			continue
+		}
+
+		// Dependency rules are scope-only (see EventRule.IsDependency): their shared
+		// RuleData's return-value and data filters belong to the dependent/derived
+		// event's schema, not this base event. Applying them here would wrongly drop
+		// base events (e.g. a data.pathname filter on a derived event has no pathname
+		// field on its base) and break derivations; the ret/data filters are applied
+		// when the derived event itself is matched.
+		if rule.IsDependency() {
+			continue
+		}
+
+		// 3. event return value filters (fast)
+		if !rule.Data.RetFilter.Filter(eventRetVal) {
+			bitwise.ClearBitInArray(&bitmap, rule.ID)
 			continue
 		}
 
@@ -395,21 +463,306 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
 		// events.PrintMemDump bypass was added due to issue #2546
 		// because it uses usermode applied filters as parameters for the event,
 		// which occurs after filtering
-		if eventID != events.PrintMemDump && !rule.DataFilter.Filter(event.Args) {
-			bitwise.ClearBit(&bitmap, bitOffset)
+		if eventID != events.PrintMemDump && !rule.Data.DataFilter.Filter(event.Args) {
+			bitwise.ClearBitInArray(&bitmap, rule.ID)
 			continue
 		}
 
-		// Early exit optimization: if bitmap becomes 0, no need to continue
-		if bitmap == 0 {
+		// Phase 2: a detector's per-base-event data filter (rule-local) applies to THIS base event's
+		// args, unlike Data.DataFilter which belongs to the dependent/derived event. AND it in.
+		if eventID != events.PrintMemDump && rule.DetectorDataFilter != nil &&
+			!rule.DetectorDataFilter.Filter(event.Args) {
+			bitwise.ClearBitInArray(&bitmap, rule.ID)
+			continue
+		}
+
+		// Early exit optimization: if the bitmap becomes empty, no need to continue
+		if bitwise.IsBitmapArrayEmpty(bitmap) {
 			break
 		}
 	}
 
-	event.MatchedPoliciesUser = bitmap   // store filtered bitmap to be used in sink stage
-	event.MatchedPoliciesBitmap = bitmap // update internal bitmap
+	event.MatchedRulesBitmap = bitmap // update internal working bitmap
+	event.MatchedRulesUser = bitmap   // store filtered bitmap to be used in sink stage
 
-	return bitmap
+	return !bitwise.IsBitmapArrayEmpty(bitmap)
+}
+
+// matchOverflowRules evaluates, in userland, the kernel-side scope filters for rules with
+// ID >= 64. The kernel's matched_rules is a single u64 and cannot represent them, so the BPF
+// code leaves them out entirely. This mirrors the eBPF match_scope_filters logic
+// (res &= equality_filter_matches(...) | mask, per overflow word) using the retained Go
+// filter maps, and writes the resulting overflow words into event.MatchedRulesBitmap. The
+// userland pass in matchPolicies then applies the per-rule ret/data/rich-scope filters to
+// those bits. Tree/follow/binary overflow rules are not handled here (tree/follow are 0-63
+// only by design); pid filtering checks host pid only (not tid), matching the prior model.
+func (t *Tracee) matchOverflowRules(event *events.PipelineEvent) {
+	eventID := event.EventID
+	snap := t.snapshotOf(event)
+	if !snap.HasOverflowRules(eventID) {
+		return
+	}
+
+	// Mirror the kernel's self-exclusion (config_entry.tracee_pid check in
+	// evaluate_scope_filters): an overflow event bypasses it - has_overflow forces
+	// submission even with matched_rules == 0 - so without this, tracee's own events
+	// would be seeded as overflow candidates and attributed to overflow rules.
+	if event.Event != nil && uint32(event.HostProcessID) == uint32(os.Getpid()) {
+		return // word 0 stays as the kernel left it (0 for self events) -> dropped downstream
+	}
+
+	// One 64-bit word per 64 rules. The kernel filled word 0 (rules 0-63); size the bitmap to
+	// cover ALL rules and init each overflow word (index 1+) to the LIVE candidate rules
+	// (GetAllRulesBitmap is gap-safe: stable rule IDs can retire and leave gaps, and a gap
+	// bit carries no rule - seeding it would log per-event "unknown ruleID" noise and, once
+	// the ID is reused, over-attribute one generation). This alone makes overflow rules with
+	// NO scope filter match unconditionally; the scope filters below only narrow. Word 0 is
+	// owned by the kernel and left untouched.
+	liveRules := snap.GetAllRulesBitmap(eventID)
+	bitmap := event.MatchedRulesBitmap
+	for len(bitmap) < len(liveRules) {
+		bitmap = append(bitmap, 0)
+	}
+	for i := 1; i < len(liveRules); i++ {
+		bitmap[i] = liveRules[i]
+	}
+	event.MatchedRulesBitmap = bitmap // store the grown slice (scope filters below mutate it in place)
+
+	// Apply the kernel-side scope filters to the overflow words (word 0 is owned by the kernel).
+	t.applyKernelScopeFiltersUserland(event, snap, 1)
+}
+
+// narrowNetBaseEventScope is the userland replacement for the kernel scope evaluation that net
+// base events (net_packet_*/net_flow_* bases) never get: their kernel bitmap is socket-bound
+// (keyed by the socket-tracking event's rule IDs) and is discarded at decode in favor of a
+// GetAllRulesBitmap seed. Without this pass, policy-level scopes (comm/uid/mntns/...) - which
+// have NO other userland re-evaluation - would be silently unenforced for net events (a policy
+// `scope: comm=foo, rules: [net_packet_icmp]` would emit every ICMP packet on the host).
+//
+// It re-runs the kernel scope-filter formula across ALL words (0 included), keyed by THIS
+// snapshot's rules version (the kernel-stamped event version reflects socket-creation time and
+// can be stale). The seed already includes overflow bits (GetAllRulesBitmap is gap-safe), so no
+// extra overflow seeding is needed. Derived net events inherit the narrowed base bitmap through
+// GetDerivedEventMatchedRules in deriveEvents.
+func (t *Tracee) narrowNetBaseEventScope(event *events.PipelineEvent, snap *policy.Snapshot) {
+	t.applyKernelScopeFiltersUserland(event, snap, 0)
+}
+
+// applyKernelScopeFiltersUserland mirrors the eBPF match_scope_filters logic
+// (res &= equality_filter_matches(...) | mask, per word) using the retained Go filter maps,
+// narrowing event.MatchedRulesBitmap in place from fromWord on. fromWord is 1 for overflow
+// narrowing on regular events (word 0 is kernel truth) and 0 for net base events (the kernel
+// bitmap was discarded, so word 0 must be re-derived here too).
+func (t *Tracee) applyKernelScopeFiltersUserland(
+	event *events.PipelineEvent, snap *policy.Snapshot, fromWord int,
+) {
+	eventID := event.EventID
+
+	// No filter map => no scope filters => the candidate bits stand.
+	fMaps := snap.GetFilterMaps()
+	if fMaps == nil {
+		return
+	}
+
+	// The exported maps are keyed by (version, eventID). Regular events use the version the
+	// kernel stamped on the event. Net base events (fromWord == 0) discarded the kernel bitmap,
+	// and their stamped version reflects SOCKET-creation time (possibly stale), so they key by
+	// the version the snapshot's exported maps are actually at (GetPushedVersion) - which equals
+	// what the kernel holds. Using the current rules version instead would miss during the
+	// window between a policy mutation and its kernel push (rules advance to V+1 while
+	// exportedFMaps is still V), silently disabling all net scope until the push lands.
+	version := event.RulesVersion
+	if fromWord == 0 {
+		version = snap.GetPushedVersion(eventID)
+	}
+	vKey := policy.FilterVersionKey{Version: version, EventID: uint32(eventID)}
+
+	// The config is version-keyed like the value maps. A stale in-flight event - generated
+	// under a rules version this snapshot no longer exports (runtime policy change mid-
+	// flight) - gets NO narrowing here and keeps its candidate bits (over-attribution):
+	// applying a NEWER config against value maps that miss the stale version would force
+	// key-missing verdicts and silently DROP legitimate events during churn.
+	cfg, ok := fMaps.ExtendedScopeFilterConfigs[vKey]
+	if !ok {
+		return
+	}
+
+	bitmap := event.MatchedRulesBitmap
+
+	// Apply each scope filter. A nil/absent inner map (key not present, including an empty
+	// container id) yields the key-missing behavior naturally.
+	applyOverflowScopeFilter(bitmap, strBitmaps(fMaps.CommFilters[vKey], event.ProcessName), cfg.CommFilterEnabled, cfg.CommFilterMatchIfKeyMissing, fromWord)
+	applyOverflowScopeFilter(bitmap, u64Bitmaps(fMaps.UIDFilters[vKey], uint64(event.UserID)), cfg.UIDFilterEnabled, cfg.UIDFilterMatchIfKeyMissing, fromWord)
+	// The kernel pid filter matches host_pid OR host_tid; mirror both (idempotent when the
+	// event is a thread-group leader, i.e. pid == tid).
+	pidBitmaps := mergeRuleBitmaps(
+		u64Bitmaps(fMaps.PIDFilters[vKey], uint64(event.HostProcessID)),
+		u64Bitmaps(fMaps.PIDFilters[vKey], uint64(event.HostThreadID)),
+	)
+	applyOverflowScopeFilter(bitmap, pidBitmaps, cfg.PIDFilterEnabled, cfg.PIDFilterMatchIfKeyMissing, fromWord)
+	applyOverflowScopeFilter(bitmap, u64Bitmaps(fMaps.MntNsFilters[vKey], uint64(event.MountNS)), cfg.MntNsFilterEnabled, cfg.MntNsFilterMatchIfKeyMissing, fromWord)
+	applyOverflowScopeFilter(bitmap, u64Bitmaps(fMaps.PidNsFilters[vKey], uint64(event.PIDNS)), cfg.PidNsFilterEnabled, cfg.PidNsFilterMatchIfKeyMissing, fromWord)
+	applyOverflowScopeFilter(bitmap, strBitmaps(fMaps.UTSFilters[vKey], event.HostName), cfg.UtsNsFilterEnabled, cfg.UtsNsFilterMatchIfKeyMissing, fromWord)
+	// cgroup is keyed by the 32-bit LSB on both sides (see kernel cgroup_id_lsb and
+	// FindContainerCgroupID32LSB), so truncate to u32 before the lookup.
+	applyOverflowScopeFilter(bitmap, u64Bitmaps(fMaps.CgroupFilters[vKey], uint64(uint32(event.CgroupID))), cfg.CgroupIdFilterEnabled, cfg.CgroupIdFilterMatchIfKeyMissing, fromWord)
+	// NOTE: the container BOOLEAN dimensions (container=true/false, new-container,
+	// container-started, new-pid) are NOT narrowed here: computeFilterMaps never fills
+	// ContainerFilters, so applying cfg.ContFilterEnabled against that empty map would
+	// force key-missing verdicts and DROP legitimate events (a container=true rule would
+	// never match). Until the container dimensions get a correct userland mirror, such
+	// rules over-attribute here rather than drop.
+	//
+	// NOTE: binary/executable scope is intentionally NOT narrowed here. This runs in the decode
+	// stage, before the proctree processor populates event.Executable.Path (see processor_proctree.go), so the
+	// binary path is not yet available. A rule scoped by executable therefore keeps its
+	// (unevaluated) bit here and is narrowed later by narrowOverflowBinaryScope, in the processEvents stage,
+	// once the path is set and before deriveEvents reads the matched set. That pass SKIPS narrowing when the
+	// path is unresolvable (e.g. exiting processes) - over-attributing rather than dropping - so enforcement is
+	// exact for live-process events (exec, security_file_open, ...) and degrades safely otherwise. Do NOT
+	// narrow binary HERE with the absent path: it would force a verdict on empty data and drop legitimate
+	// events. Tree/follow are 0-63 only, so they never overflow (and have no userland mirror; on the net
+	// path they over-attribute). Full exit-event enforcement would need the binary from the kernel event
+	// context or a staged (match/fail/pending) model.
+	// (scope filters mutate bitmap in place; the caller stored the slice on the event already)
+}
+
+// applyOverflowScopeFilter applies one scope filter to the bitmap words from fromWord on,
+// mirroring eBPF: res &= (equals_in_rules | (match_if_key_missing & ~key_used_in_rules)) | mask
+// where mask = ~filter_enabled (rules without this filter are unaffected). bitmaps holds the
+// per-word {equals,key_used} for the looked-up key (nil => key missing). fromWord is 1 when
+// word 0 is kernel truth (overflow narrowing) and 0 when word 0 must be re-derived in userland
+// (net base events).
+func applyOverflowScopeFilter(bitmap []uint64, bitmaps []policy.RuleBitmap, filterEnabled, matchIfKeyMissing []uint64, fromWord int) {
+	for i := fromWord; i < len(bitmap); i++ {
+		mask := ^uint64(0) // rules without this filter enabled are unaffected
+		if i < len(filterEnabled) {
+			mask = ^filterEnabled[i]
+		}
+		var matchIfMissing uint64
+		if i < len(matchIfKeyMissing) {
+			matchIfMissing = matchIfKeyMissing[i]
+		}
+		var equals, keyUsed uint64
+		if i < len(bitmaps) {
+			equals = bitmaps[i].EqualsInRules
+			keyUsed = bitmaps[i].KeyUsedInRules
+		}
+		filterMatches := equals | (matchIfMissing & ^keyUsed)
+		bitmap[i] &= filterMatches | mask
+	}
+}
+
+// u64Bitmaps / strBitmaps look up the per-word rule bitmaps for a key in a filter inner map,
+// returning nil when the map or key is absent (key-missing behavior).
+func u64Bitmaps(m map[uint64][]policy.RuleBitmap, key uint64) []policy.RuleBitmap {
+	if m == nil {
+		return nil
+	}
+	return m[key]
+}
+
+// mergeRuleBitmaps ORs two per-word RuleBitmap slices (equals and key-used each). Used to mirror
+// the kernel's pid filter, which matches host_pid OR host_tid (filtering.h): looking up only one
+// would clear a rule keyed on the other and, on the net path (word 0), drop the event.
+func mergeRuleBitmaps(a, b []policy.RuleBitmap) []policy.RuleBitmap {
+	if len(b) == 0 {
+		return a
+	}
+	if len(a) == 0 {
+		return b
+	}
+	n := len(a)
+	if len(b) > n {
+		n = len(b)
+	}
+	out := make([]policy.RuleBitmap, n)
+	for i := 0; i < n; i++ {
+		if i < len(a) {
+			out[i] = a[i]
+		}
+		if i < len(b) {
+			out[i].EqualsInRules |= b[i].EqualsInRules
+			out[i].KeyUsedInRules |= b[i].KeyUsedInRules
+		}
+	}
+	return out
+}
+
+func strBitmaps(m map[string][]policy.RuleBitmap, key string) []policy.RuleBitmap {
+	if m == nil {
+		return nil
+	}
+	return m[key]
+}
+
+// binaryBitmaps looks up the per-word rule bitmaps for an event's binary, mirroring the kernel's
+// binary_filter_matches double lookup: the path-only key (any mount namespace, stored as {MntNS: 0, Path})
+// is tried first, then the namespace-specific {MntNS, Path}. Returns nil when the map or key is absent.
+func binaryBitmaps(m map[filters.NSBinary][]policy.RuleBitmap, path string, mntNS uint32) []policy.RuleBitmap {
+	if m == nil {
+		return nil
+	}
+	if bm, ok := m[filters.NSBinary{MntNS: 0, Path: path}]; ok {
+		return bm
+	}
+	return m[filters.NSBinary{MntNS: mntNS, Path: path}]
+}
+
+// narrowOverflowBinaryScope enforces executable/binary scope for OVERFLOW rules (ID >= 64) that
+// matchOverflowRules deliberately left un-narrowed at decode, because the binary path is only populated
+// later by the proctree processor. It runs in the processEvents stage AFTER that processor and BEFORE
+// deriveEvents (which reads MatchedRulesUser), so the matched set is final before anything consumes it.
+// It only ever clears overflow bits; an event narrowed to no matching rule is dropped at the sink terminal
+// drop, so no new drop point is needed. Rules 0-63 are enforced in the kernel and are untouched here.
+//
+// SAFETY: if the binary is unresolvable (event.Executable.Path == ""), we SKIP narrowing rather than treat
+// the empty path as a key-miss. An equal executable filter on a missing key would clear the bit and DROP a
+// legitimate event. This happens for post-mortem events like sched_process_exit, where the process is already
+// gone from the process tree so procTreeAddBinInfo cannot fill the path. Skipping leaves the overflow bit set
+// -> over-attribution (the pre-existing binary/tree limitation), which is correct-but-imprecise, never a drop.
+// Live-process events (sched_process_exec, security_file_open, ...) do carry the path and are enforced exactly.
+func (t *Tracee) narrowOverflowBinaryScope(event *events.PipelineEvent) {
+	eventID := event.EventID
+	snap := t.snapshotOf(event)
+
+	// Net base events discarded the kernel bitmap at decode, so their word 0 (rules 0-63) was
+	// never binary-narrowed by the kernel either - narrow it here alongside the overflow words,
+	// keyed by the version the exported maps are actually at (GetPushedVersion; the kernel-
+	// stamped one is socket-creation-time and can be stale, and the current rules version can be
+	// ahead of the exported maps during a mutation-before-push window). Regular events narrow
+	// overflow words only: word 0 is kernel truth.
+	isNetBase := eventID >= events.NetPacketBase && eventID < events.MaxNetID
+	fromWord := 1
+	version := event.RulesVersion
+	if isNetBase {
+		fromWord = 0
+		version = snap.GetPushedVersion(eventID)
+	} else if !snap.HasOverflowRules(eventID) {
+		return
+	}
+	if event.Executable.Path == "" {
+		return // binary unresolvable (e.g. exiting process): over-attribute rather than drop
+	}
+	fMaps := snap.GetFilterMaps()
+	if fMaps == nil {
+		return
+	}
+
+	vKey := policy.FilterVersionKey{Version: version, EventID: uint32(eventID)}
+	// Version-keyed config: a stale in-flight event keeps its bits (see
+	// applyKernelScopeFiltersUserland for the rationale).
+	cfg, ok := fMaps.ExtendedScopeFilterConfigs[vKey]
+	if !ok {
+		return
+	}
+	binBitmaps := binaryBitmaps(fMaps.BinaryFilters[vKey], event.Executable.Path, uint32(event.MountNS))
+
+	// MatchedRulesBitmap and MatchedRulesUser alias the same slice after decode, but narrow both defensively
+	// (the operation only clears bits and is idempotent). MatchedRulesKernel holds word 0 only, which the
+	// overflow narrowing (words 1+) never touches.
+	applyOverflowScopeFilter(event.MatchedRulesBitmap, binBitmaps, cfg.BinPathFilterEnabled, cfg.BinPathFilterMatchIfKeyMissing, fromWord)
+	applyOverflowScopeFilter(event.MatchedRulesUser, binBitmaps, cfg.BinPathFilterEnabled, cfg.BinPathFilterMatchIfKeyMissing, fromWord)
 }
 
 // matchPoliciesProto does userland filtering for proto-native events (detector outputs).
@@ -417,55 +770,41 @@ func (t *Tracee) matchPolicies(event *events.PipelineEvent) uint64 {
 // Note: This function applies only basic filters (UID/PID) and skips RetFilter, ScopeFilter,
 // and DataFilter since they require trace.Event. This is acceptable since detector outputs
 // typically don't need complex filtering.
-func (t *Tracee) matchPoliciesProto(pipelineEvent *events.PipelineEvent) uint64 {
+func (t *Tracee) matchPoliciesProto(pipelineEvent *events.PipelineEvent) bool {
 	if pipelineEvent == nil || pipelineEvent.ProtoEvent == nil {
-		return 0
+		return false
 	}
 
 	pbEvent := pipelineEvent.ProtoEvent
 
 	eventID := pipelineEvent.EventID
-	bitmap := pipelineEvent.MatchedPoliciesBitmap
+	snap := t.snapshotOf(pipelineEvent)
+	bitmap := pipelineEvent.MatchedRulesBitmap // working copy of the matched-rules bitmap
 
-	// Short circuit if no userland filtering needed
-	if !t.policyManager.FilterableInUserland() {
-		return bitmap
-	}
+	// Drop rules disabled at runtime (DisableRule).
+	t.clearDisabledRules(snap, eventID, bitmap)
 
 	// Extract fields from protobuf for filtering using helper functions
 	eventUID := pb.GetProcessRealUserId(pbEvent)
 	eventPID := pb.GetProcessHostPid(pbEvent)
 
-	// range through each userland filterable policy
-	for it := t.policyManager.CreateUserlandIterator(); it.HasNext(); {
-		p := it.Next()
-		// Policy ID is the bit offset in the bitmap.
-		bitOffset := uint(p.ID)
-
-		if !bitwise.HasBit(bitmap, bitOffset) { // event does not match this policy
-			continue
-		}
-
-		// The event might have this policy bit set, but the policy might not have this
-		// event ID. This happens whenever the event submitted by the kernel is going to
-		// derive an event that this policy is interested in. In this case, don't do
-		// anything and let the derivation stage handle this event.
-		_, ok := p.Rules[eventID]
-		if !ok {
+	// range through each userland-filterable rule for this event
+	for _, rule := range snap.GetUserlandRules(eventID) {
+		if !bitwise.HasBitInArray(bitmap, rule.ID) { // event does not match this rule
 			continue
 		}
 
 		// Apply fast filters (UID/PID only for proto-native events)
-		if p.UIDFilter.Enabled() {
-			if !p.UIDFilter.InMinMaxRange(eventUID) {
-				bitwise.ClearBit(&bitmap, bitOffset)
+		if rule.Policy.UIDFilter.Enabled() {
+			if !rule.Policy.UIDFilter.InMinMaxRange(eventUID) {
+				bitwise.ClearBitInArray(&bitmap, rule.ID)
 				continue
 			}
 		}
 
-		if p.PIDFilter.Enabled() {
-			if !p.PIDFilter.InMinMaxRange(eventPID) {
-				bitwise.ClearBit(&bitmap, bitOffset)
+		if rule.Policy.PIDFilter.Enabled() {
+			if !rule.Policy.PIDFilter.InMinMaxRange(eventPID) {
+				bitwise.ClearBitInArray(&bitmap, rule.ID)
 				continue
 			}
 		}
@@ -478,15 +817,15 @@ func (t *Tracee) matchPoliciesProto(pipelineEvent *events.PipelineEvent) uint64 
 		// re-implement these filters to work directly with protobuf fields and restore
 		// full filtering capabilities for all events.
 
-		// Early exit optimization: if bitmap becomes 0, no need to continue
-		if bitmap == 0 {
+		// Early exit optimization: if the bitmap becomes empty, no need to continue
+		if bitwise.IsBitmapArrayEmpty(bitmap) {
 			break
 		}
 	}
 
-	pipelineEvent.MatchedPoliciesBitmap = bitmap // update internal bitmap
+	pipelineEvent.MatchedRulesBitmap = bitmap // update internal bitmap
 
-	return bitmap
+	return !bitwise.IsBitmapArrayEmpty(bitmap)
 }
 
 func parseContextFlags(containerId string, flags uint32) trace.ContextFlags {
@@ -543,11 +882,11 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 				continue
 			}
 
-			// Get a bitmap with all policies containing container filters
-			policiesWithContainerFilter := t.policyManager.WithContainerFilterEnabled()
+			// Get the bitmap of rules (for this event) that have container filters.
+			containerFilteredRules := t.snapshotOf(event).GetContainerFilteredRulesBitmap(event.EventID)
 
-			// Filter out events that don't have a container ID from all the policies that
-			// have container filters. This will guarantee that any of those policies
+			// Filter out events that don't have a container ID from all the rules that
+			// have container filters. This will guarantee that any of those rules
 			// won't get matched by this event. This situation might happen if the events
 			// from a recently created container appear BEFORE the initial cgroup_mkdir of
 			// that container root directory.  This could be solved by sorting the events
@@ -555,7 +894,7 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 			// enabled, so, in those cases, ignore the event IF the event is not a
 			// cgroup_mkdir or cgroup_rmdir.
 
-			if policiesWithContainerFilter > 0 && event.Container.ID == "" {
+			if !bitwise.IsBitmapArrayEmpty(containerFilteredRules) && event.Container.ID == "" {
 				eventId := event.EventID
 
 				// never skip cgroup_{mkdir,rmdir}: container_{create,remove} events need it
@@ -566,18 +905,32 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *events.PipelineEv
 				logger.Debugw("False container positive", "event.Timestamp", event.Timestamp,
 					"eventId", eventId)
 
-				// remove event from the policies with container filters
-				bitwise.ClearBits(&event.MatchedPoliciesKernel, policiesWithContainerFilter)
-				bitwise.ClearBits(&event.MatchedPoliciesUser, policiesWithContainerFilter)
-				bitwise.ClearBits(&event.MatchedPoliciesBitmap, policiesWithContainerFilter)
+				// remove the container-filtered rule bits from the event's bitmaps
+				// (across all overflow words, so rule IDs >= 64 are handled too)
+				clearContainerBits := func(dst []uint64) {
+					for i := 0; i < len(dst) && i < len(containerFilteredRules); i++ {
+						bitwise.ClearBits(&dst[i], containerFilteredRules[i])
+					}
+				}
+				clearContainerBits(event.MatchedRulesKernel)
+				clearContainerBits(event.MatchedRulesUser)
+				clearContainerBits(event.MatchedRulesBitmap)
 
-				if event.MatchedPoliciesKernel == 0 {
+				// Drop on the FULL working bitmap, not the kernel word: MatchedRulesKernel is
+				// word 0 only, so an event whose surviving matches live in overflow words
+				// (rule IDs >= 64) - or, for net events, in the userland-recomputed bitmap -
+				// would look empty there and be wrongly discarded.
+				if bitwise.IsBitmapArrayEmpty(event.MatchedRulesBitmap) {
 					t.eventsPool.Put(event)
 					continue
 				}
 			}
 
 		sendEvent:
+			// Enforce executable/binary scope for overflow rules now that the proctree processor
+			// (above) has populated event.Executable.Path - matchOverflowRules could not at decode.
+			t.narrowOverflowBinaryScope(event)
+
 			// NOTE: We do NOT check ctx.Done() here - we continue sending events
 			// until the input channel is closed. This ensures graceful drain.
 			out <- event
@@ -611,6 +964,14 @@ func (t *Tracee) deriveEvents(in <-chan *events.PipelineEvent) (
 			// Extract trace.Event for derivation
 			derivatives, errors := t.eventDerivations.DeriveEvent(event.Event)
 
+			// Capture the base event's identity, matched-rules bitmap, and policy snapshot BEFORE
+			// sending it downstream (downstream stages may recycle the pooled event). The derived events'
+			// matched rules are computed from these, and derived events inherit the base's snapshot so both
+			// resolve against one consistent policy version.
+			baseEventID := event.EventID
+			baseEventMatchedRules := event.MatchedRulesUser
+			baseSnap := t.snapshotOf(event)
+
 			// Send original event down the pipeline
 			out <- event
 
@@ -628,8 +989,21 @@ func (t *Tracee) deriveEvents(in <-chan *events.PipelineEvent) (
 				//        Let's keep an eye on that moving from experimental for these and similar cases in tracee.
 				derivativeEvent := &derivatives[i]
 
-				// Wrap derived event in PipelineEvent
+				// Map the base event's matched rules to this derived event's own rule
+				// IDs (the kernel/base bitmap is keyed by the base event's rule IDs, not
+				// the derived event's). See PolicyManager.GetDerivedEventMatchedRules.
+				derivedMatched := baseSnap.GetDerivedEventMatchedRules(
+					events.ID(derivativeEvent.EventID), // derived event ID
+					baseEventID,                        // base event ID
+					baseEventMatchedRules,              // base event matched-rules bitmap
+				)
+				derivativeEvent.MatchedRulesKernel = derivedMatched
+				derivativeEvent.MatchedRulesUser = derivedMatched
+
+				// Wrap derived event in PipelineEvent; inherit the base's snapshot so the derived event's
+				// rule IDs resolve against the same policy version the base matched under.
 				derivativePipelineEvent := events.NewPipelineEvent(derivativeEvent)
+				derivativePipelineEvent.RulesSnapshot = baseSnap
 
 				// Skip events that dont work with filtering due to missing types
 				// being handled (https://github.com/aquasecurity/tracee/issues/2486)
@@ -637,7 +1011,7 @@ func (t *Tracee) deriveEvents(in <-chan *events.PipelineEvent) (
 				case events.SymbolsLoaded, events.SharedObjectLoaded, events.PrintMemDump:
 				default:
 					// Derived events might need filtering as well
-					if t.matchPolicies(derivativePipelineEvent) == 0 {
+					if !t.matchPolicies(derivativePipelineEvent) {
 						_ = t.stats.EventsFiltered.Increment()
 						continue
 					}
@@ -664,7 +1038,7 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 	errc := make(chan error, 1)
 
 	// Maximum depth for detector chains (prevents infinite loops)
-	// Expected: raw event → derived event → threat event → threat event (depth 4)
+	// Expected: raw event -> derived event -> threat event -> threat event (depth 4)
 	const maxDetectorChainDepth = 5
 
 	go func() {
@@ -680,9 +1054,12 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 				continue
 			}
 
-			// Capture policy context BEFORE sending event downstream to avoid race conditions
-			// The event may be modified or returned to pool by downstream stages
-			matchedPoliciesBitmap := event.MatchedPoliciesBitmap
+			// Capture matched-rules context BEFORE sending event downstream to avoid
+			// race conditions (the event may be recycled by downstream stages). The detector
+			// outputs inherit the base's snapshot so their rule IDs resolve against one version.
+			matchedRulesBitmap := event.MatchedRulesBitmap
+			baseEventID := event.EventID
+			baseSnap := t.snapshotOf(event)
 
 			// Convert to v1beta1.Event for detector API BEFORE sending downstream
 			// (uses cached conversion, but we get the pointer before potential race)
@@ -706,30 +1083,54 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 				continue
 			}
 
-			// All detector outputs in the chain inherit policy context from the original event
-			// since they're all derived from this single kernel event
-
-			// Process detector outputs through breadth-first chain traversal
-			// Start queue with initial detector outputs (not the original event)
+			// Each detector output is a DERIVED event with its OWN rule IDs, so the base
+			// event's matched-rules bitmap can't be inherited verbatim - it is mapped onto the
+			// output's rule IDs with GetDerivedEventMatchedRules, then narrowed by the output's
+			// own filters (matchPoliciesProto).
+			//
+			// ALL chain levels map from the ORIGINAL base event (not the immediate parent):
+			// addTransitiveDependencyRules attaches a dependency rule for every transitive
+			// derived event onto the base, so the base's bitmap resolves any output at any
+			// depth. Mapping from the parent would fail - the parent's mapped bitmap carries
+			// only the parent's own selected bit, not its deeper dependency bits. baseEventID
+			// and matchedRulesBitmap were captured before forwarding (the base may be recycled).
 			queue := outputs
-
 			for depth := 0; depth < maxDetectorChainDepth && len(queue) > 0; depth++ {
 				var nextDepth []*pb.Event
 
-				// Process all events at current depth
 				for _, protoEvent := range queue {
-					// Create proto-native PipelineEvent (similar to derive stage)
-					pipelineEvent := &events.PipelineEvent{
-						Event:                 nil, // proto-native, no trace.Event
-						EventID:               events.ID(protoEvent.Id),
-						Timestamp:             uint64(protoEvent.GetTimestamp().AsTime().UnixNano()),
-						MatchedPoliciesBitmap: matchedPoliciesBitmap,
-						ProtoEvent:            protoEvent,
+					outputID := events.ID(protoEvent.Id)
+
+					mapped := baseSnap.GetDerivedEventMatchedRules(
+						outputID, baseEventID, matchedRulesBitmap)
+
+					// An empty mapping means every policy selecting this output had its
+					// dependency bit on the base cleared by the kernel scope filter - i.e. the
+					// output's selecting policies all scoped out the triggering process - so the
+					// output must be attributed to no one and dropped. (An earlier version seeded
+					// the output's full rule set here, re-attributing it to policies whose scope
+					// had excluded it; the dispatcher gates by the detector's OWN declared scope,
+					// but a policy-level spec.scope on the selecting policy is enforced only via
+					// these base dependency bits.) A bootstrap-only base bitmap also maps empty
+					// (the bootstrap rule belongs to no output chain) and is correctly dropped.
+					if bitwise.IsBitmapArrayEmpty(mapped) {
+						continue
 					}
 
-					// Apply policy filtering to detector outputs
-					if t.matchPoliciesProto(pipelineEvent) == 0 {
-						continue // Skip events not matching policy
+					// Create proto-native PipelineEvent (similar to derive stage); inherit the base's
+					// snapshot so the output's rule IDs resolve against the same policy version.
+					pipelineEvent := &events.PipelineEvent{
+						Event:              nil, // proto-native, no trace.Event
+						EventID:            outputID,
+						Timestamp:          uint64(protoEvent.GetTimestamp().AsTime().UnixNano()),
+						MatchedRulesBitmap: mapped,
+						ProtoEvent:         protoEvent,
+						RulesSnapshot:      baseSnap,
+					}
+
+					// Apply rule filtering to detector outputs (narrows by the output's filters)
+					if !t.matchPoliciesProto(pipelineEvent) {
+						continue // Skip events not matching any rule
 					}
 
 					// Dispatch to next level detectors FIRST (before sending to sink)
@@ -743,7 +1144,6 @@ func (t *Tracee) detectEvents(ctx context.Context, in <-chan *events.PipelineEve
 					// Send to output (blocking - sink always consumes)
 					out <- pipelineEvent
 
-					// Collect all outputs for next depth level
 					nextDepth = append(nextDepth, nextOutputs...)
 				}
 
@@ -786,16 +1186,26 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 				continue
 			}
 
-			// Is the event enabled for the policies or globally?
-			if !t.policyManager.IsEnabled(event.MatchedPoliciesBitmap, event.EventID) {
+			// Resolve this event's captured policy snapshot once for the sink reads below, so
+			// enable/attribution decisions match the version the event was decoded under.
+			snap := t.snapshotOf(event)
+
+			// Is the event enabled?
+			if !snap.IsEventEnabled(event.EventID) {
 				// TODO: create metrics from dropped events
 				t.eventsPool.Put(event)
 				continue
 			}
 
-			// Only emit events requested by the user and matched by at least one policy.
-			event.MatchedPoliciesBitmap = t.policyManager.MatchEvent(event.EventID, event.MatchedPoliciesBitmap)
-			if event.MatchedPoliciesBitmap == 0 {
+			// Only emit events the user explicitly selected (a SelectedByUser rule) and
+			// that matched at least one rule. GetMatchedRulesInfo returns the matched
+			// user-selected policy names; empty means only dependency rules matched (the
+			// event is internal-only, e.g. a base event for a derivation) -> drop.
+			// Use the PipelineEvent working bitmap (always set by matchPolicies/
+			// matchPoliciesProto) rather than the embedded trace.Event field, which is
+			// nil for proto-native detector-output events.
+			matchedNames := snap.GetMatchedRulesInfo(event.EventID, event.MatchedRulesBitmap)
+			if len(matchedNames) == 0 {
 				t.eventsPool.Put(event)
 				continue
 			}
@@ -804,7 +1214,7 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 			if pbEvent.Policies == nil {
 				pbEvent.Policies = &pb.Policies{}
 			}
-			pbEvent.Policies.Matched = t.policyManager.MatchedNames(event.MatchedPoliciesBitmap)
+			pbEvent.Policies.Matched = matchedNames
 
 			// Parse arguments for output formatting if enabled.
 			if t.config.Output.DecodedData {
@@ -824,13 +1234,15 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 
 			// Send the event to the streams.
 			if t.streamsManager.HasSubscribers() {
-				// Detach the slab from pool management — the stream takes ownership.
+				// Detach the slab from pool management - the stream takes ownership.
 				// This prevents the slab from being recycled while the stream still
 				// holds a reference to the proto event.
 				pbEvent = event.DetachProto()
 				// Translate event ID to external format for streams (external API boundary)
 				pbEvent.Id = pb.EventId(events.TranslateEventID(int(pbEvent.Id)))
-				t.streamsManager.Publish(pbEvent, event.MatchedPoliciesBitmap)
+				// Route to streams by matched (user-selected) policy names - the rule model
+				// has no per-policy integer id to build a bitmap from.
+				t.streamsManager.Publish(pbEvent, matchedNames)
 			}
 			_ = t.stats.EventCount.Increment()
 			t.eventsPool.Put(event)

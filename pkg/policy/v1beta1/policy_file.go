@@ -403,15 +403,20 @@ func PoliciesFromPaths(paths []string) ([]k8s.PolicyInterface, error) {
 }
 
 func getPoliciesFromFile(filePath string) (PolicyFile, error) {
-	var p PolicyFile
-
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return p, err
+		return PolicyFile{}, err
 	}
+	return PolicyFileFromBytes(data, strings.HasSuffix(filePath, ".json"))
+}
+
+// PolicyFileFromBytes parses a single policy document (YAML or JSON, plain or K8s-CRD form) into a validated
+// PolicyFile. It is the file-less equivalent of getPoliciesFromFile, used by runtime policy application (the
+// gRPC ApplyPolicy path) where the document arrives as bytes rather than a path.
+func PolicyFileFromBytes(data []byte, isJSON bool) (PolicyFile, error) {
+	var p PolicyFile
 
 	// Detect format from data
-	isJSON := strings.HasSuffix(filePath, ".json")
 	format, err := peekPolicyFormat(data, isJSON)
 	if err != nil {
 		return p, err
