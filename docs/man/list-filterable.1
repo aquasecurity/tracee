@@ -44,7 +44,13 @@ and, per selected event, the report states whether in\-kernel filtering
 is \f[B]effective\f[R], \f[B]defeated\f[R] by a broad (unfiltered)
 co\-selector of the same event, or lost to \f[B]overflow\f[R] (an event
 selected by more than 64 rules, which the kernel must submit in full).
-Per\-policy attribution and a hint are included where relevant.
+Filters that refine in user space \f[B]after\f[R] submission (return
+values, non\-pathname data fields, per\-rule scope already covered by the
+policy scope, a specific container id) are listed separately, with
+per\-policy attribution where relevant.
+Non\-kernel verdicts carry an actionable \f[B]tip\f[R] naming the cause \- the
+unfiltered co\-selector to narrow, an always\-collected event, or rules whose
+only filters run in user space.
 .IP
 .EX
 tracee list filterable ./policies

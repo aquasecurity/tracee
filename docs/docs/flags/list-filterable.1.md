@@ -36,7 +36,7 @@ tracee list filterable sched_process_exec security_file_open --json
 
 ## POLICY-AWARE MODE
 
-Given a policy file or directory (detected automatically) or **\-\-policy**, the real rule set is computed - dependency expansion, bootstrap selections, cross-policy union, and overflow - and, per selected event, the report states whether in-kernel filtering is **effective**, **defeated** by a broad (unfiltered) co-selector of the same event, or lost to **overflow** (an event selected by more than 64 rules, which the kernel must submit in full). Per-policy attribution and a hint are included where relevant.
+Given a policy file or directory (detected automatically) or **\-\-policy**, the real rule set is computed - dependency expansion, bootstrap selections, cross-policy union, and overflow - and, per selected event, the report states whether in-kernel filtering is **effective**, **defeated** by a broad (unfiltered) co-selector of the same event, or lost to **overflow** (an event selected by more than 64 rules, which the kernel must submit in full). Filters that refine in user space **after** submission (return values, non-pathname data fields, per-rule scope already covered by the policy scope, a specific container id) are listed separately, with per-policy attribution where relevant. Non-kernel verdicts carry an actionable **tip** naming the cause - the unfiltered co-selector to narrow, an always-collected event, or rules whose only filters run in user space.
 
 ```console
 tracee list filterable ./policies
