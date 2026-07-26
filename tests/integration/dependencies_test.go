@@ -281,7 +281,7 @@ func Test_EventsDependencies(t *testing.T) {
 				cancel()
 				t.Fatal(err)
 			}
-			t.Log("  --- started tracee ---")
+			testutils.LogTraceeStarted(t)
 			err = testutils.WaitForTraceeStart(trc)
 			if err != nil {
 				cancel()
@@ -320,7 +320,7 @@ func Test_EventsDependencies(t *testing.T) {
 
 			// test events
 			testCmdEvents = createCmdEvents(testCaseInst.expectedEvents, testCaseInst.unexpectedEvents)
-			err = ExpectAtLeastOneForEach(t, testCmdEvents, buf, false)
+			err = ExpectAtLeastOneForEach(t, testCmdEvents, buf, false, false)
 			if err != nil {
 				t.Logf("Test %s failed: %v", t.Name(), err)
 				failed = true
@@ -343,7 +343,7 @@ func Test_EventsDependencies(t *testing.T) {
 				t.Log(errStop)
 				failed = true
 			} else {
-				t.Log("  --- stopped tracee ---")
+				testutils.LogTraceeStopped(t)
 			}
 
 			if failed {

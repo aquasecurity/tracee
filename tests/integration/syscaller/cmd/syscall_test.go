@@ -27,12 +27,12 @@ func init() {
 	}
 }
 
-// Test_callsys tests the callsys function.
+// Test_callsys tests the callsys function with the DEFAULT (zero-arg) map.
 func Test_callsys(t *testing.T) {
 	// SYS_READ and SYS_CLOSE are syscalls that, considering this environment,
 	// should not return an error when called with zeroed arguments
 	syscalls := []events.ID{events.Read, events.Close}
-	errs := callsys(syscalls)
+	errs := callsys(syscalls, syscallMap)
 	for _, err := range errs {
 		assert.Equal(t, syscall.Errno(0), err)
 	}
@@ -40,8 +40,26 @@ func Test_callsys(t *testing.T) {
 	// SYS_WRITE is a syscall that, considering this environment,
 	// should return an error when called with zeroed arguments
 	syscalls = []events.ID{events.Write}
-	err := callsys(syscalls)[0]
+	err := callsys(syscalls, syscallMap)[0]
 	assert.Equal(t, syscall.EBADF, err)
+}
+
+// Test_setupSyscallContext_SuccessReaching verifies the enriched arg presets make the file
+// syscalls actually succeed (return errno 0), so they progress into the kernel hooks that emit
+// derived/security events - the whole point of the presets. With zero args these would fail at
+// parameter validation (EBADF/EFAULT) and never reach those hooks.
+func Test_setupSyscallContext_SuccessReaching(t *testing.T) {
+	argsMap, cleanup, keepAlive, err := setupSyscallContext()
+	require.NoError(t, err)
+	defer cleanup()
+
+	for _, id := range []events.ID{events.Openat, events.Open, events.Read, events.Write, events.Newfstatat} {
+		errs := callsys([]events.ID{id}, argsMap)
+		if len(errs) > 0 {
+			assert.Equal(t, syscall.Errno(0), errs[0], "syscall %d should succeed with the preset args", id)
+		}
+	}
+	runtime.KeepAlive(keepAlive)
 }
 
 // Test_changeOwnComm tests the changeOwnComm function results.
