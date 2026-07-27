@@ -95,6 +95,10 @@ install_go_tools() {
     "${SCRIPT_DIR}/install-go-tools.sh"
 }
 
+install_zig() {
+    "${SCRIPT_DIR}/install-zig.sh"
+}
+
 install_docker() {
     info "Installing Docker"
 
@@ -121,11 +125,12 @@ verify_installation() {
     info "Verifying installation"
 
     # Check critical tools
-    require_cmds go gofmt clang staticcheck revive goimports-reviser errcheck govulncheck
+    require_cmds go gofmt clang staticcheck revive goimports-reviser errcheck govulncheck zig
 
     # Show versions
     info "Installation verification:"
     go version
+    zig version
     clang --version | head -n1
 
     if command -v clang-format > /dev/null 2>&1; then
@@ -153,6 +158,7 @@ main() {
     install_golang
     install_clang
     install_go_tools
+    install_zig
     install_docker
     verify_installation
 

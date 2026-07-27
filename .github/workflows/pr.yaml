@@ -433,6 +433,12 @@ jobs:
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
 
+      # On-the-fly install: the pre-baked AMI does not yet ship Zig, which builds the
+      # syscaller integration-test helper. Remove once Zig is baked into the AMI
+      # (scripts/installation/prepare-ami.sh). Pinned + checksum-verified.
+      - name: Install Zig
+        run: sudo ./scripts/installation/install-zig.sh
+
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests
 
@@ -503,6 +509,12 @@ jobs:
 
       - name: Pull test images
         uses: ./.github/actions/pull-test-images
+
+      # On-the-fly install: the pre-baked AMI does not yet ship Zig, which builds the
+      # syscaller integration-test helper. Remove once Zig is baked into the AMI
+      # (scripts/installation/prepare-ami.sh). Pinned + checksum-verified.
+      - name: Install Zig
+        run: sudo ./scripts/installation/install-zig.sh
 
       - name: Run Integration Tests
         uses: ./.github/actions/run-integration-tests

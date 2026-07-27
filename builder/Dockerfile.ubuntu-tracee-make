@@ -12,7 +12,7 @@ ARG gid=1000
 RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get update && \
     apt-get install -y sudo coreutils findutils && \
-    apt-get install -y bash git curl rsync && \
+    apt-get install -y bash git curl rsync xz-utils && \
     apt-get install -y llvm clang clangd clang-format golang make gcc linux-headers-generic libelf-dev zlib1g-dev libzstd-dev
 
 # Install Clang using centralized script
@@ -59,6 +59,9 @@ RUN export uid=$uid gid=$gid && \
 # install Go and Go tools using centralized scripts
 RUN /tmp/scripts/installation/install-golang.sh
 RUN /tmp/scripts/installation/install-go-tools.sh
+
+# install Zig (builds the syscaller integration-test helper)
+RUN /tmp/scripts/installation/install-zig.sh
 
 USER tracee
 ENV HOME=/home/tracee
