@@ -247,6 +247,25 @@ func countDetectorEventsByComm(buf *testutils.EventBuffer, eventName, comm strin
 	return n
 }
 
+// countDetectorSplit returns, from a SINGLE buffer snapshot, the total detections named eventName and
+// how many of them carry comm. Reading both from one GetCopy() avoids the snapshot-skew race of a
+// total-count read followed by a per-comm read at a later instant: the union events keep streaming in
+// asynchronously, so a detection arriving between the two reads would otherwise make byComm exceed the
+// stale total. total matches countDetectorEvents (name only); byComm matches countDetectorEventsByComm.
+func countDetectorSplit(buf *testutils.EventBuffer, eventName, comm string) (total, byComm int) {
+	for _, e := range buf.GetCopy() {
+		if e == nil || e.Name != eventName {
+			continue
+		}
+		total++
+		if e.Workload != nil && e.Workload.Process != nil && e.Workload.Process.Thread != nil &&
+			e.Workload.Process.Thread.Name == comm {
+			byComm++
+		}
+	}
+	return total, byComm
+}
+
 // waitForDetectorCount waits until at least want events named eventName are buffered (or timeout),
 // returning the final count. Callers assert the exact expected value (a unique comm caps the count, so
 // it can reach want but never exceed it).
@@ -924,10 +943,15 @@ func Test_YAMLDetectorScopeFilterUnionKernelPushdown(t *testing.T) {
 	// No cross-firing: every A detection comes from commA and none from commB or the complement (and
 	// symmetrically for B) - the dispatcher applies each subscription's own scope to the union-submitted
 	// base events.
-	require.Equal(t, gotA, countDetectorEventsByComm(buf, "test_union_a", commA), "all A detections must come from commA")
+	// Compare total vs per-comm from ONE snapshot each (see countDetectorSplit): asserting the stale
+	// gotA/gotB total against a later per-comm read races the async event stream (a straggler makes the
+	// per-comm count exceed the captured total). The invariant is "every A detection is from commA".
+	totalA, aFromA := countDetectorSplit(buf, "test_union_a", commA)
+	require.Equal(t, totalA, aFromA, "all A detections must come from commA")
 	require.Zero(t, countDetectorEventsByComm(buf, "test_union_a", commB), "detector A must never fire for commB")
 	require.Zero(t, countDetectorEventsByComm(buf, "test_union_a", commNone), "detector A must never fire for the complement")
-	require.Equal(t, gotB, countDetectorEventsByComm(buf, "test_union_b", commB), "all B detections must come from commB")
+	totalB, bFromB := countDetectorSplit(buf, "test_union_b", commB)
+	require.Equal(t, totalB, bFromB, "all B detections must come from commB")
 	require.Zero(t, countDetectorEventsByComm(buf, "test_union_b", commA), "detector B must never fire for commA")
 	require.Zero(t, countDetectorEventsByComm(buf, "test_union_b", commNone), "detector B must never fire for the complement")
 
