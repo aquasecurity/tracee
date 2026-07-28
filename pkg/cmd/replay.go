@@ -53,7 +53,9 @@ func (r ReplayRunner) Run(ctx context.Context) error {
 			return events.Core.GetDefinitionByID(id).GetDependencies()
 		})
 
-	// Create policy manager with empty policies (all events enabled by default)
+	// Create a policy manager with no policies: nothing is selected until
+	// events are explicitly enabled below, and the detector dispatcher only
+	// routes events the policy manager reports as selected
 	policyMgr, err := policy.NewManager(policy.ManagerConfig{}, depsManager)
 	if err != nil {
 		return errfmt.Errorf("failed to create policy manager: %v", err)
@@ -75,10 +77,15 @@ func (r ReplayRunner) Run(ctx context.Context) error {
 
 		// Enable input events that this detector requires
 		for _, req := range def.Requirements.Events {
-			eventID := events.LookupPredefinedEventID(req.Name)
-			if eventID != 0 {
-				policyMgr.EnableEvent(eventID)
+			// Not LookupPredefinedEventID: its 0 return is ambiguous with the
+			// read event (internal ID 0), which would never get enabled
+			reqEventID, found := events.Core.GetDefinitionIDByName(req.Name)
+			if !found {
+				logger.Warnw("Detector required event not found, skipping",
+					"detector", def.ID, "event", req.Name)
+				continue
 			}
+			policyMgr.EnableEvent(reqEventID)
 		}
 	}
 
@@ -96,15 +103,13 @@ func (r ReplayRunner) Run(ctx context.Context) error {
 	}
 
 	// Call replay with detectors
-	replay.Replay(replay.Config{
+	return replay.Replay(ctx, replay.Config{
 		Source:            sourceFile,
 		Printer:           p,
 		Detectors:         detectorsList,
 		PolicyManager:     policyMgr,
 		EnrichmentOptions: enrichmentOpts,
 	})
-
-	return nil
 }
 
 // createReplayPrinter creates a printer from the output config for replay mode
@@ -123,14 +128,19 @@ func createReplayPrinter(outputCfg *config.OutputConfig) (printer.EventPrinter, 
 		return p, nil
 	}
 
-	// Note: For now, replay mode only supports a single output stream with a single destination
+	// For now, replay mode only supports a single output stream with a
+	// single destination. Silently dropping extra outputs could lose an
+	// alerting sink (e.g. a webhook), so reject them outright.
 	firstStream := outputCfg.Streams[0]
 	if len(firstStream.Destinations) == 0 {
 		return nil, errfmt.Errorf("no destinations in output stream")
 	}
-	firstDest := firstStream.Destinations[0]
+	if len(outputCfg.Streams) > 1 || len(firstStream.Destinations) > 1 {
+		return nil, errfmt.Errorf("replay mode supports a single output destination, got %d stream(s) with %d destination(s) in the first",
+			len(outputCfg.Streams), len(firstStream.Destinations))
+	}
 
-	p, err := printer.New([]config.Destination{firstDest})
+	p, err := printer.New([]config.Destination{firstStream.Destinations[0]})
 	if err != nil {
 		return nil, errfmt.Errorf("failed to create printer: %v", err)
 	}

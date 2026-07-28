@@ -21,7 +21,7 @@ func init() {
 
 	// Output flag
 	replayCmd.Flags().StringArrayP(
-		"output",
+		flags.OutputFlag,
 		"o",
 		[]string{"json:stdout"},
 		"[json|table|webhook...]\t\tControl how and where output is printed",
@@ -70,16 +70,16 @@ Examples:
   tracee replay events.json --detectors /path/to/detectors --detectors /another/path
 
   # Replay with debug logging
-  tracee replay events.json --log debug
+  tracee replay events.json --logging level=debug
 
   # Complete workflow: capture then replay
   tracee --events execve,openat --output json:events.json
   tracee replay events.json --output table --detectors /etc/tracee/detectors`,
 	Args: cobra.ExactArgs(1), // Require exactly one positional argument
 	PreRun: func(cmd *cobra.Command, args []string) {
-		err := viper.BindPFlag("output", cmd.Flags().Lookup("output"))
+		err := viper.BindPFlag(flags.OutputFlag, cmd.Flags().Lookup(flags.OutputFlag))
 		if err != nil {
-			logger.Fatalw("Error binding viper flag", "flag", "output", "error", err)
+			logger.Fatalw("Error binding viper flag", "flag", flags.OutputFlag, "error", err)
 		}
 		err = viper.BindPFlag(flags.DetectorsFlag, cmd.Flags().Lookup(flags.DetectorsFlag))
 		if err != nil {

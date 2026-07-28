@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/api/v1beta1/detection"
@@ -22,39 +23,62 @@ import (
 )
 
 func TestEventFiltering_DetectorEventsFiltered(t *testing.T) {
-	mockDetector := createMockDetector("test_detector", "test_detector_event", nil, nil)
-	defaultPrinter := createDefaultPrinter()
-	setup := setupReplayTest(t, "testdata/mixed_events.json", []detection.EventDetector{mockDetector}, nil, defaultPrinter)
+	// producerDetector never fires: it only exists to register
+	// test_detector_event (the detector event present in mixed_events.json)
+	producerDetector := createMockDetector("test_detector", "test_detector_event", nil, nil)
+
+	// watcherDetector fires on test_detector_event: if the file-supplied
+	// detector event were dispatched instead of filtered, it would produce
+	// output and fail the test
+	watcherDetector := createMockDetector("filter_watcher", "filter_watcher_output", []string{"test_detector_event"},
+		func(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+			return []detection.DetectorOutput{
+				{Data: []*v1beta1.EventValue{v1beta1.NewStringValue("leaked", "true")}},
+			}, nil
+		})
+
+	setup := setupReplayTest(t, "testdata/mixed_events.json",
+		[]detection.EventDetector{producerDetector, watcherDetector},
+		[]string{"test_detector_event", "filter_watcher_output"}, createDefaultPrinter())
 	defer setup.sourceFile.Close()
 
 	runReplay(t, setup.cfg, 5*time.Second)
 
-	// Verify that detector events were filtered out
-	detectorFound := false
 	for _, event := range setup.printedEvents {
-		if event.Name == "test_detector_event" {
-			detectorFound = true
-		}
+		assert.NotEqual(t, "filter_watcher_output", event.Name,
+			"detector events from the file must be filtered out before dispatch")
+		assert.NotEqual(t, "test_detector_event", event.Name,
+			"file-supplied detector events must never be printed")
 	}
-	assert.False(t, detectorFound, "Detector events should be filtered out")
 }
 
 func TestEventFiltering_LowLevelEventsProcessed(t *testing.T) {
-	mockDetector := createMockDetector("test_detector", "test_detector_event", nil, nil)
-	defaultPrinter := createDefaultPrinter()
-	setup := setupReplayTest(t, "testdata/low_level_events.json", []detection.EventDetector{mockDetector}, []string{"execve", "openat"}, defaultPrinter)
+	// Fires on both low-level events in the file, proving they are dispatched
+	watcherDetector := createMockDetector("lowlevel_watcher", "lowlevel_watcher_output", []string{"execve", "openat"},
+		func(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+			return []detection.DetectorOutput{
+				{Data: []*v1beta1.EventValue{v1beta1.NewStringValue("seen", event.Name)}},
+			}, nil
+		})
+
+	setup := setupReplayTest(t, "testdata/low_level_events.json",
+		[]detection.EventDetector{watcherDetector},
+		[]string{"execve", "openat", "lowlevel_watcher_output"}, createDefaultPrinter())
 	defer setup.sourceFile.Close()
 
 	runReplay(t, setup.cfg, 5*time.Second)
 
-	// Verify that low-level events were NOT printed (only detector outputs should be printed)
-	// Since the mock detector doesn't produce outputs, no events should be printed
-	eventNames := make(map[string]bool)
+	// Both low-level events are processed (the detector fired for each), but
+	// only detector outputs are printed, never the raw events themselves
+	outputs := 0
 	for _, event := range setup.printedEvents {
-		eventNames[event.Name] = true
+		assert.NotContains(t, []string{"execve", "openat"}, event.Name,
+			"low-level events must not be printed, only detector outputs")
+		if event.Name == "lowlevel_watcher_output" {
+			outputs++
+		}
 	}
-	assert.False(t, eventNames["execve"], "execve event should NOT be printed (only detector outputs)")
-	assert.False(t, eventNames["openat"], "openat event should NOT be printed (only detector outputs)")
+	assert.Equal(t, 2, outputs, "the detector should fire once per low-level event in the file")
 }
 
 func TestReplay_DetectorProducesOutput(t *testing.T) {
@@ -141,6 +165,93 @@ func TestReplay_DetectorChaining(t *testing.T) {
 	assert.Greater(t, len(firstOutputs), 0, "First detector should produce output")
 	// Verify second detector was triggered by first detector's output (chaining)
 	assert.Greater(t, len(secondOutputs), 0, "Second detector should be triggered by first detector output (chaining)")
+}
+
+func TestReplay_DetectorChaining_LargeFile(t *testing.T) {
+	// Regression test: with more events than the channel buffer, tail events
+	// used to be handled by a drain path that skipped detector chaining
+	const numEvents = 3 * eventChanBufferSize
+
+	inputEvents := make([]*v1beta1.Event, numEvents)
+	for i := range inputEvents {
+		inputEvents[i] = &v1beta1.Event{
+			Timestamp: timestamppb.Now(),
+			Id:        v1beta1.EventId_execve,
+			Name:      "execve",
+		}
+	}
+	path := writeEventsFile(t, inputEvents)
+
+	firstDetector := createMockDetector("first_detector_lf", "first_detector_lf_output", []string{"execve"},
+		func(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+			if event.Name == "execve" {
+				return []detection.DetectorOutput{
+					{Data: []*v1beta1.EventValue{v1beta1.NewStringValue("level", "1")}},
+				}, nil
+			}
+			return nil, nil
+		})
+	secondDetector := createMockDetector("second_detector_lf", "second_detector_lf_output", []string{"first_detector_lf_output"},
+		func(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+			if event.Name == "first_detector_lf_output" {
+				return []detection.DetectorOutput{
+					{Data: []*v1beta1.EventValue{v1beta1.NewStringValue("level", "2")}},
+				}, nil
+			}
+			return nil, nil
+		})
+
+	detectorsList := []detection.EventDetector{firstDetector, secondDetector}
+	setup := setupReplayTest(t, path, detectorsList,
+		[]string{"execve", "first_detector_lf_output", "second_detector_lf_output"}, createDefaultPrinter())
+	defer setup.sourceFile.Close()
+
+	runReplay(t, setup.cfg, 10*time.Second)
+
+	firstCount, secondCount := 0, 0
+	for _, event := range setup.printedEvents {
+		switch event.Name {
+		case "first_detector_lf_output":
+			firstCount++
+		case "second_detector_lf_output":
+			secondCount++
+		default:
+		}
+	}
+	assert.Equal(t, numEvents, firstCount, "every input event should trigger the first detector")
+	assert.Equal(t, numEvents, secondCount, "every first detector output should chain into the second detector")
+}
+
+func TestReplay_DetectorCycleTerminates(t *testing.T) {
+	// Regression test: a detector triggered by its own output must not loop
+	// forever; the chain is bounded by maxDetectorChainDepth as in the live
+	// pipeline.
+	selfDetector := createMockDetector("cycle_detector", "cycle_detector_output",
+		[]string{"execve", "cycle_detector_output"},
+		func(ctx context.Context, event *v1beta1.Event) ([]detection.DetectorOutput, error) {
+			return []detection.DetectorOutput{
+				{Data: []*v1beta1.EventValue{v1beta1.NewStringValue("looping", "yes")}},
+			}, nil
+		})
+
+	setup := setupReplayTest(t, "testdata/low_level_events.json",
+		[]detection.EventDetector{selfDetector},
+		[]string{"execve", "cycle_detector_output"}, createDefaultPrinter())
+	defer setup.sourceFile.Close()
+
+	runReplay(t, setup.cfg, 10*time.Second)
+
+	// low_level_events.json holds one execve (and one openat, which is not a
+	// requirement): the initial dispatch fires once, then one chained output
+	// per depth level until the cap cuts the cycle
+	outputs := 0
+	for _, event := range setup.printedEvents {
+		if event.Name == "cycle_detector_output" {
+			outputs++
+		}
+	}
+	assert.Equal(t, 1+maxDetectorChainDepth, outputs,
+		"cycle must be cut off by the chain depth cap")
 }
 
 // verify mockEventPrinter implements the interface
@@ -278,42 +389,24 @@ func setupReplayTest(t *testing.T, testdataFile string, detectorList []detection
 		policyMgr.EnableEvent(eventID)
 	}
 
-	// Create slice to track printed events (will be shared with printer closure)
-	printedEvents := []*v1beta1.Event{}
-
-	// Wrap provided printer to track events
-	originalPrinter := eventPrinter
-	wrappedPrinter := &mockEventPrinter{
-		printFunc: func(event *v1beta1.Event) {
-			printedEvents = append(printedEvents, event)
-			originalPrinter.Print(event)
-		},
+	setup := &testSetup{
+		sourceFile: sourceFile,
+		policyMgr:  policyMgr,
 	}
 
-	cfg := Config{
-		Source:            sourceFile,
-		Printer:           wrappedPrinter,
+	// Wrap provided printer to track printed events in setup.printedEvents
+	setup.cfg = Config{
+		Source: sourceFile,
+		Printer: &mockEventPrinter{
+			printFunc: func(event *v1beta1.Event) {
+				setup.printedEvents = append(setup.printedEvents, event)
+				eventPrinter.Print(event)
+			},
+		},
 		Detectors:         detectorList,
 		PolicyManager:     policyMgr,
 		EnrichmentOptions: &detectors.EnrichmentOptions{},
 	}
-
-	setup := &testSetup{
-		sourceFile:    sourceFile,
-		policyMgr:     policyMgr,
-		printedEvents: printedEvents,
-		cfg:           cfg,
-	}
-
-	// Update printer closure to reference setup.printedEvents
-	// This ensures the closure modifies the same slice stored in the struct
-	cfg.Printer = &mockEventPrinter{
-		printFunc: func(event *v1beta1.Event) {
-			setup.printedEvents = append(setup.printedEvents, event)
-			originalPrinter.Print(event)
-		},
-	}
-	setup.cfg = cfg
 
 	return setup
 }
@@ -343,15 +436,14 @@ func runReplay(t *testing.T, cfg Config, timeout time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	done := make(chan bool)
+	done := make(chan error, 1)
 	go func() {
-		Replay(cfg)
-		done <- true
+		done <- Replay(ctx, cfg)
 	}()
 
 	select {
-	case <-done:
-		// Replay completed
+	case err := <-done:
+		require.NoError(t, err, "Replay failed")
 	case <-ctx.Done():
 		t.Fatal("Replay timed out")
 	}
