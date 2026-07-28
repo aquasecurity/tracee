@@ -43,6 +43,8 @@ type LoadResult struct {
 }
 
 // LoadFromDirectory scans a directory for YAML detector and list files and loads them.
+// If the path is a regular YAML file instead of a directory, that single file is loaded
+// standalone (a detector referencing shared lists must be loaded via its directory).
 // Returns successfully loaded detectors, lists, and a slice of errors for failed files.
 // Most errors are non-fatal and processing continues, but duplicate list names abort
 // the entire directory load to prevent ambiguous definitions.
@@ -68,11 +70,7 @@ func LoadFromDirectory(dir string) LoadResult {
 	}
 
 	if !info.IsDir() {
-		result.Errors = append(result.Errors, &LoaderError{
-			FilePath: dir,
-			Err:      errors.New("path is not a directory"),
-		})
-		return result
+		return loadFromSingleFile(dir)
 	}
 
 	// Read directory (flat - no subdirectories)
@@ -191,6 +189,74 @@ func LoadFromDirectory(dir string) LoadResult {
 		}
 
 		result.Detectors = append(result.Detectors, detector)
+	}
+
+	return result
+}
+
+// loadFromSingleFile loads one YAML detector or list file standalone.
+// No shared-list context is available: a detector that references shared
+// lists fails validation and should be loaded via its directory instead.
+func loadFromSingleFile(path string) LoadResult {
+	result := LoadResult{
+		Detectors: make([]detection.EventDetector, 0),
+		Lists:     make([]ListEntry, 0),
+		Errors:    make([]error, 0),
+	}
+
+	if !strings.HasSuffix(path, ".yaml") && !strings.HasSuffix(path, ".yml") {
+		result.Errors = append(result.Errors, &LoaderError{
+			FilePath: path,
+			Err:      errors.New("path is neither a directory nor a YAML file"),
+		})
+		return result
+	}
+
+	// peekFileType also rejects non-regular files (symlinks, FIFOs, ...)
+	fileType, err := peekFileType(path)
+	if err != nil {
+		result.Errors = append(result.Errors, &LoaderError{
+			FilePath: path,
+			Err:      fmt.Errorf("failed to read type field: %w", err),
+		})
+		return result
+	}
+
+	switch fileType {
+	case ListTypeString:
+		listDef, err := loadListFile(path)
+		if err == nil {
+			err = validateListName(listDef.Name)
+		}
+		if err != nil {
+			result.Errors = append(result.Errors, &LoaderError{
+				FilePath: path,
+				Err:      err,
+			})
+			return result
+		}
+		result.Lists = append(result.Lists, ListEntry{
+			Name:      listDef.Name,
+			Values:    listDef.Values,
+			SourceDir: filepath.Dir(path),
+		})
+	case TypeDetector:
+		detector, err := LoadFromFile(path, nil)
+		if err != nil {
+			result.Errors = append(result.Errors, err)
+			return result
+		}
+		result.Detectors = append(result.Detectors, detector)
+	case "":
+		result.Errors = append(result.Errors, &LoaderError{
+			FilePath: path,
+			Err:      errors.New("missing required field 'type'"),
+		})
+	default:
+		result.Errors = append(result.Errors, &LoaderError{
+			FilePath: path,
+			Err:      fmt.Errorf("invalid type '%s', must be 'detector' or 'string_list'", fileType),
+		})
 	}
 
 	return result
