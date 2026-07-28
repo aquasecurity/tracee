@@ -2,7 +2,7 @@
 title: TRACEE-REPLAY
 section: 1
 header: Tracee Replay Command Manual
-date: 2025/01
+date: 2026/07
 ...
 
 ## NAME
@@ -29,7 +29,7 @@ The **replay** command allows you to replay past events from a file and process 
 **\-\-output**, **\-o** \<format\>[:path]
 : Control how and where output is printed. Format can be `json`, `table`, `webhook`, etc. Path is optional and defaults to `stdout` for most formats.
 
-  **Note**: Replay mode currently supports a single output destination at a time. If multiple output streams or destinations are configured, only the first destination from the first stream will be used. All other outputs will be ignored.
+  **Note**: Replay mode currently supports a single output destination at a time. Configuring multiple output streams or destinations is rejected with an error.
 
   Examples:
   - `--output json:stdout` - JSON format to stdout
@@ -45,12 +45,12 @@ The **replay** command allows you to replay past events from a file and process 
   - `--detectors /path/to/detectors --detectors /another/path`
   - `--detectors /path/to/detector.yaml`
 
-**\-\-log**, **\-l** \<level\>[:destination]
-: Logger options. Level can be `debug`, `info`, `warn`, `error`. Destination is optional.
+**\-\-logging**, **\-l** \<option\>
+: Logger options. Use `level=<level>` where level is `debug`, `info`, `warn`, `error` or `fatal` (default `info`), and `file=<path>` to write logs to a file (default stderr).
 
   Examples:
-  - `--log debug` - Debug level logging
-  - `--log info:stdout` - Info level to stdout
+  - `--logging level=debug` - Debug level logging
+  - `--logging level=info --logging file=/var/log/tracee.log` - Info level to a file
 
 ## ARCHITECTURE
 
@@ -89,7 +89,7 @@ tracee replay events.json --detectors /path/to/detectors
 Replay events with debug-level logging:
 
 ```console
-tracee replay events.json --log debug
+tracee replay events.json --logging level=debug
 ```
 
 ### Complete Example
@@ -101,23 +101,25 @@ Capture events, then replay them:
 tracee --events execve,openat --output json:events.json
 
 # Replay events with detectors
-tracee replay events.json --output table --detectors /etc/tracee/detectors --log info
+tracee replay events.json --output table --detectors /etc/tracee/detectors --logging level=info
 ```
 
 ## FILE FORMAT
 
 The replay file should contain events in JSON Lines format (one JSON event per line). Each line should be a valid JSON object representing a `v1beta1.Event` protobuf message in JSON format.
 
+Events are dispatched by the numeric `id` (the protobuf `EventId` enum value, e.g. `60` for `execve`, `258` for `openat`); the `name` field is informational.
+
 Example file content:
 
 ```json
-{"timestamp":"2024-01-01T00:00:00Z","id":1,"name":"execve","workload":{"process":{"executable":{"path":"/bin/bash"}}}}
-{"timestamp":"2024-01-01T00:00:01Z","id":2,"name":"openat","workload":{"process":{"executable":{"path":"/bin/bash"}}}}
+{"timestamp":"2024-01-01T00:00:00Z","id":60,"name":"execve","workload":{"process":{"executable":{"path":"/bin/bash"}}}}
+{"timestamp":"2024-01-01T00:00:01Z","id":258,"name":"openat","workload":{"process":{"executable":{"path":"/bin/bash"}}}}
 ```
 
 ## NOTES
 
-- Detector events in the input file will be automatically filtered out with a warning message
+- Detector events in the input file are automatically filtered out
 - Only low-level events are processed
 - Events are processed in file order
 
