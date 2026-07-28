@@ -177,3 +177,60 @@ func TestTranslateEventID_Consistency(t *testing.T) {
 		}
 	}
 }
+
+func TestTranslateFromProtoEventID_BuiltinEvents(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		protoID    pb.EventId
+		expectedID ID
+	}{
+		{"read (proto 1 -> internal 0)", pb.EventId_read, Read},
+		{"write", pb.EventId_write, Write},
+		{"execve", pb.EventId_execve, Execve},
+		{"openat", pb.EventId_openat, Openat},
+		{"sched_process_exec", pb.EventId_sched_process_exec, SchedProcessExec},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tt.expectedID, TranslateFromProtoEventID(tt.protoID))
+		})
+	}
+}
+
+func TestTranslateFromProtoEventID_EdgeCases(t *testing.T) {
+	t.Parallel()
+
+	// Unspecified carries no identity: it must NOT resolve to some unmapped
+	// internal ID (regression test for the linear-search implementation)
+	assert.Equal(t, Undefined, TranslateFromProtoEventID(pb.EventId_unspecified))
+
+	// IDs above MaxUserSpaceID have no protobuf mapping and pass through
+	// unchanged (signature, detector and test event ranges)
+	assert.Equal(t, StartDetectorID, TranslateFromProtoEventID(pb.EventId(StartDetectorID)))
+	assert.Equal(t, StartSignatureID, TranslateFromProtoEventID(pb.EventId(StartSignatureID)))
+
+	// Unsupported (9000) has no table entry and passes through unchanged
+	assert.Equal(t, Unsupported, TranslateFromProtoEventID(pb.EventId(Unsupported)))
+}
+
+func TestTranslateFromProtoEventID_InverseOfTranslateEventID(t *testing.T) {
+	t.Parallel()
+
+	// For every mapped table entry, reverse-then-forward must return the same
+	// protobuf ID. (Reverse alone may pick the lowest of duplicate internal
+	// IDs, so the assertion goes through the table.)
+	for internalID, protoID := range EventTranslationTable {
+		if protoID == pb.EventId_unspecified {
+			continue
+		}
+		reversed := TranslateFromProtoEventID(protoID)
+		require.Less(t, int(reversed), len(EventTranslationTable),
+			"reversed ID for proto %v out of table range", protoID)
+		assert.Equal(t, protoID, EventTranslationTable[reversed],
+			"proto %v (from internal %d) did not survive reverse translation", protoID, internalID)
+	}
+}
