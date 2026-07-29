@@ -108,7 +108,7 @@ func Test_TraceeCapture(t *testing.T) {
 			r := <-ready // block until tracee is ready (or not)
 			switch r {
 			case testutils.TraceeStarted:
-				t.Log("  --- started tracee ---")
+				testutils.LogTraceeStarted(t)
 			case testutils.TraceeFailed:
 				t.Fatal("tracee failed to start")
 			case testutils.TraceeTimedout:
@@ -138,7 +138,7 @@ func Test_TraceeCapture(t *testing.T) {
 				failed = true
 				t.Logf("failed to stop tracee: %v", cmdErrs)
 			} else {
-				t.Log("  --- stopped tracee ---")
+				testutils.LogTraceeStopped(t)
 			}
 
 			if failed {
@@ -492,7 +492,7 @@ func packetContext(t *testing.T, captureDir string, workingDir string) error {
 	pid := cmd.Process.Pid
 
 	// Ping localhost from a container (use busybox because it's smaller than alpine)
-	cmd = exec.Command("docker", "run", "-d", "--rm", busyboxImage, "ping", "-c", "1", "127.0.0.1")
+	cmd = exec.Command(testutils.ContainerEngine(), "run", "-d", "--rm", busyboxImage, "ping", "-c", "1", "127.0.0.1")
 	// Get the container ID from the output
 	output, err := cmd.Output()
 	if err != nil {

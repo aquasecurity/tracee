@@ -22,9 +22,8 @@ func PrepareFilterMapsFromPolicies(policies []k8s.PolicyInterface, detectors []d
 		return nil, nil, errfmt.Errorf("no policies provided")
 	}
 
-	if len(policies) > policy.PolicyMax {
-		return nil, nil, errfmt.Errorf("too many policies provided, there is a limit of %d policies", policy.PolicyMax)
-	}
+	// NOTE: the rule model lifts the former 64-policy cap (rule IDs overflow beyond a
+	// single 64-bit word), so there is no PolicyMax limit check here anymore.
 
 	policyNames := make(map[string]bool)
 
@@ -114,7 +113,7 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 			return nil, InvalidFlagEmpty()
 		}
 
-		pol, err := createSinglePolicy(policyIdx, policyScope, policyEvents)
+		pol, err := createSinglePolicy(policyScope, policyEvents)
 		if err != nil {
 			return nil, err
 		}
@@ -124,9 +123,8 @@ func CreatePolicies(policyScopeMap PolicyScopeMap, policyEventsMap PolicyEventMa
 	return policies, nil
 }
 
-func createSinglePolicy(policyIdx int, policyScope policyScopes, policyEvents policyEvents) (*policy.Policy, error) {
+func createSinglePolicy(policyScope policyScopes, policyEvents policyEvents) (*policy.Policy, error) {
 	p := policy.NewPolicy()
-	p.ID = policyIdx
 	p.Name = policyScope.policyName
 
 	if err := parseScopeFilters(p, policyScope.scopeFlags); err != nil {

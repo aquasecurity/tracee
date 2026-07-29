@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -42,8 +43,25 @@ func createTempYAMLDetector(t *testing.T, yamlDir, filename, content string) {
 	require.NoError(t, err, "Failed to create temp YAML detector")
 }
 
-// startTraceeWithYAMLDetectors starts Tracee with YAML detector directory configured
+// startTraceeWithYAMLDetectors starts Tracee with YAML detector directory configured. It selects the
+// detector output events AND their input (base) events. Selecting the base events explicitly creates a
+// broad (unscoped) policy rule on them - fine for tests that only check detector firing, but it
+// UNION-DEFEATS any detector-declared kernel scope filter on those base events. Kernel-pushdown tests
+// must use startTraceeWithYAMLDetectorsScoped instead.
 func startTraceeWithYAMLDetectors(ctx context.Context, t *testing.T, yamlDir string) (*tracee.Tracee, *testutils.EventBuffer, *streams.Stream) {
+	return startTraceeWithYAMLDetectorsEx(ctx, t, yamlDir, true)
+}
+
+// startTraceeWithYAMLDetectorsScoped selects ONLY the detector output events. Each detector's required
+// base events are then pulled in solely as SCOPED dependencies (a detector output declares its
+// requirements as event dependencies), with no competing broad policy rule. This is what makes a
+// detector-declared kernel scope filter actually gate submission - required for the kernel-pushdown
+// tests, where EventsFiltered==0 must mean "dropped in the kernel", not "matched a broad rule".
+func startTraceeWithYAMLDetectorsScoped(ctx context.Context, t *testing.T, yamlDir string) (*tracee.Tracee, *testutils.EventBuffer, *streams.Stream) {
+	return startTraceeWithYAMLDetectorsEx(ctx, t, yamlDir, false)
+}
+
+func startTraceeWithYAMLDetectorsEx(ctx context.Context, t *testing.T, yamlDir string, selectInputs bool) (*tracee.Tracee, *testutils.EventBuffer, *streams.Stream) {
 	// Load YAML detectors from test directory
 	result := yamldetectors.LoadFromDirectories([]string{yamlDir})
 	// Errors are expected in error handling tests and suppressed via logger setup
@@ -66,19 +84,22 @@ func startTraceeWithYAMLDetectors(ctx context.Context, t *testing.T, yamlDir str
 		eventsToSelect = append(eventsToSelect, eventID)
 	}
 
-	// Add input events that detectors depend on
-	inputEventNames := make(map[string]bool)
-	for _, det := range result.Detectors {
-		def := det.GetDefinition()
-		for _, req := range def.Requirements.Events {
-			inputEventNames[req.Name] = true
+	// Optionally add input events that detectors depend on. Skipped by the scoped variant so base
+	// events carry only the detector's scoped dependency rule (no broad rule to union-defeat it).
+	if selectInputs {
+		inputEventNames := make(map[string]bool)
+		for _, det := range result.Detectors {
+			def := det.GetDefinition()
+			for _, req := range def.Requirements.Events {
+				inputEventNames[req.Name] = true
+			}
 		}
-	}
 
-	// Convert input event names to IDs
-	for eventName := range inputEventNames {
-		if eventID, found := events.Core.GetDefinitionIDByName(eventName); found {
-			eventsToSelect = append(eventsToSelect, eventID)
+		// Convert input event names to IDs
+		for eventName := range inputEventNames {
+			if eventID, found := events.Core.GetDefinitionIDByName(eventName); found {
+				eventsToSelect = append(eventsToSelect, eventID)
+			}
 		}
 	}
 
@@ -112,6 +133,7 @@ func startTraceeWithYAMLDetectors(ctx context.Context, t *testing.T, yamlDir str
 	// NOW wait for Tracee to be fully running
 	err = testutils.WaitForTraceeStart(trc)
 	require.NoError(t, err, "Tracee failed to start")
+	testutils.LogTraceeStarted(t)
 
 	// Start goroutine to collect events
 	buf := testutils.NewEventBuffer()
@@ -178,6 +200,157 @@ func getArgValue(evt *pb.Event, argName string) interface{} {
 	}
 	return nil
 }
+
+// buildCommBinary writes a byte-for-byte copy of /usr/bin/true into dir under the given name and makes
+// it executable, returning its path. Executing it yields a single-threaded process whose comm is that
+// name (the exec'd file's basename, truncated to TASK_COMM_LEN-1 = 15 chars). Tests use unique, unusual
+// comms so a scope filter matches exactly the processes the test spawns and nothing else on the host.
+func buildCommBinary(t *testing.T, dir, comm string) string {
+	return buildCommBinaryFrom(t, dir, comm, "/usr/bin/true")
+}
+
+// buildCommBinaryFrom is buildCommBinary with a chosen source binary, so a test can control the exit
+// code (e.g. /usr/bin/true exits 0, /usr/bin/false exits 1) while keeping the same comm. Two binaries
+// sharing a comm must live in different dirs (the comm is the file basename).
+func buildCommBinaryFrom(t *testing.T, dir, comm, src string) string {
+	t.Helper()
+	srcBytes, err := os.ReadFile(src)
+	require.NoError(t, err, "reading %s", src)
+	p := filepath.Join(dir, comm)
+	require.NoError(t, os.WriteFile(p, srcBytes, 0o755))
+	return p
+}
+
+// countDetectorEvents counts buffered events with the given produced-event name.
+func countDetectorEvents(buf *testutils.EventBuffer, eventName string) int {
+	n := 0
+	for _, e := range buf.GetCopy() {
+		if e != nil && e.Name == eventName {
+			n++
+		}
+	}
+	return n
+}
+
+// countDetectorEventsByComm counts buffered events with the given produced-event name whose triggering
+// process comm matches (a detection inherits the base event's workload context).
+func countDetectorEventsByComm(buf *testutils.EventBuffer, eventName, comm string) int {
+	n := 0
+	for _, e := range buf.GetCopy() {
+		if e == nil || e.Name != eventName ||
+			e.Workload == nil || e.Workload.Process == nil || e.Workload.Process.Thread == nil ||
+			e.Workload.Process.Thread.Name != comm {
+			continue
+		}
+		n++
+	}
+	return n
+}
+
+// countDetectorSplit returns, from a SINGLE buffer snapshot, the total detections named eventName and
+// how many of them carry comm. Reading both from one GetCopy() avoids the snapshot-skew race of a
+// total-count read followed by a per-comm read at a later instant: the union events keep streaming in
+// asynchronously, so a detection arriving between the two reads would otherwise make byComm exceed the
+// stale total. total matches countDetectorEvents (name only); byComm matches countDetectorEventsByComm.
+func countDetectorSplit(buf *testutils.EventBuffer, eventName, comm string) (total, byComm int) {
+	for _, e := range buf.GetCopy() {
+		if e == nil || e.Name != eventName {
+			continue
+		}
+		total++
+		if e.Workload != nil && e.Workload.Process != nil && e.Workload.Process.Thread != nil &&
+			e.Workload.Process.Thread.Name == comm {
+			byComm++
+		}
+	}
+	return total, byComm
+}
+
+// waitForDetectorCount waits until at least want events named eventName are buffered (or timeout),
+// returning the final count. Callers assert the exact expected value (a unique comm caps the count, so
+// it can reach want but never exceed it).
+func waitForDetectorCount(buf *testutils.EventBuffer, eventName string, want int, timeout time.Duration) int {
+	deadline := time.Now().Add(timeout)
+	for countDetectorEvents(buf, eventName) < want && time.Now().Before(deadline) {
+		time.Sleep(100 * time.Millisecond)
+	}
+	return countDetectorEvents(buf, eventName)
+}
+
+// scopeOpenatDetectorYAML is a detector requiring openat scoped to a comm. Format args: id,
+// produced-event name, comm. pid comes from the process context (always present), so a fired detection
+// never depends on event data fields.
+//
+// openat is the base event because the kernel-pushdown tests need stats.EventsFiltered to be a genuine
+// kernel-vs-userland discriminator, and it is one only for events with NO bootstrap-policy rule: the
+// internal bootstrap policy always collects sched_process_exec/fork/exit unfiltered, so those are always
+// submitted and their bitmap never empties (EventsFiltered structurally stays 0 - a vacuous assertion).
+// With openat, the detector's scoped dependency rule is the ONLY rule on the event: if the kernel failed
+// to gate submission, every complement openat would reach userland, be cleared by the userland re-check
+// of the detector scope (matchPolicies), empty the bitmap and bump the counter. openat also has no
+// derivation, and being a syscall event it is selected at init here (dispatchers attach at start).
+//
+// Count semantics: a process performs SEVERAL openats (dynamic loader etc.), so detections are asserted
+// as >= runs per matching process batch, and cross-firing/complement checks match on the detection's
+// inherited workload comm instead of exact totals.
+const scopeOpenatDetectorYAML = `type: detector
+id: %s
+produced_event:
+  name: %s
+  version: 1.0.0
+  description: Scope-pushdown kernel-enforcement test detector
+  tags:
+    - test
+  fields:
+    - name: pid
+      type: uint32
+
+requirements:
+  min_tracee_version: 0.0.0
+  events:
+    - name: openat
+      dependency: required
+      scope_filters:
+        - comm=%s
+
+auto_populate:
+  detected_from: true
+
+output:
+  fields:
+    - name: pid
+      expression: workload.process.pid
+`
+
+// consumerDetectorYAML is a detector consuming another detector's output event (no scope of its own).
+// Format args: id, produced-event name, input-event name. It re-emits the input's pid field, so a
+// multi-level chain propagates the scope-filtered base event up through both levels.
+const consumerDetectorYAML = `type: detector
+id: %s
+produced_event:
+  name: %s
+  version: 1.0.0
+  description: Consumer detector for multi-level chain test
+  tags:
+    - test
+  fields:
+    - name: pid
+      type: uint32
+
+requirements:
+  min_tracee_version: 0.0.0
+  events:
+    - name: %s
+      dependency: required
+
+auto_populate:
+  detected_from: true
+
+output:
+  fields:
+    - name: pid
+      expression: getEventData("pid")
+`
 
 // Test Cases
 
@@ -295,6 +468,7 @@ output:
 		if err := testutils.WaitForTraceeStop(trc); err != nil {
 			t.Logf("Error stopping Tracee: %v", err)
 		}
+		testutils.LogTraceeStopped(t)
 	}()
 
 	// Trigger the detector by executing /usr/bin/true
@@ -411,6 +585,7 @@ output:
 		if err := testutils.WaitForTraceeStop(trc); err != nil {
 			t.Logf("Error stopping Tracee: %v", err)
 		}
+		testutils.LogTraceeStopped(t)
 	}()
 
 	// Trigger the detector chain by executing /usr/bin/id
@@ -488,6 +663,7 @@ output:
 		if err := testutils.WaitForTraceeStop(trc); err != nil {
 			t.Logf("Error stopping Tracee: %v", err)
 		}
+		testutils.LogTraceeStopped(t)
 	}()
 
 	// Clear buffer before tests
@@ -522,6 +698,443 @@ output:
 
 	unmatchedEvt := waitForDetectorEvent(buf, "test_filter_match", 2*time.Second)
 	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for non-matching pathname /usr/bin/false")
+}
+
+// Test_YAMLDetectorScopeFilterPushdown is the scope-filter counterpart of Test_YAMLDetectorFilters and
+// the integration counterpart of the Phase 2 scope pushdown: a detector declaring scope_filters on a
+// base event fires only for the workload matching that scope. It exercises the full scope path
+// (registry -> PolicyManager provider -> RecomputeRules -> DetectorScopeFilter -> kernel comm filter +
+// userland matchPolicies), proving the pushed-down filter narrows the base event correctly end-to-end.
+func Test_YAMLDetectorScopeFilterPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	yamlDir := t.TempDir()
+
+	// Detector subscribes to sched_process_exec with a comm scope filter (workload-level).
+	detectorYAML := `type: detector
+id: yaml-test-scope-filters
+produced_event:
+  name: test_scope_filter_match
+  version: 1.0.0
+  description: Test detector for scope filter pushdown (Phase 2)
+  tags:
+    - test
+  fields:
+    - name: matched_path
+      type: string
+
+requirements:
+  min_tracee_version: 0.0.0
+  events:
+    - name: sched_process_exec
+      dependency: required
+      scope_filters:
+        - comm=true
+
+auto_populate:
+  detected_from: true
+
+output:
+  fields:
+    - name: matched_path
+      expression: getEventData("pathname")
+`
+
+	createTempYAMLDetector(t, yamlDir, "test_scope_filters.yaml", detectorYAML)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithYAMLDetectors(ctx, t, yamlDir)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+		testutils.LogTraceeStopped(t)
+	}()
+
+	buf.Clear()
+
+	// Matching comm (/usr/bin/true -> comm "true") must fire the detector.
+	require.NoError(t, exec.Command("/usr/bin/true").Run(), "Failed to execute /usr/bin/true")
+	time.Sleep(1 * time.Second)
+
+	matchedEvt := waitForDetectorEvent(buf, "test_scope_filter_match", 3*time.Second)
+	assert.NotNil(t, matchedEvt, "Detector should fire for a process matching scope comm=true")
+
+	// Wait for any remaining events to arrive before clearing.
+	time.Sleep(200 * time.Millisecond)
+	buf.Clear()
+
+	// Non-matching comm (/usr/bin/false -> comm "false") must NOT fire the detector.
+	_ = exec.Command("/usr/bin/false").Run() // /usr/bin/false exits 1 by design, ignore error
+	time.Sleep(1 * time.Second)
+
+	unmatchedEvt := waitForDetectorEvent(buf, "test_scope_filter_match", 2*time.Second)
+	assert.Nil(t, unmatchedEvt, "Detector should NOT fire for a process not matching scope comm=true")
+}
+
+// Test_YAMLDetectorScopeFilterKernelPushdown proves the detector-declared scope filter is enforced IN THE
+// KERNEL, not just re-checked in userland (the substantive Phase 2 claim). The companion
+// Test_YAMLDetectorScopeFilterPushdown only shows the filter works end-to-end; a kernel drop and a userland
+// drop look identical in the output, so this test pins down WHERE the drop happens via EventsFiltered.
+//
+// Base event is openat, and that choice is load-bearing: the internal bootstrap policy always collects
+// sched_process_exec/fork/exit unfiltered, so those events are ALWAYS submitted and EventsFiltered can
+// never move for them (an exit-based version of this test is vacuously green). openat has no bootstrap
+// rule, so the detector's scoped dependency rule is the only rule on it: if the kernel failed to gate
+// submission, every non-matching openat on the host would reach userland, be cleared by the userland
+// re-check of the detector scope, empty the bitmap and bump EventsFiltered. openat also has no derivation,
+// and being selected at init the syscall dispatchers attach at start.
+//
+// Deterministic workload: the scoped comm is a unique string (from this pid), and the matching processes
+// are copies of /usr/bin/true renamed to it, so only this test's processes can match. A process performs
+// several openats (dynamic loader etc.), so the detection count is asserted as >= matchRuns, and the
+// "never fires for other comms" half is asserted via the detection's inherited workload comm.
+func Test_YAMLDetectorScopeFilterKernelPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	// Unique, unusual comms: nothing else on the system shares them, so the matching set is exactly the
+	// processes this test spawns.
+	matchComm := fmt.Sprintf("trcok%d", os.Getpid()) // e.g. "trcok1234567" (<= 12 chars)
+	otherComm := fmt.Sprintf("trcno%d", os.Getpid())
+
+	// Two single-threaded executables (byte-for-byte copies of /usr/bin/true) named by those comms.
+	binDir := t.TempDir()
+	matchBin := buildCommBinary(t, binDir, matchComm)
+	otherBin := buildCommBinary(t, binDir, otherComm)
+
+	yamlDir := t.TempDir()
+	createTempYAMLDetector(t, yamlDir, "test_scope_kernel_pushdown.yaml",
+		fmt.Sprintf(scopeOpenatDetectorYAML, "yaml-test-scope-kernel-pushdown", "test_scope_kernel_pushdown", matchComm))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithYAMLDetectorsScoped(ctx, t, yamlDir)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+		testutils.LogTraceeStopped(t)
+	}()
+
+	// Let the comm filter map get programmed before measuring, then start from a clean slate.
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	const (
+		matchRuns    = 20
+		nonMatchRuns = 200
+	)
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	// Controlled NON-matching workload: comm never equals the scoped comm. The kernel must drop every
+	// one of its openats before submission, so none can reach userland.
+	for i := 0; i < nonMatchRuns; i++ {
+		_ = exec.Command(otherBin).Run()
+	}
+
+	// Controlled MATCHING workload: every openat of these processes is submitted and fires the detector.
+	for i := 0; i < matchRuns; i++ {
+		require.NoError(t, exec.Command(matchBin).Run())
+	}
+
+	// Each matching process performs at least one openat, so at least matchRuns detections arrive, all
+	// carrying the matching comm.
+	got := waitForDetectorCount(buf, "test_scope_kernel_pushdown", matchRuns, 10*time.Second)
+	require.GreaterOrEqual(t, got, matchRuns, "expected at least one detection per matching process")
+	require.Equal(t, got, countDetectorEventsByComm(buf, "test_scope_kernel_pushdown", matchComm),
+		"every detection must come from the scoped comm")
+	require.Zero(t, countDetectorEventsByComm(buf, "test_scope_kernel_pushdown", otherComm),
+		"the detector must never fire for the non-matching comm")
+
+	// Kernel enforcement, the assertion that can actually fail: if the kernel had not gated submission,
+	// every non-matching openat (our nonMatchRuns processes plus all background openats on the host) would
+	// have been submitted, userland-cleared by the detector-scope re-check, and counted here.
+	filteredDelta := trc.Stats().EventsFiltered.Get() - baseline
+	require.Zero(t, filteredDelta,
+		"EventsFiltered moved by %d: non-matching openat events reached userland, so the "+
+			"detector scope comm=%s was NOT enforced in the kernel", filteredDelta, matchComm)
+}
+
+// Test_YAMLDetectorScopeFilterUnionKernelPushdown proves how the kernel filter behaves when TWO
+// detectors subscribe to the SAME base event (openat) with DISTINCT comm scopes. The kernel comm filter
+// for the event becomes the UNION of both scopes, so:
+//   - a process matching EITHER comm is submitted (union widening never drops an event some rule wants);
+//   - a process matching NEITHER is still dropped in the kernel (the union is {A,B}, not "everything");
+//   - each detector fires only for ITS OWN comm - the dispatcher applies each subscription's own scope
+//     filter (dispatch.go), so an A-process never fires detector B even though the union submitted it.
+//
+// openat is the base for the same reason as in Test_YAMLDetectorScopeFilterKernelPushdown: it has no
+// bootstrap rule, so EventsFiltered==0 is falsifiable (a kernel miss floods userland with cleared-bitmap
+// events and bumps the counter). Determinism comes from three unique comms (A, B, and a complement
+// matching neither); counts are >= runs (several openats per process) and cross-firing is asserted via
+// each detection's inherited workload comm.
+func Test_YAMLDetectorScopeFilterUnionKernelPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	commA := fmt.Sprintf("trcua%d", os.Getpid())
+	commB := fmt.Sprintf("trcub%d", os.Getpid())
+	commNone := fmt.Sprintf("trcun%d", os.Getpid()) // matches neither scope
+
+	binDir := t.TempDir()
+	binA := buildCommBinary(t, binDir, commA)
+	binB := buildCommBinary(t, binDir, commB)
+	binNone := buildCommBinary(t, binDir, commNone)
+
+	yamlDir := t.TempDir()
+	createTempYAMLDetector(t, yamlDir, "union_a.yaml",
+		fmt.Sprintf(scopeOpenatDetectorYAML, "yaml-union-a", "test_union_a", commA))
+	createTempYAMLDetector(t, yamlDir, "union_b.yaml",
+		fmt.Sprintf(scopeOpenatDetectorYAML, "yaml-union-b", "test_union_b", commB))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithYAMLDetectorsScoped(ctx, t, yamlDir)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+		testutils.LogTraceeStopped(t)
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	const (
+		runsA    = 15
+		runsB    = 15
+		runsNone = 100
+	)
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	// Complement (matches neither scope) - the kernel must drop all of these.
+	for i := 0; i < runsNone; i++ {
+		require.NoError(t, exec.Command(binNone).Run())
+	}
+	// Each half of the union.
+	for i := 0; i < runsA; i++ {
+		require.NoError(t, exec.Command(binA).Run())
+	}
+	for i := 0; i < runsB; i++ {
+		require.NoError(t, exec.Command(binB).Run())
+	}
+
+	gotA := waitForDetectorCount(buf, "test_union_a", runsA, 10*time.Second)
+	gotB := waitForDetectorCount(buf, "test_union_b", runsB, 10*time.Second)
+
+	// Both halves of the union are submitted and dispatched to the correct detector.
+	require.GreaterOrEqual(t, gotA, runsA, "detector A must fire for commA openats (union half A submitted)")
+	require.GreaterOrEqual(t, gotB, runsB, "detector B must fire for commB openats (union half B submitted)")
+
+	// No cross-firing: every A detection comes from commA and none from commB or the complement (and
+	// symmetrically for B) - the dispatcher applies each subscription's own scope to the union-submitted
+	// base events.
+	// Compare total vs per-comm from ONE snapshot each (see countDetectorSplit): asserting the stale
+	// gotA/gotB total against a later per-comm read races the async event stream (a straggler makes the
+	// per-comm count exceed the captured total). The invariant is "every A detection is from commA".
+	totalA, aFromA := countDetectorSplit(buf, "test_union_a", commA)
+	require.Equal(t, totalA, aFromA, "all A detections must come from commA")
+	require.Zero(t, countDetectorEventsByComm(buf, "test_union_a", commB), "detector A must never fire for commB")
+	require.Zero(t, countDetectorEventsByComm(buf, "test_union_a", commNone), "detector A must never fire for the complement")
+	totalB, bFromB := countDetectorSplit(buf, "test_union_b", commB)
+	require.Equal(t, totalB, bFromB, "all B detections must come from commB")
+	require.Zero(t, countDetectorEventsByComm(buf, "test_union_b", commA), "detector B must never fire for commA")
+	require.Zero(t, countDetectorEventsByComm(buf, "test_union_b", commNone), "detector B must never fire for the complement")
+
+	// The complement was dropped in the kernel (never reached userland), and A/B openats each matched
+	// their own rule so were never userland-filtered. A non-zero value means the union kernel filter
+	// failed to drop the complement.
+	filteredDelta := trc.Stats().EventsFiltered.Get() - baseline
+	require.Zero(t, filteredDelta,
+		"EventsFiltered moved by %d: the union comm filter {%s,%s} did not cleanly gate submission in the kernel",
+		filteredDelta, commA, commB)
+}
+
+// Test_YAMLDetectorMultiLevelScopeKernelPushdown proves scope pushdown on a base event holds across a
+// TWO-LEVEL detector chain. Level 1 scopes openat to a unique comm and emits E1; level 2 consumes E1 (no
+// scope of its own) and emits E2. The scope filter is declared on level 1's base event, but level 2 is
+// the top consumer - so this exercises the matched-rules chain mapping (the base event's scope is
+// threaded onto the transitive dependency rule) together with kernel enforcement.
+//
+// openat is the base for the same reason as in Test_YAMLDetectorScopeFilterKernelPushdown: no bootstrap
+// rule, so EventsFiltered==0 is falsifiable. A matching process fires L1 at least once per openat and the
+// chain propagates 1:1 (L2 consumes each L1 event), so after the stream settles the two levels' counts
+// must be EQUAL; a complement comm fires neither and is dropped in the kernel.
+func Test_YAMLDetectorMultiLevelScopeKernelPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	commX := fmt.Sprintf("trcml%d", os.Getpid())
+	commNone := fmt.Sprintf("trcmn%d", os.Getpid())
+
+	binDir := t.TempDir()
+	binX := buildCommBinary(t, binDir, commX)
+	binNone := buildCommBinary(t, binDir, commNone)
+
+	yamlDir := t.TempDir()
+	// Level 1: openat scoped to commX -> test_ml_level1.
+	createTempYAMLDetector(t, yamlDir, "ml_level1.yaml",
+		fmt.Sprintf(scopeOpenatDetectorYAML, "yaml-ml-level1", "test_ml_level1", commX))
+	// Level 2: consumes test_ml_level1 -> test_ml_level2.
+	createTempYAMLDetector(t, yamlDir, "ml_level2.yaml",
+		fmt.Sprintf(consumerDetectorYAML, "yaml-ml-level2", "test_ml_level2", "test_ml_level1"))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithYAMLDetectorsScoped(ctx, t, yamlDir)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+		testutils.LogTraceeStopped(t)
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	const (
+		runs     = 15
+		runsNone = 100
+	)
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	// Complement: dropped in the kernel, so it can fire neither level.
+	for i := 0; i < runsNone; i++ {
+		require.NoError(t, exec.Command(binNone).Run())
+	}
+	// Matching: drives the full chain.
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binX).Run())
+	}
+
+	// Wait for the deepest level to reach the floor, then let the stream settle so both levels' final
+	// counts are comparable (the chain is in-process, but level 2 trails level 1 by a pipeline hop).
+	gotL2 := waitForDetectorCount(buf, "test_ml_level2", runs, 10*time.Second)
+	require.GreaterOrEqual(t, gotL2, runs, "level 2 must fire at least once per matching process")
+	time.Sleep(1 * time.Second)
+
+	finalL1 := countDetectorEvents(buf, "test_ml_level1")
+	finalL2 := countDetectorEvents(buf, "test_ml_level2")
+	require.GreaterOrEqual(t, finalL1, runs, "level 1 must fire at least once per matching process")
+	require.Equal(t, finalL1, finalL2, "chain must propagate 1:1 (one level-2 event per level-1 event)")
+	require.Zero(t, countDetectorEventsByComm(buf, "test_ml_level1", commNone),
+		"level 1 must never fire for the complement comm")
+
+	// Complement openats were dropped in the kernel; matching openats matched the chain's base rule in
+	// userland. Non-zero means the scope pushed onto the transitive base dependency did not gate the
+	// kernel submission.
+	filteredDelta := trc.Stats().EventsFiltered.Get() - baseline
+	require.Zero(t, filteredDelta,
+		"EventsFiltered moved by %d: the base scope comm=%s was not enforced in the kernel across the chain",
+		filteredDelta, commX)
+}
+
+// Test_YAMLDetectorFiveLevelScopeKernelPushdown drives the MAXIMUM supported detector chain:
+// base -> L1 -> L2 -> L3 -> L4 -> L5 (five detectors). The bound is addTransitiveDependencyRules
+// (policy_manager.go), whose recursion reaches the base event at depth == number of detector levels and
+// errors when depth > maxDepth (5). So the top consumer L5 reaches the base at depth 5 (allowed); a sixth
+// level would reach the base at depth 6 and fail rule computation at init. The dispatch loop cap
+// (maxDetectorChainDepth=5) is looser and has room to spare. Only L1 declares a scope (comm on openat -
+// non-bootstrap, so EventsFiltered==0 is falsifiable, see Test_YAMLDetectorScopeFilterKernelPushdown); it
+// must thread down the whole transitive chain so the kernel still drops the complement. A matching comm
+// drives all five levels 1:1 (equal final counts, at least once per process); a complement comm fires
+// none and is dropped in the kernel (EventsFiltered stays 0).
+func Test_YAMLDetectorFiveLevelScopeKernelPushdown(t *testing.T) {
+	testutils.AssureIsRoot(t)
+	defer goleak.VerifyNone(t)
+
+	commX := fmt.Sprintf("trcm5%d", os.Getpid())
+	commNone := fmt.Sprintf("trcn5%d", os.Getpid())
+
+	binDir := t.TempDir()
+	binX := buildCommBinary(t, binDir, commX)
+	binNone := buildCommBinary(t, binDir, commNone)
+
+	yamlDir := t.TempDir()
+	// L1 scopes the base event; L2..L5 each consume the previous level's output (no scope of their own).
+	createTempYAMLDetector(t, yamlDir, "ml5_level1.yaml",
+		fmt.Sprintf(scopeOpenatDetectorYAML, "yaml-ml5-level1", "test_ml5_level1", commX))
+	createTempYAMLDetector(t, yamlDir, "ml5_level2.yaml",
+		fmt.Sprintf(consumerDetectorYAML, "yaml-ml5-level2", "test_ml5_level2", "test_ml5_level1"))
+	createTempYAMLDetector(t, yamlDir, "ml5_level3.yaml",
+		fmt.Sprintf(consumerDetectorYAML, "yaml-ml5-level3", "test_ml5_level3", "test_ml5_level2"))
+	createTempYAMLDetector(t, yamlDir, "ml5_level4.yaml",
+		fmt.Sprintf(consumerDetectorYAML, "yaml-ml5-level4", "test_ml5_level4", "test_ml5_level3"))
+	createTempYAMLDetector(t, yamlDir, "ml5_level5.yaml",
+		fmt.Sprintf(consumerDetectorYAML, "yaml-ml5-level5", "test_ml5_level5", "test_ml5_level4"))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	trc, buf, stream := startTraceeWithYAMLDetectorsScoped(ctx, t, yamlDir)
+	defer func() {
+		trc.Unsubscribe(stream)
+		cancel()
+		if err := testutils.WaitForTraceeStop(trc); err != nil {
+			t.Logf("Error stopping Tracee: %v", err)
+		}
+		testutils.LogTraceeStopped(t)
+	}()
+
+	time.Sleep(2 * time.Second)
+	buf.Clear()
+
+	const (
+		runs     = 15
+		runsNone = 100
+	)
+
+	baseline := trc.Stats().EventsFiltered.Get()
+
+	for i := 0; i < runsNone; i++ {
+		require.NoError(t, exec.Command(binNone).Run())
+	}
+	for i := 0; i < runs; i++ {
+		require.NoError(t, exec.Command(binX).Run())
+	}
+
+	// Wait for the deepest level to reach the floor, then let the stream settle so all levels' final
+	// counts are comparable (each level trails the previous by a pipeline hop).
+	levels := []string{"test_ml5_level1", "test_ml5_level2", "test_ml5_level3", "test_ml5_level4", "test_ml5_level5"}
+	gotL5 := waitForDetectorCount(buf, levels[len(levels)-1], runs, 15*time.Second)
+	require.GreaterOrEqual(t, gotL5, runs, "level 5 must fire at least once per matching process")
+	time.Sleep(1 * time.Second)
+
+	// The chain propagates 1:1 end to end: every level's final count equals level 1's, and level 1 fired
+	// at least once per matching process, never for the complement.
+	finalL1 := countDetectorEvents(buf, levels[0])
+	require.GreaterOrEqual(t, finalL1, runs, "level 1 must fire at least once per matching process")
+	require.Zero(t, countDetectorEventsByComm(buf, levels[0], commNone),
+		"level 1 must never fire for the complement comm")
+	for lvl, name := range levels[1:] {
+		require.Equal(t, finalL1, countDetectorEvents(buf, name),
+			"level %d (%s) must propagate 1:1 from level 1", lvl+2, name)
+	}
+
+	// The base scope comm=commX, threaded onto the transitive dependency five hops down, gated the kernel
+	// submission: the complement never reached userland.
+	filteredDelta := trc.Stats().EventsFiltered.Get() - baseline
+	require.Zero(t, filteredDelta,
+		"EventsFiltered moved by %d: base scope comm=%s was not enforced in the kernel across the 5-level chain",
+		filteredDelta, commX)
 }
 
 // Test_YAMLDetectorErrorHandling tests graceful handling of invalid YAML and missing fields
@@ -660,6 +1273,7 @@ output:
 		if err := testutils.WaitForTraceeStop(trc); err != nil {
 			t.Logf("Error stopping Tracee: %v", err)
 		}
+		testutils.LogTraceeStopped(t)
 	}()
 
 	// Trigger the detector

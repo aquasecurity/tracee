@@ -2,7 +2,7 @@
 title: TRACEE-LIST-EVENTS
 section: 1
 header: Tracee List Events Command Manual
-date: 2025/01
+date: 2026/07
 ...
 
 ## NAME
@@ -153,4 +153,4 @@ tracee list events tag=fs --json | jq '.[] | .name'
 
 ## SEE ALSO
 
-tracee-list(1), tracee-list-detectors(1), tracee-list-policies(1)
+tracee-list(1), tracee-list-detectors(1), tracee-list-policies(1), tracee-list-filterable(1), tracee-list-deps(1)

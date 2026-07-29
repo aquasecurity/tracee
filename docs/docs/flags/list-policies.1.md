@@ -2,7 +2,7 @@
 title: TRACEE-LIST-POLICIES
 section: 1
 header: Tracee List Policies Command Manual
-date: 2025/01
+date: 2026/07
 ...
 
 ## NAME
@@ -77,4 +77,4 @@ tracee list policies --json
 
 ## SEE ALSO
 
-tracee-list(1), tracee-list-events(1), tracee-list-detectors(1), tracee-policy(1)
+tracee-list(1), tracee-list-events(1), tracee-list-detectors(1), tracee-list-filterable(1), tracee-list-deps(1), tracee-policy(1)

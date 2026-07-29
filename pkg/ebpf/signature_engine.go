@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/aquasecurity/tracee/common/bitwise"
+	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
 	"github.com/aquasecurity/tracee/pkg/datastores/container"
 	"github.com/aquasecurity/tracee/pkg/datastores/dns"
@@ -85,8 +87,13 @@ func (t *Tracee) engineEvents(in <-chan *events.PipelineEvent) (<-chan *events.P
 
 			id := event.EventID
 
-			// if the event is NOT marked as submit, it is not sent to the rules engine
-			if !t.policyManager.IsEventToSubmit(id) {
+			// An event deselected mid-flight (RemovePolicy) skips the engine but must still
+			// flow downstream: the sink owns the pooled event's lifecycle (recycle), and
+			// dropping it here would both lose the event and leak the pool slot. Use the
+			// event's own snapshot so the decision is consistent with the version it was
+			// decoded under.
+			if !t.snapshotOf(event).IsEventSelected(id) {
+				out <- event
 				return
 			}
 
@@ -213,9 +220,46 @@ func (t *Tracee) engineEvents(in <-chan *events.PipelineEvent) (<-chan *events.P
 				continue
 			}
 
-			// Wrap finding event in PipelineEvent
+			// Rule-bit indexes are only meaningful within one event's rule table, so the
+			// finding cannot inherit the base event's bitmap verbatim - it is remapped onto
+			// the signature event's own rule IDs, exactly like deriveEvents/detectEvents do
+			// for their outputs. The engine round-trip is asynchronous (the base's
+			// PipelineEvent and its snapshot are long gone), so the remap and the narrowing
+			// below both resolve under ONE freshly-loaded snapshot; stable rule IDs keep the
+			// base bitmap meaningful across that gap.
+			baseEvent, ok := finding.Event.Payload.(trace.Event)
+			if !ok {
+				// unreachable: FindingToEvent above already validated the payload type
+				t.handleError(errfmt.Errorf("failed to extract finding event payload: %s", finding.SigMetadata.ID))
+				continue
+			}
+			snap := t.policyManager.LoadSnapshot()
+			mapped := snap.GetDerivedEventMatchedRules(
+				events.ID(traceEvent.EventID),
+				events.ID(baseEvent.EventID),
+				baseEvent.MatchedRulesUser,
+			)
+
+			// An empty mapping means NO policy that selects this signature had a surviving
+			// dependency bit on the base event - i.e. every such policy's scope (comm/container/
+			// ...) excluded the triggering process, and the kernel already cleared those bits.
+			// The finding must therefore be attributed to no one and dropped. (An earlier version
+			// seeded all of the signature's rules here, which re-attributed the finding to a
+			// policy whose scope had excluded it - the pre-port model dropped it, and so must
+			// we.) A signature consuming a bootstrap-collected event whose only surviving bit is
+			// the bootstrap rule also lands here: the bootstrap rule maps to no signature rule,
+			// so the mapping is empty and the finding is correctly dropped.
+			if bitwise.IsBitmapArrayEmpty(mapped) {
+				continue
+			}
+			traceEvent.MatchedRulesKernel = mapped
+			traceEvent.MatchedRulesUser = mapped
+
+			// Wrap finding event in PipelineEvent; pin the snapshot the remap used so the
+			// narrowing and sink attribution resolve against the same policy version.
 			event := events.NewPipelineEvent(traceEvent)
-			if t.matchPolicies(event) == 0 {
+			event.RulesSnapshot = snap
+			if !t.matchPolicies(event) {
 				_ = t.stats.EventsFiltered.Increment()
 				continue
 			}

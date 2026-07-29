@@ -18,6 +18,20 @@ import (
 	"github.com/aquasecurity/tracee/pkg/version"
 )
 
+// detectorScopeUnsupported are scope-filter field names the detector dispatcher cannot evaluate
+// because they are absent from the proto Event that ScopeFilter.FilterProto sees. A detector
+// scope on any of them would never match at dispatch (see the registration check). Aliases are
+// all listed so a detector cannot slip one past by spelling.
+var detectorScopeUnsupported = map[string]bool{
+	"cgroupId":       true,
+	"hostName":       true,
+	"mntns":          true,
+	"mountNamespace": true,
+	"pidns":          true,
+	"pidNamespace":   true,
+	"processorId":    true,
+}
+
 // parseHashMode converts a string hash mode to digest.CalcHashesOption
 func parseHashMode(mode string) digest.CalcHashesOption {
 	switch mode {
@@ -55,14 +69,14 @@ type entry struct {
 // registry manages all registered detectors
 type registry struct {
 	mu                sync.RWMutex
-	detectors         map[string]*entry // Detector ID -> entry
-	eventNameIndex    map[string]string // Event name -> Detector ID (for collision detection)
-	policyManager     *policy.Manager   // For policy checking during registration
+	detectors         map[string]*entry     // Detector ID -> entry
+	eventNameIndex    map[string]string     // Event name -> Detector ID (for collision detection)
+	policyManager     *policy.PolicyManager // For policy checking during registration
 	enrichmentOptions *EnrichmentOptions
 }
 
 // newRegistry creates a new detector registry
-func newRegistry(policyManager *policy.Manager, enrichmentOptions *EnrichmentOptions) *registry {
+func newRegistry(policyManager *policy.PolicyManager, enrichmentOptions *EnrichmentOptions) *registry {
 	return &registry{
 		detectors:         make(map[string]*entry),
 		eventNameIndex:    make(map[string]string),
@@ -439,6 +453,19 @@ func (r *registry) RegisterDetector(
 			// Parse and add scope filters for this requirement
 			for _, filterStr := range req.ScopeFilters {
 				field, operatorAndValues := parseFilterString(filterStr)
+				// Reject dimensions the dispatcher cannot evaluate. Dispatch re-checks a
+				// detector's declared scope with ScopeFilter.FilterProto, and the proto Event
+				// omits cgroupId/hostName/mntns/pidns/processorId - so a scope on one of them
+				// evaluates against a zero value and the detector would NEVER fire (even though
+				// the kernel narrowed the base event correctly). Fail loudly at registration
+				// instead of shipping a silently-dead detector; express these at the POLICY
+				// level (spec.scope) where they are kernel-enforced and dispatch-independent.
+				if detectorScopeUnsupported[field] {
+					return fmt.Errorf(
+						"detector %s, event %s: scope filter %q uses %q, which the detector dispatcher cannot evaluate "+
+							"(not in the proto event); put this dimension in the policy spec.scope instead",
+						detectorID, req.Name, filterStr, field)
+				}
 				if err := scopeFilter.Parse(field, operatorAndValues); err != nil {
 					return fmt.Errorf("detector %s, event %s: invalid scope filter '%s': %w",
 						detectorID, req.Name, filterStr, err)
@@ -505,6 +532,50 @@ func (r *registry) GetDetectorCount() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.detectors)
+}
+
+// GetDetectorBaseScopeFilters returns, per detector OUTPUT event id, the scope filters the detector
+// declared for each required base event (Requirements.Events[].ScopeFilters). Phase 2 pushes these
+// onto the base events' dependency rules via PolicyManager.SetDetectorScopeFilters. Detectors with
+// no declared scope filters are omitted.
+func (r *registry) GetDetectorBaseScopeFilters() map[events.ID]map[events.ID]*filters.ScopeFilter {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make(map[events.ID]map[events.ID]*filters.ScopeFilter)
+	for _, e := range r.detectors {
+		if len(e.scopeFilters) == 0 {
+			continue
+		}
+		perBase := make(map[events.ID]*filters.ScopeFilter, len(e.scopeFilters))
+		for baseID, sf := range e.scopeFilters {
+			perBase[events.ID(baseID)] = sf
+		}
+		out[events.ID(e.eventID)] = perBase
+	}
+	return out
+}
+
+// GetDetectorBaseDataFilters returns, per detector OUTPUT event id, the data filters the detector
+// declared for each required base event (Requirements.Events[].DataFilters). Phase 2 pushes these
+// onto the base events' dependency rules via PolicyManager.SetDetectorDataFilters. Detectors with no
+// declared data filters are omitted.
+func (r *registry) GetDetectorBaseDataFilters() map[events.ID]map[events.ID]*filters.DataFilter {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make(map[events.ID]map[events.ID]*filters.DataFilter)
+	for _, e := range r.detectors {
+		if len(e.dataFilters) == 0 {
+			continue
+		}
+		perBase := make(map[events.ID]*filters.DataFilter, len(e.dataFilters))
+		for baseID, df := range e.dataFilters {
+			perBase[events.ID(baseID)] = df
+		}
+		out[events.ID(e.eventID)] = perBase
+	}
+	return out
 }
 
 // UnregisterDetector removes a detector from the registry

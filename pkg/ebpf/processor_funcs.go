@@ -232,8 +232,9 @@ func (t *Tracee) processDoInitModule(event *trace.Event) error {
 	//
 	// Gate on the match so the wakeup below never targets a receiver that
 	// was never started.
-	okFtrace := t.policyManager.IsEventSelected(events.FtraceHook) &&
-		t.policyManager.MatchEventInAnyPolicy(events.FtraceHook) != 0
+	// In the rule model, a selected event always has at least one rule, so
+	// IsEventSelected subsumes the old MatchEventInAnyPolicy != 0 check.
+	okFtrace := t.policyManager.IsEventSelected(events.FtraceHook)
 
 	if !okSyscalls && !okSeqOps && !okProcFops && !okMemDump && !okFtrace {
 		return nil

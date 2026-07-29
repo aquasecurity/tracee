@@ -20,9 +20,19 @@ type PipelineEvent struct {
 	// Timestamp is the original event timestamp in nanoseconds since epoch.
 	Timestamp uint64
 
-	// MatchedPoliciesBitmap is a combined bitmap for efficient policy matching.
-	// This replaces the need to expose separate Kernel/User bitmaps to external APIs.
-	MatchedPoliciesBitmap uint64
+	// MatchedRulesBitmap is the working bitmap of matched rule IDs, mutated as
+	// userland filters run. It is a []uint64 (not a single word) so rule IDs may
+	// exceed 64 via overflow words. Initialized as a copy of the event's
+	// MatchedRulesKernel so the kernel bitmap stays pristine.
+	MatchedRulesBitmap []uint64
+
+	// RulesSnapshot is the immutable policy read snapshot captured for this event at decode - an opaque
+	// *policy.Snapshot, set and read only by pkg/ebpf (pkg/events cannot import pkg/policy: it would cycle).
+	// Threading one snapshot through every stage makes all matched-rules reads for the event resolve against a
+	// single consistent version, even if a runtime policy change publishes a newer snapshot mid-flight; the
+	// held pointer also keeps that version alive (GC-based retention) until the event drains. Derived events
+	// inherit their base's snapshot.
+	RulesSnapshot any
 
 	// ProtoEvent is a cached protobuf representation of the event.
 	// It is lazily populated on first call to ToProto() and reused thereafter.
@@ -37,17 +47,20 @@ type PipelineEvent struct {
 }
 
 // NewPipelineEvent creates a new PipelineEvent wrapping the provided trace.Event.
-// The MatchedPoliciesBitmap is initialized from the event's MatchedPoliciesKernel field.
+// The MatchedRulesBitmap is initialized as a copy of the event's MatchedRulesKernel
+// so mutation during userland filtering does not corrupt the kernel bitmap.
 // The EventID and Timestamp are copied to top-level fields for efficient pipeline access.
 func NewPipelineEvent(event *trace.Event) *PipelineEvent {
 	if event == nil {
 		return nil
 	}
+	matchedRules := make([]uint64, len(event.MatchedRulesKernel))
+	copy(matchedRules, event.MatchedRulesKernel)
 	return &PipelineEvent{
-		Event:                 event,
-		EventID:               ID(event.EventID),
-		Timestamp:             uint64(event.Timestamp),
-		MatchedPoliciesBitmap: event.MatchedPoliciesKernel,
+		Event:              event,
+		EventID:            ID(event.EventID),
+		Timestamp:          uint64(event.Timestamp),
+		MatchedRulesBitmap: matchedRules,
 	}
 }
 
@@ -65,13 +78,17 @@ func (pe *PipelineEvent) ToTraceEvent() *trace.Event {
 // when getting a new event from the pool.
 // If a proto slab is still attached (event was filtered, not published),
 // it is returned to protoSlabPool for reuse.
+// RulesSnapshot MUST be cleared here: snapshot retention is GC-based (the held pointer
+// keeps that policy version alive until the event drains), so an idle pooled event would
+// otherwise pin a whole retired snapshot - rules map and exported filter maps - forever.
 func (pe *PipelineEvent) Reset() {
 	if pe == nil {
 		return
 	}
 	pe.EventID = 0
 	pe.Timestamp = 0
-	pe.MatchedPoliciesBitmap = 0
+	pe.MatchedRulesBitmap = nil
+	pe.RulesSnapshot = nil
 	if pe.protoSlab != nil {
 		protoSlabPool.Put(pe.protoSlab)
 		pe.protoSlab = nil

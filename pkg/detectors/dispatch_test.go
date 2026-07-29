@@ -18,7 +18,7 @@ import (
 )
 
 // Helper function to create a test policy manager that selects specific events
-func newTestPolicyManager(selectedEventIDs ...events.ID) *policy.Manager {
+func newTestPolicyManager(selectedEventIDs ...events.ID) *policy.PolicyManager {
 	// Create a dependencies manager
 	depsManager := dependencies.NewDependenciesManager(
 		func(id events.ID) events.DependencyStrategy {

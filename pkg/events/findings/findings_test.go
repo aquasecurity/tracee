@@ -42,10 +42,10 @@ func TestFindingToEvent(t *testing.T) {
 			PodNamespace: "namespace",
 			PodUID:       "uid",
 		},
-		ReturnValue:           10,
-		MatchedPoliciesKernel: 1,
-		MatchedPoliciesUser:   1,
-		ArgsNum:               3,
+		ReturnValue: 10,
+		// MatchedRulesKernel/User are NOT inherited from the source event: the bitmap is
+		// keyed by the base event's rule IDs and is remapped by the signature engine stage.
+		ArgsNum: 3,
 		Args: []trace.Argument{
 			{
 				ArgMeta: trace.ArgMeta{
@@ -187,10 +187,10 @@ func createFakeEventAndFinding() detect.Finding {
 					PodNamespace: "namespace",
 					PodUID:       "uid",
 				},
-				ReturnValue:           10,
-				MatchedPoliciesKernel: 1,
-				MatchedPoliciesUser:   1,
-				ArgsNum:               1,
+				ReturnValue:        10,
+				MatchedRulesKernel: []uint64{1},
+				MatchedRulesUser:   []uint64{1},
+				ArgsNum:            1,
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{

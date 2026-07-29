@@ -1,0 +1,13 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: follow-bash
+  annotations:
+    description: trace bash and (via follow) every process it spawns, recursively
+spec:
+  scope:
+    - comm=bash
+    - follow
+  rules:
+    - event: sched_process_exec
+    - event: sched_process_exit

@@ -1,0 +1,13 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: scoped-openat
+  annotations:
+    description: >
+      One half of the union-defeat demo: a kernel scope on openat. On its own this would be
+      [kernel], but see broad.yaml in the same directory.
+spec:
+  scope:
+    - comm=nginx
+  rules:
+    - event: openat

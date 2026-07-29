@@ -9,6 +9,7 @@ package bufferdecoder
 import (
 	"encoding/binary"
 	"fmt"
+	"slices"
 
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/logger"
@@ -342,11 +343,17 @@ func (decoder *EbpfDecoder) DecodeBytes(msg []byte, size int) error {
 
 // ReadBytesLen is a helper which allocates a known size bytes buffer and decodes
 // the bytes from the buffer into it.
-func (decoder *EbpfDecoder) ReadBytesLen(len int) ([]byte, error) {
-	var err error
-	res := make([]byte, len)
-	err = decoder.DecodeBytes(res[:], len)
-	if err != nil {
+func (decoder *EbpfDecoder) ReadBytesLen(length int) ([]byte, error) {
+	// Validate against the remaining buffer BEFORE allocating. length is derived from a
+	// kernel-supplied size (e.g. a string/array header) and can be adversarially large on a
+	// corrupt buffer (or negative-underflowed by a caller, e.g. size-1 with size==0, which
+	// wraps to a ~4GiB length): make([]byte, length) would then attempt a huge allocation
+	// before DecodeBytes' own check rejects it.
+	if length < 0 || length > len(decoder.buffer)-decoder.cursor {
+		return nil, errfmt.Errorf("byte array length %d exceeds remaining buffer (%d bytes)", length, len(decoder.buffer)-decoder.cursor)
+	}
+	res := make([]byte, length)
+	if err := decoder.DecodeBytes(res[:], length); err != nil {
 		return nil, errfmt.Errorf("error reading byte array: %v", err)
 	}
 	return res, nil
@@ -372,6 +379,13 @@ func (decoder *EbpfDecoder) DecodeUint64Array(msg *[]uint64) error {
 	if err != nil {
 		return errfmt.Errorf("error reading ulong array number of elements: %v", err)
 	}
+	// Validate the decoded length against the remaining buffer BEFORE allocating: arrLen is
+	// attacker-independent (kernel-sourced) but a corrupt buffer could otherwise trigger a
+	// pointless up-to-512KB allocation just to fail element-by-element below.
+	if remaining := len(decoder.buffer) - decoder.cursor; int(arrLen)*8 > remaining {
+		return errfmt.Errorf("ulong array length %d exceeds remaining buffer (%d bytes)", arrLen, remaining)
+	}
+	*msg = slices.Grow(*msg, int(arrLen)) // one alloc up front instead of append regrowth
 	for i := 0; i < int(arrLen); i++ {
 		var element uint64
 		err := decoder.DecodeUint64(&element)

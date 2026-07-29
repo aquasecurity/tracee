@@ -1,8 +1,6 @@
 package testutils
 
 import (
-	"fmt"
-
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
 	"github.com/aquasecurity/tracee/pkg/events"
 	k8s "github.com/aquasecurity/tracee/pkg/k8s/apis/tracee.aquasec.com/v1beta1"
@@ -42,7 +40,10 @@ func BuildPoliciesFromEvents(eventsToChoose []events.ID) []*policy.Policy {
 	return NewPolicies(policiesFiles)
 }
 
-// NewPolicies creates a slice of policies setting the ID of each policy to the given ID.
+// NewPolicies builds policies from the given in-memory policy files. The rule model no longer
+// assigns per-policy IDs (policies are identified by name), so the Id field is ignored; it is
+// kept for source compatibility with existing callers. New tests should prefer
+// NewPoliciesFromPaths to exercise the real YAML load path.
 func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
 	var polsFiles []k8s.PolicyInterface
 
@@ -60,22 +61,25 @@ func NewPolicies(polsFilesID []PolicyFileWithID) []*policy.Policy {
 		panic(err)
 	}
 
-	for i := range policies {
-		found := false
-		for j := range polsFilesID {
-			if policies[i].Name == polsFilesID[j].PolicyFile.Metadata.Name {
-				policies[i].ID = polsFilesID[j].Id - 1
-				found = true
-				break
-			}
-		}
+	return policies
+}
 
-		if !found {
-			panic(fmt.Errorf("policy %s not found in polsFilesID", policies[i].Name))
-		}
+// NewPoliciesFromPaths loads real policy YAML files (the same path the Tracee CLI uses for
+// --policy) and returns the resulting policies. Preferred for integration tests: it exercises
+// the actual parse -> load pipeline and is decoupled from internal policy IDs. paths may be
+// files or directories of .yaml/.yml policies.
+func NewPoliciesFromPaths(paths []string) ([]*policy.Policy, error) {
+	polsFiles, err := v1beta1.PoliciesFromPaths(paths)
+	if err != nil {
+		return nil, err
 	}
 
-	return policies
+	policyScopeMap, policyEventMap, err := flags.PrepareFilterMapsFromPolicies(polsFiles, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return flags.CreatePolicies(policyScopeMap, policyEventMap)
 }
 
 type PolicyFileWithID struct {

@@ -1,0 +1,22 @@
+apiVersion: tracee.aquasec.com/v1beta1
+kind: Policy
+metadata:
+  name: userspace-retval
+  annotations:
+    description: >
+      Return-value filters and non-pathname data filters run in user space (the kernel cannot evaluate
+      them), so the kernel submits every instance.
+      `tracee list filterable userspace-retval.yaml` reports:
+      [user-space] close
+        also narrows in user space: retval
+        submitted to user space by: userspace-retval (user-space retval)
+        tip: only user-space filters select this event - adding a workload scope
+        (comm/uid/container/executable/...) or a pathname data filter would drop
+        non-matching instances in the kernel
+spec:
+  scope:
+    - global
+  rules:
+    - event: close
+      filters:
+        - retval!=0

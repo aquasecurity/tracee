@@ -1,0 +1,50 @@
+type: detector
+id: webshell-l2-indicator
+produced_event:
+  name: webshell_indicator
+  version: 1.0.0
+  description: Shell or network tool executed under a service account (possible web shell)
+  tags:
+    - execution
+    - persistence
+  fields:
+    - name: binary_path
+      type: string
+    - name: uid
+      type: uint32
+
+# Level 2 (composed): consume the base "a tool ran" finding and keep only the executions performed by
+# a service account - a web server (nginx, apache, php-fpm) spawning a shell or network tool is a
+# classic web-shell / post-exploitation pattern. The `scope_filters` here is threaded all the way down
+# the chain onto the raw sched_process_exec and enforced in the kernel; adding this detector does not
+# widen what is collected. Set the uid to your web-service account (e.g. www-data=33, nginx=101).
+requirements:
+  events:
+    - name: interactive_tool_exec
+      dependency: required
+      scope_filters:
+        - uid=33
+
+threat:
+  name: Web Shell Command Execution
+  severity: high
+  description: >
+    A shell or network tool was executed under a web-service account, a common indicator of a web
+    shell or post-exploitation command execution.
+  mitre:
+    technique:
+      id: T1505.003
+      name: Web Shell
+    tactic:
+      name: Persistence
+
+auto_populate:
+  threat: true
+  detected_from: true
+
+output:
+  fields:
+    - name: binary_path
+      expression: getEventData("binary_path")
+    - name: uid
+      expression: workload.process.real_user.id

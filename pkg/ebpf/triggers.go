@@ -53,19 +53,19 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 
 	var errs []error
 
-	for it := t.policyManager.CreateAllIterator(); it.HasNext(); {
-		p := it.Next()
-		// This might break in the future if PrintMemDump will become a dependency of another event.
-		_, isSelected := p.Rules[events.PrintMemDump]
-		if !isSelected {
+	for _, rule := range t.policyManager.GetRules(events.PrintMemDump) {
+		// Parameters come from user-selected rules; dependency rules carry another
+		// event's filters and must not be read as PrintMemDump parameters.
+		if rule.IsDependency() {
 			continue
 		}
-		printMemDumpFilters := p.Rules[events.PrintMemDump].DataFilter.GetFieldFilters()
+		p := rule.Policy
+		printMemDumpFilters := rule.Data.DataFilter.GetFieldFilters()
 		if len(printMemDumpFilters) == 0 {
-			errs = append(errs, errfmt.Errorf("policy %d: no address or symbols were provided to print_mem_dump event. "+
+			errs = append(errs, errfmt.Errorf("policy %s: no address or symbols were provided to print_mem_dump event. "+
 				"please provide it via -e print_mem_dump.data.address=<hex address>"+
 				", -e print_mem_dump.data.symbol_name=<owner>:<symbol> or "+
-				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", p.ID))
+				"-e print_mem_dump.data.symbol_name=<symbol> if specifying a system owned symbol", p.Name))
 
 			continue
 		}
@@ -80,7 +80,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			field := lengthFilter.Equal()[0]
 			length, err = strconv.ParseUint(field, 10, 64)
 			if err != nil {
-				errs = append(errs, errfmt.Errorf("policy %d: invalid length provided to print_mem_dump event: %v", p.ID, err))
+				errs = append(errs, errfmt.Errorf("policy %s: invalid length provided to print_mem_dump event: %v", p.Name, err))
 
 				continue
 			}
@@ -91,7 +91,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 			for _, field := range addressFilter.Equal() {
 				address, err := strconv.ParseUint(field, 16, 64)
 				if err != nil {
-					errs[p.ID] = errfmt.Errorf("policy %d: invalid address provided to print_mem_dump event: %v", p.ID, err)
+					errs = append(errs, errfmt.Errorf("policy %s: invalid address provided to print_mem_dump event: %v", p.Name, err))
 
 					continue
 				}
@@ -114,14 +114,14 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 					owner = symbolSlice[0]
 					name = symbolSlice[1]
 				} else {
-					errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.ID, field))
+					errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - more than one ':' provided", p.Name, field))
 
 					continue
 				}
 				symbol, err := t.getKernelSymbols().GetSymbolByOwnerAndName(owner, name)
 				if err != nil {
 					if owner != "system" {
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s - %v", p.ID, field, err))
+						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s - %v", p.Name, field, err))
 
 						continue
 					}
@@ -148,7 +148,7 @@ func (t *Tracee) triggerMemDump(event trace.Event) []error {
 							values[i] = v
 						}
 						attemptedSymbols := fmt.Sprintf("{%s,%s,%s,%s}%s", values...)
-						errs = append(errs, errfmt.Errorf("policy %d: invalid symbols provided to print_mem_dump event: %s", p.ID, attemptedSymbols))
+						errs = append(errs, errfmt.Errorf("policy %s: invalid symbols provided to print_mem_dump event: %s", p.Name, attemptedSymbols))
 
 						continue
 					}
@@ -174,7 +174,7 @@ func (t *Tracee) triggerFeaturesFallbackTestCall() {
 // TriggerFeaturesFallbackTest triggers the features fallback test event.
 // This is exposed for testing purposes to verify which probe implementation was loaded.
 func (t *Tracee) TriggerFeaturesFallbackTest() {
-	if !t.policyManager.IsEventToSubmit(events.FeaturesFallbackTest) {
+	if !t.policyManager.IsEventSelected(events.FeaturesFallbackTest) {
 		return
 	}
 	t.triggerFeaturesFallbackTestCall()

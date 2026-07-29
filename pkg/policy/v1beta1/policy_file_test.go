@@ -1442,3 +1442,28 @@ spec:
 		})
 	}
 }
+
+// TestPolicyFileFromBytes verifies the file-less parse used by the gRPC ApplyPolicy path: a valid policy
+// document parses into a PolicyFile with the expected fields, and a malformed document errors (no panic).
+func TestPolicyFileFromBytes(t *testing.T) {
+	t.Parallel()
+
+	validYAML := `type: policy
+name: from-bytes-policy
+description: parsed from bytes
+scope:
+  - global
+rules:
+  - event: sched_process_exec
+`
+	pf, err := PolicyFileFromBytes([]byte(validYAML), false)
+	assert.NilError(t, err)
+	assert.Equal(t, pf.GetName(), "from-bytes-policy")
+	assert.Equal(t, pf.GetDescription(), "parsed from bytes")
+	assert.Equal(t, len(pf.GetRules()), 1)
+	assert.Equal(t, pf.GetRules()[0].Event, "sched_process_exec")
+
+	// malformed YAML (unclosed flow sequence) must error, not panic.
+	_, err = PolicyFileFromBytes([]byte("name: [unclosed"), false)
+	assert.Assert(t, err != nil)
+}

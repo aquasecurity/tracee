@@ -7,7 +7,6 @@ import (
 )
 
 type Policy struct {
-	ID                int
 	Name              string
 	UIDFilter         *filters.NumericFilter[uint32]
 	PIDFilter         *filters.NumericFilter[uint32]
@@ -38,7 +37,6 @@ var _ interfaces.Cloner[*Policy] = &Policy{}
 
 func NewPolicy() *Policy {
 	return &Policy{
-		ID:                0,
 		Name:              "",
 		UIDFilter:         filters.NewUInt32Filter(),
 		PIDFilter:         filters.NewUInt32Filter(),
@@ -73,7 +71,6 @@ func (p *Policy) Clone() *Policy {
 
 	n := NewPolicy()
 
-	n.ID = p.ID
 	n.Name = p.Name
 	n.UIDFilter = p.UIDFilter.Clone()
 	n.PIDFilter = p.PIDFilter.Clone()

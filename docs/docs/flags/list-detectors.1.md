@@ -2,7 +2,7 @@
 title: TRACEE-LIST-DETECTORS
 section: 1
 header: Tracee List Detectors Command Manual
-date: 2026/05
+date: 2026/07
 ...
 
 ## NAME
@@ -125,4 +125,4 @@ tracee list detectors --json | jq '.lists[].name'
 
 ## SEE ALSO
 
-tracee-list(1), tracee-list-events(1), tracee-list-policies(1)
+tracee-list(1), tracee-list-events(1), tracee-list-policies(1), tracee-list-filterable(1), tracee-list-deps(1)

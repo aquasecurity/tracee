@@ -38,15 +38,18 @@ func (t *Tracee) handleEventParameters() error {
 		// confusion as it abuses the filter system.
 		// TODO: in the future, a dedicated event parameter system should be added.
 		eventParams := make([]map[string]filters.Filter[*filters.StringFilter], 0)
-		for iterator := t.policyManager.CreateAllIterator(); iterator.HasNext(); {
-			policy := iterator.Next()
-			if rule, ok := policy.Rules[eventID]; ok {
-				policyParams := rule.DataFilter.GetFieldFilters()
-				if len(policyParams) == 0 {
-					continue
-				}
-				eventParams = append(eventParams, policyParams)
+		for _, rule := range t.policyManager.GetRules(eventID) {
+			// Event parameters come from rules the user selected directly; dependency
+			// rules carry another event's filters and must not be read as this event's
+			// parameters.
+			if rule.IsDependency() {
+				continue
 			}
+			policyParams := rule.Data.DataFilter.GetFieldFilters()
+			if len(policyParams) == 0 {
+				continue
+			}
+			eventParams = append(eventParams, policyParams)
 		}
 		if len(eventParams) == 0 {
 			// No parameters for this event
