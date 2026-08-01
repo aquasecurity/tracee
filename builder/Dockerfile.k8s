@@ -1,4 +1,4 @@
-FROM golang:1.26.5@sha256:d52df9c279840adf958d017ebb275651ed8338b953d39817bc3633a2e6b1bbcc
+FROM golang:1.26.5@sha256:3aff6657219a4d9c14e27fb1d8976c49c29fddb70ba835014f477e1c70636647
 
 RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@c71f90318f2c818b93a4458e42f7c4da416d5368 # v0.17.0
 
