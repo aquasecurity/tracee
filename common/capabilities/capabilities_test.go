@@ -509,3 +509,24 @@ func cleanupCapabilities(c *Capabilities, values ...cap.Value) {
 		_ = c.EBPFRingRemove(v)
 	}
 }
+
+// TestSpecificPreservesBaseRingCaps pins the invariant that base-ring caps,
+// which baseRingAdd propagates into every ring, survive a Specific() window:
+// regression for Specific() unsetting a requested base cap from the Specific
+// ring, which dropped it from the process-wide effective set during every
+// later Specific() callback.
+func TestSpecificPreservesBaseRingCaps(t *testing.T) {
+	c := &Capabilities{lock: &sync.Mutex{}}
+	require.NoError(t, c.initialize(Config{Bypass: true}))
+
+	require.NoError(t, c.BaseRingAdd(cap.SYS_PTRACE))
+	require.True(t, c.all[cap.SYS_PTRACE][Specific], "base cap should propagate to the Specific ring")
+
+	require.NoError(t, c.Specific(func() error { return nil }, cap.SYS_PTRACE))
+	assert.True(t, c.all[cap.SYS_PTRACE][Specific], "base-ring cap stripped from the Specific ring by Specific()")
+	assert.True(t, c.all[cap.SYS_PTRACE][Base])
+
+	// non-base caps are still cleaned up for the next call
+	require.NoError(t, c.Specific(func() error { return nil }, cap.NET_ADMIN))
+	assert.False(t, c.all[cap.NET_ADMIN][Specific], "non-base cap should be cleaned from the Specific ring")
+}

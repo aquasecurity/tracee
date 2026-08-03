@@ -343,7 +343,19 @@ func (c *Capabilities) Specific(cb func() error, values ...cap.Value) error {
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
-	err = c.unset(Specific, values...) // clean specific ring for next calls
+	// Clean the specific ring for next calls, but keep base-ring caps: they are
+	// propagated to every ring, and unsetting one here would drop it from the
+	// process-wide effective set during every later Specific() callback,
+	// breaking concurrent goroutines that rely on base caps (e.g. SYS_PTRACE
+	// for /proc readers).
+	toUnset := make([]cap.Value, 0, len(values))
+	for _, v := range values {
+		if m, exists := c.all[v]; exists && m[Base] {
+			continue
+		}
+		toUnset = append(toUnset, v)
+	}
+	err = c.unset(Specific, toUnset...) // clean specific ring for next calls
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
