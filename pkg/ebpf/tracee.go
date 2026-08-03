@@ -2194,10 +2194,18 @@ func (t *Tracee) invokeInitEvents(ctx gocontext.Context, out chan *events.Pipeli
 
 	matchedPolicies = policiesMatch(events.InitNamespaces)
 	if matchedPolicies > 0 {
-		systemInfoEvent := events.InitNamespacesEvent()
-		setMatchedPolicies(&systemInfoEvent, matchedPolicies)
-		out <- events.NewPipelineEvent(&systemInfoEvent)
-		// Note: EventCount is incremented in sinkEvents stage, not here
+		// The values are authoritative host namespace ids for downstream
+		// consumers (e.g. escape-to-host signatures): drop the event with an
+		// error rather than emit zeroed ids. Failures here are deterministic
+		// (missing capability, hardened kernel), so there is no point retrying.
+		systemInfoEvent, err := events.InitNamespacesEvent()
+		if err != nil {
+			logger.Errorw("init_namespaces event dropped", "error", err)
+		} else {
+			setMatchedPolicies(&systemInfoEvent, matchedPolicies)
+			out <- events.NewPipelineEvent(&systemInfoEvent)
+			// Note: EventCount is incremented in sinkEvents stage, not here
+		}
 	}
 
 	// Initial existing containers events (1 event per container)
