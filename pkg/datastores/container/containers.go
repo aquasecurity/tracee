@@ -273,14 +273,18 @@ func (c *Manager) cgroupUpdate(
 // If the given cgroup does not belong to a container, no error will be returned, but the
 // returned metadata's containerId will be empty. This should be checked separately.
 func (c *Manager) EnrichCgroupInfo(cgroupId uint64) (Container, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
 	var cont Container
+
+	// Snapshot and validate under the lock, then release it: the runtime RPC
+	// below must not run while holding the lock, or every reader (event
+	// decoding, signature data-source queries) stalls for up to the RPC
+	// deadline, backpressuring the pipeline.
+	c.lock.Lock()
 	info, ok := c.cgroupsMap[uint32(cgroupId)]
 
 	// if there is no cgroup anymore for some reason, return early
 	if !ok {
+		c.lock.Unlock()
 		return cont, errfmt.Errorf("cgroup %d not found, won't enrich", cgroupId)
 	}
 
@@ -288,40 +292,62 @@ func (c *Manager) EnrichCgroupInfo(cgroupId uint64) (Container, error) {
 
 	if containerId == "" {
 		// not a container, nothing to do
+		c.lock.Unlock()
 		cont.ContainerId = ""
 		return cont, nil
 	}
 
-	container := c.containerMap[containerId]
+	container, containerTracked := c.containerMap[containerId]
+	if !containerTracked {
+		// already purged while a stale cgroup entry lingers: don't burn an
+		// RPC for a container that no longer exists (its zero Runtime would
+		// make the service try every registered enricher)
+		c.lock.Unlock()
+		return cont, errfmt.Errorf("container %s no longer tracked, won't enrich", containerId)
+	}
 
 	isMikubeOrKind := k8s.IsMinkube() || k8s.IsKind()
 	if info.Dead && !isMikubeOrKind {
+		c.lock.Unlock()
 		return cont, errfmt.Errorf("container %s already deleted in path %s", containerId, info.Path)
 	}
 
 	if container.Image != "" {
 		// If already enriched (from control plane) - short circuit and return
+		c.lock.Unlock()
 		return container, nil
 	}
+	containerRuntime := container.Runtime
+	c.lock.Unlock()
 
 	// There might be a performance overhead with the cancel
 	// But, I think it will be negligible since this code path shouldn't be reached too frequently
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	enrichRes, err := c.enricher.Get(ctx, containerId, container.Runtime)
+	enrichRes, err := c.enricher.Get(ctx, containerId, containerRuntime)
 	defer cancel()
 	// if enrichment fails, just return early
 	if err != nil {
 		return cont, errfmt.WrapError(err)
 	}
 
-	// we read the dictionary again to make sure the cgroup still exists
-	// otherwise we risk reintroducing it despite not existing
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	// we read both dictionaries again to make sure the cgroup AND the
+	// container still exist - otherwise we risk reintroducing a purged
+	// container (e.g. root expired while a stale sub-cgroup entry lingers)
+	// with zero CreatedAt/Runtime
 	_, ok = c.cgroupsMap[uint32(cgroupId)]
-	if ok {
+	current, containerExists := c.containerMap[containerId]
+	if ok && containerExists {
+		// merge onto the CURRENT entry: a concurrent cgroupUpdate may have
+		// improved CreatedAt/Runtime while the RPC was in flight (and the old
+		// info snapshot is not written back - a concurrent CgroupRemove may
+		// have marked it dead meanwhile)
 		container = Container{
 			ContainerId: intern.String(containerId),
-			Runtime:     container.Runtime,
-			CreatedAt:   container.CreatedAt,
+			Runtime:     current.Runtime,
+			CreatedAt:   current.CreatedAt,
 			Name:        intern.String(enrichRes.ContName),
 			Image:       intern.String(enrichRes.Image),
 			ImageDigest: intern.String(enrichRes.ImageDigest),
@@ -332,7 +358,6 @@ func (c *Manager) EnrichCgroupInfo(cgroupId uint64) (Container, error) {
 				Sandbox:   enrichRes.Sandbox,
 			},
 		}
-		c.cgroupsMap[uint32(cgroupId)] = info
 		c.containerMap[containerId] = container
 		cont = container
 	}
