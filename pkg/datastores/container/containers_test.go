@@ -2,6 +2,7 @@ package container
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -106,4 +107,47 @@ func TestParseContainerIdFromCgroupPath(t *testing.T) {
 			assert.Equal(t, tt.expectedIsRoot, isRoot, "IsRoot mismatch")
 		})
 	}
+}
+
+func TestPurgeExpiredKeepsLiveContainerOnSubCgroupExpiry(t *testing.T) {
+	const cid = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+	now := time.Now()
+	mgr := &Manager{
+		cgroupsMap: map[uint32]CgroupDir{
+			1: {Path: "/docker-" + cid + ".scope", ContainerId: cid, ContainerRoot: true, Ctime: now.Add(-time.Minute)},
+			2: {Path: "/docker-" + cid + ".scope/sub", ContainerId: cid, ContainerRoot: false,
+				Ctime: now, Dead: true, expiresAt: now.Add(-time.Second)},
+		},
+		containerMap: map[string]Container{
+			cid: {ContainerId: cid, CreatedAt: now.Add(-time.Minute), Name: "live"},
+		},
+		deleted: []uint64{2},
+	}
+
+	// a sub-cgroup expiry must not purge the live container's entry
+	mgr.purgeExpired(now)
+	_, subExists := mgr.cgroupsMap[2]
+	assert.False(t, subExists, "expired sub-cgroup dir should be deleted")
+	cont, ok := mgr.containerMap[cid]
+	assert.True(t, ok, "live container entry purged by sub-cgroup expiry")
+	assert.Equal(t, "live", cont.Name)
+	assert.Empty(t, mgr.deleted)
+
+	// the container root's expiry ends the container
+	root := mgr.cgroupsMap[1]
+	root.Dead = true
+	root.expiresAt = now.Add(-time.Second)
+	mgr.cgroupsMap[1] = root
+	mgr.deleted = []uint64{1}
+	mgr.purgeExpired(now)
+	_, ok = mgr.containerMap[cid]
+	assert.False(t, ok, "container entry should be purged on root expiry")
+
+	// not-yet-expired entries stay scheduled
+	mgr.cgroupsMap[3] = CgroupDir{ContainerId: cid, Dead: true, expiresAt: now.Add(time.Hour)}
+	mgr.deleted = []uint64{3}
+	mgr.purgeExpired(now)
+	_, ok = mgr.cgroupsMap[3]
+	assert.True(t, ok)
+	assert.Equal(t, []uint64{3}, mgr.deleted)
 }

@@ -243,6 +243,22 @@ func (c *Manager) cgroupUpdate(
 		CreatedAt:   ctime,
 	}
 
+	// A container spans several cgroup dirs, and lazy lookups can stat a dir
+	// long after creation: keep the earliest CreatedAt (consumers compare file
+	// ctimes against it, e.g. drift detections) and never wipe enrichment data.
+	if existing, ok := c.containerMap[containerId]; ok && containerId != "" {
+		if !existing.CreatedAt.IsZero() && existing.CreatedAt.Before(ctime) {
+			container.CreatedAt = existing.CreatedAt
+		}
+		if container.Runtime == runtime.Unknown {
+			container.Runtime = existing.Runtime
+		}
+		container.Name = existing.Name
+		container.Image = existing.Image
+		container.ImageDigest = existing.ImageDigest
+		container.Pod = existing.Pod
+	}
+
 	c.cgroupsMap[uint32(cgroupId)] = info
 	c.containerMap[containerId] = container
 
@@ -428,22 +444,11 @@ func (c *Manager) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 	}
 
 	now := time.Now()
-	var deleted []uint64
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
 	// process previously deleted cgroupInfo data (deleted cgroup dirs)
-	for _, id := range c.deleted {
-		info := c.cgroupsMap[uint32(id)]
-		if now.After(info.expiresAt) {
-			contId := c.cgroupsMap[uint32(id)].ContainerId
-			delete(c.cgroupsMap, uint32(id))
-			delete(c.containerMap, contId)
-		} else {
-			deleted = append(deleted, id)
-		}
-	}
-	c.deleted = deleted
+	c.purgeExpired(now)
 
 	if info, ok := c.cgroupsMap[uint32(cgroupId)]; ok {
 		info.expiresAt = now.Add(expiryTime)
@@ -451,6 +456,27 @@ func (c *Manager) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 		c.cgroupsMap[uint32(cgroupId)] = info
 		c.deleted = append(c.deleted, cgroupId)
 	}
+}
+
+// purgeExpired deletes previously removed cgroup dirs whose grace period
+// elapsed. Only a container-root expiry removes the container entry: a
+// transient sub-cgroup removal must not purge a live container, or its
+// CreatedAt/enrichment would later be rebuilt with a postdated ctime.
+// NOTE: not thread-safe, lock handled by the calling function.
+func (c *Manager) purgeExpired(now time.Time) {
+	var remaining []uint64
+	for _, id := range c.deleted {
+		info := c.cgroupsMap[uint32(id)]
+		if now.After(info.expiresAt) {
+			if info.ContainerRoot {
+				delete(c.containerMap, info.ContainerId)
+			}
+			delete(c.cgroupsMap, uint32(id))
+		} else {
+			remaining = append(remaining, id)
+		}
+	}
+	c.deleted = remaining
 }
 
 // CgroupMkdir adds cgroupInfo of a created cgroup dir to Containers struct.
