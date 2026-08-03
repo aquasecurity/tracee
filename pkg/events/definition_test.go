@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewDefinition(t *testing.T) {
@@ -47,6 +48,13 @@ func TestNewDefinition(t *testing.T) {
 
 func TestAdd(t *testing.T) {
 	t.Parallel()
+
+	// Operate on a local group, not the global Core: Add mutates the
+	// registry, so a second in-process run (go test -count>1) would trip
+	// over the first run's additions. Seed the two collision targets.
+	group := NewDefinitionGroup()
+	require.NoError(t, group.Add(ID(700), Definition{id32Bit: ID(700), name: "existing_event"}))
+	require.NoError(t, group.Add(ID(710), Definition{id32Bit: ID(710), name: "net_packet"}))
 
 	tests := []struct {
 		name string
@@ -105,16 +113,16 @@ func TestAdd(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			err := Core.Add(test.evt.GetID32Bit(), test.evt)
+			err := group.Add(test.evt.GetID32Bit(), test.evt)
 			if err != nil {
 				assert.ErrorContains(t, err, test.err)
 				return
 			}
 
-			eventDefID, ok := Core.GetDefinitionIDByName(test.evt.GetName())
+			eventDefID, ok := group.GetDefinitionIDByName(test.evt.GetName())
 			assert.True(t, ok)
 
-			eventDefinition := Core.GetDefinitionByID(eventDefID)
+			eventDefinition := group.GetDefinitionByID(eventDefID)
 			assert.Equal(t, test.evt, eventDefinition)
 		})
 	}
