@@ -32,6 +32,11 @@ import (
 func Test_EventFilters(t *testing.T) {
 	testutils.AssureIsRoot(t)
 
+	// Resolve the container engine once (skips with instructions if neither
+	// docker nor podman is available). Reused for the image pulls and every
+	// "run" command below so the test works under docker or podman.
+	engine := testutils.RequireContainerEngine(t)
+
 	// Make sure we don't leak any goroutines since we run Tracee many times in this test.
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
 	defer goleak.VerifyNone(t)
@@ -41,7 +46,7 @@ func Test_EventFilters(t *testing.T) {
 	// to pull images while tests are running.
 	for _, image := range []string{busyboxImage, ubuntuJammyPinnedImage} {
 		t.Logf("Pre-pulling container image: %s", image)
-		pullCmd := exec.Command(testutils.ContainerEngine(), "image", "pull", image)
+		pullCmd := exec.Command(engine, "image", "pull", image)
 		if err := pullCmd.Run(); err != nil {
 			t.Logf("Warning: failed to pre-pull image %s: %v (tests may still work if cached)", image, err)
 		}
@@ -95,7 +100,7 @@ func Test_EventFilters(t *testing.T) {
 					// the forked /bin/sleep exec) may legitimately precede it.
 					// waitFor must cover the grace: the collector otherwise
 					// stops at 'at least 1 event' before the true exec fires.
-					"docker run -d --rm "+busyboxImage+" sh -c 'sleep 1 && exec /bin/true'",
+					engine+" run -d --rm "+busyboxImage+" sh -c 'sleep 1 && exec /bin/true'",
 					3*time.Second,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]*pb.Event{
@@ -796,7 +801,7 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					"docker run -d --rm "+busyboxImage,
+					engine+" run -d --rm "+busyboxImage,
 					0,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]*pb.Event{
@@ -1868,7 +1873,7 @@ func Test_EventFilters(t *testing.T) {
 					// To test certain "not equal" filters, such as exact, prefix, and suffix,
 					// it was necessary to use a fixed version of Ubuntu to ensure consistent
 					// library versions.
-					"docker run --rm "+ubuntuJammyPinnedImage+" more /etc/netconfig",
+					engine+" run --rm "+ubuntuJammyPinnedImage+" more /etc/netconfig",
 					0,
 					20*time.Second,
 					// Running the commands inside a container caused duplicate
@@ -1952,7 +1957,7 @@ func Test_EventFilters(t *testing.T) {
 					// To test certain "not equal" filters, such as exact, prefix, and suffix,
 					// it was necessary to use a fixed version of Ubuntu to ensure consistent
 					// library versions.
-					"docker run --rm "+ubuntuJammyPinnedImage+" sh -c 'cat /etc/netconfig > /tmp/netconfig'",
+					engine+" run --rm "+ubuntuJammyPinnedImage+" sh -c 'cat /etc/netconfig > /tmp/netconfig'",
 					0,
 					20*time.Second,
 					// Running the commands inside a container caused duplicate

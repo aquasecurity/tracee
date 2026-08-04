@@ -475,6 +475,10 @@ func assertContext(t *testing.T, pcapFile string, pcapType pcaps.PcapType, hostN
 }
 
 func packetContext(t *testing.T, captureDir string, workingDir string) error {
+	// resolve the container engine (skips with instructions if neither docker
+	// nor podman is available) instead of passing an empty program to exec
+	engine := testutils.RequireContainerEngine(t)
+
 	var emptyString = ""
 	var ping = "ping"
 
@@ -492,7 +496,7 @@ func packetContext(t *testing.T, captureDir string, workingDir string) error {
 	pid := cmd.Process.Pid
 
 	// Ping localhost from a container (use busybox because it's smaller than alpine)
-	cmd = exec.Command(testutils.ContainerEngine(), "run", "-d", "--rm", busyboxImage, "ping", "-c", "1", "127.0.0.1")
+	cmd = exec.Command(engine, "run", "-d", "--rm", busyboxImage, "ping", "-c", "1", "127.0.0.1")
 	// Get the container ID from the output
 	output, err := cmd.Output()
 	if err != nil {
