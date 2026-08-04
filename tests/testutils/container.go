@@ -16,13 +16,20 @@ var (
 )
 
 // ContainerEngine returns the container engine CLI to use for integration tests, resolved
-// once: the TRACEE_CONTAINER_ENGINE env override if set, otherwise the first of "docker" or
-// "podman" found in PATH, otherwise "" when neither is available. podman's CLI is
-// docker-compatible for the verbs the tests use (run/pull/rm/image pull), so either works.
+// once: the TRACEE_CONTAINER_ENGINE env override if set and resolvable in PATH, otherwise the
+// first of "docker" or "podman" found in PATH, otherwise "" when neither is available. podman's
+// CLI is docker-compatible for the verbs the tests use (run/pull/rm/image pull), so either works.
 func ContainerEngine() string {
 	containerEngineOnce.Do(func() {
 		if eng := os.Getenv("TRACEE_CONTAINER_ENGINE"); eng != "" {
-			containerEnginePath = eng
+			// Honor the override exclusively, but only when it resolves to a
+			// real executable. An unresolvable value (a typo, or a string with
+			// spaces/flags) would otherwise be accepted here and only surface
+			// much later as a confusing "executable file not found" at exec
+			// time; leaving the path empty instead yields a clean skip.
+			if _, err := exec.LookPath(eng); err == nil {
+				containerEnginePath = eng
+			}
 			return
 		}
 		for _, eng := range []string{"docker", "podman"} {
@@ -41,6 +48,9 @@ func RequireContainerEngine(t *testing.T) string {
 	t.Helper()
 	engine := ContainerEngine()
 	if engine == "" {
+		if override := os.Getenv("TRACEE_CONTAINER_ENGINE"); override != "" {
+			t.Skipf("TRACEE_CONTAINER_ENGINE=%q is not a resolvable executable (not found in PATH)", override)
+		}
 		t.Skip("no container engine available: install docker or podman, or set TRACEE_CONTAINER_ENGINE")
 	}
 	return engine
