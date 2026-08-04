@@ -158,38 +158,40 @@ WORKDIR /tracee
 
 #
 # ubuntu-fc: opt-in VM-capable environment for the kernel-tampering E2E tests
-# (FTRACE_HOOK, HOOKED_SYSCALL). Adds Firecracker and the ext4/rsync tooling
-# the runner (scripts/e2e-firecracker.sh) needs to assemble a throwaway microVM
-# rootfs. No kernel is bundled: the runner boots the HOST's running kernel
-# (extracted from /boot/vmlinuz-$(uname -r), which is bind-mounted in). Kept
-# off the default dev images so everyday builds stay lean; built only for
-# `make test-e2e-vm`.
+# (FTRACE_HOOK, HOOKED_SYSCALL). Built ON TOP OF ubuntu-dev (not ubuntu-checkers)
+# so it is a SUPERSET of the normal dev image: 'make tests-e2e' runs the whole
+# e2e suite inside this single image, and the containerized core/net/kernel
+# tests need the dev image's docker CLI and tooling (e.g. CONTAINERS_DATA_STORE
+# and run-kernel.sh drive containers through the host engine socket mounted at
+# /var/run/docker.sock). test-e2e-vm then adds the microVM on top. Firecracker
+# and the ext4/rsync tooling below let scripts/e2e-firecracker.sh assemble a
+# throwaway rootfs; no kernel is bundled - the runner boots the HOST's running
+# kernel (extracted from /boot/vmlinuz-$(uname -r), bind-mounted in). Still
+# opt-in (built only for test-e2e-vm / tests-e2e), so everyday 'make image' dev
+# builds stay on the leaner ubuntu-dev.
 #
 
-FROM ubuntu-checkers AS ubuntu-fc
+FROM ubuntu-dev AS ubuntu-fc
 LABEL AS=ubuntu-fc
 USER root
 
 ARG DEBIAN_FRONTEND="noninteractive"
 
-# rootfs assembly + module loading + guest-init + e2e tooling (jq is required
-# by run.sh; binutils=readelf for vmlinux extraction; kmod=insmod/rmmod;
-# procps/iproute2/sudo used by the guest init and the module test scripts)
+# VM-only additions on top of ubuntu-dev: rootfs assembly + module loading +
+# guest-init tooling (jq is required by run.sh; binutils=readelf for vmlinux
+# extraction; kmod=insmod/rmmod; procps/sudo used by the guest init and the
+# module test scripts). The docker CLI, iproute2, netcat and the rest of the
+# e2e tooling are inherited from ubuntu-dev.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    e2fsprogs rsync kmod sudo iproute2 procps binutils jq zstd xz-utils && \
+    e2fsprogs rsync kmod sudo procps binutils jq zstd xz-utils && \
     rm -rf /var/lib/apt/lists/*
 
 RUN /tmp/scripts/installation/install-firecracker.sh
 
-ARG uid
-ARG gid
-RUN /tmp/scripts/installation/setup-buildenv-user.sh "${uid}" "${gid}"
-
-ENV TRACEE_BUILDENV=1
-ENV TRACEE_BUILDENV_DISTRO=ubuntu
-# the microVM runner must run as root (mkfs, firecracker, /dev/kvm); it is
-# only reached via the privileged test-e2e-vm path
+# the tracee user, sudoers, TRACEE_BUILDENV=1 and the /tracee workdir are all
+# inherited from ubuntu-dev. The microVM runner must run as root (mkfs,
+# firecracker, /dev/kvm); it is only reached via the privileged test-e2e-vm path.
 USER root
 WORKDIR /tracee
 
