@@ -19,7 +19,9 @@ CONTAINERFILE := builder/Containerfile
 
 IMAGE_HASH_LABEL := org.tracee.buildenv.hash
 IMAGE_SRC := $(CONTAINERFILE) $(sort $(wildcard scripts/lib*.sh)) \
-	$(sort $(wildcard scripts/installation/*.sh))
+	$(sort $(wildcard scripts/installation/*.sh)) \
+	$(sort $(wildcard scripts/installation/checksums/*)) \
+	$(sort $(wildcard scripts/installation/keys/*))
 IMAGE_HASH := $(shell cat $(IMAGE_SRC) 2> /dev/null | md5sum | cut -d' ' -f1)-$(UID)-$(GID)
 
 # distro-test rootfs matrix (see the distro-test stage in the Containerfile):
