@@ -230,16 +230,24 @@ LABEL AS=protoc
 # scripts/installation/checksums/ (cross-check against the sha256 digests in
 # the GitHub release API for the tag)
 ARG PROTOC_VERSION="35.1"
-ARG PROTOC_ZIP="protoc-${PROTOC_VERSION}-linux-x86_64.zip"
 
 COPY scripts/installation/checksums/ /tmp/checksums/
 RUN apt update -y && \
     apt install -y --no-install-recommends unzip && \
     rm -rf /var/lib/apt/lists/*
-RUN wget -q https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP} && \
-    sha256sum -c "/tmp/checksums/${PROTOC_ZIP}.sha256" && \
-    unzip ${PROTOC_ZIP} -d /usr/local && \
-    rm -f ${PROTOC_ZIP}
+# protoc release assets are named linux-x86_64 / linux-aarch_64 (note the
+# underscore). Map the container's dpkg arch to that so the image builds on
+# amd64 and arm64, each verified against its own vendored checksum.
+RUN case "$(dpkg --print-architecture)" in \
+        amd64) protoc_arch=x86_64 ;; \
+        arm64) protoc_arch=aarch_64 ;; \
+        *) echo "unsupported architecture: $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac && \
+    protoc_zip="protoc-${PROTOC_VERSION}-linux-${protoc_arch}.zip" && \
+    wget -q "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${protoc_zip}" && \
+    sha256sum -c "/tmp/checksums/${protoc_zip}.sha256" && \
+    unzip "${protoc_zip}" -d /usr/local && \
+    rm -f "${protoc_zip}"
 
 # Update guide for the codegen plugins below:
 #
