@@ -1,0 +1,82 @@
+{
+	// tracee dev container for VS Code / Cursor / JetBrains. "Reopen in
+	// Container" builds the buildenv image and runs the editor server inside,
+	// so gopls/clangd/dlv and the toolchain share the container filesystem and
+	// go-to-definition into library source works.
+	//
+	// Emacs and other editors do not need this file: use `make dev` +
+	// `make attach` (engine-native attach), or `make lsp-go` / `make lsp-c`
+	// (language server over stdio).
+	//
+	// First-time setup inside the container (integrated terminal):
+	//   make check-vet   # installs the libbpf headers cgo needs, warms caches
+	//   make bear        # compile_commands.json for clangd (/tracee paths)
+	"name": "tracee",
+	"build": {
+		"dockerfile": "../builder/Containerfile",
+		"context": "..",
+		"target": "alpine-dev"
+	},
+	"workspaceFolder": "/tracee",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/tracee,type=bind",
+	"remoteUser": "tracee",
+	// persist the user caches (go build/module, gopls, clangd index) across
+	// container rebuilds, mirroring the named home volume of `make dev`
+	"mounts": [
+		"source=tracee-devcontainer-home,target=/home/tracee,type=volume"
+	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.go",
+				"llvm-vs-code-extensions.vscode-clangd"
+			],
+			"settings": {
+				// Use the container's pinned tools on PATH - never download
+				// or auto-update copies that drift from what `make` uses.
+				"go.alternateTools": {
+					"gopls": "gopls",
+					"dlv": "dlv"
+				},
+				"go.toolsManagement.autoUpdate": false,
+				"go.toolsManagement.checkForUpdates": "off",
+				// The tree only loads under the build tags `make` compiles
+				// with: ebpfstub swaps the go:embed of built BPF artifacts
+				// for empty stubs so nothing in dist/ needs to exist, and
+				// cgo needs the libbpf headers (installed by any check/build
+				// target, e.g. `make check-vet`).
+				"go.buildTags": "core,ebpf,lsmsupport,ebpfstub",
+				"go.toolsEnvVars": {
+					"CGO_CFLAGS": "-I/tracee/dist/.ctx/alpine/libbpf/include"
+				},
+				"gopls": {
+					"build.buildFlags": [
+						"-tags=core,ebpf,lsmsupport,ebpfstub"
+					],
+					"build.env": {
+						"CGO_CFLAGS": "-I/tracee/dist/.ctx/alpine/libbpf/include"
+					}
+				},
+				// Lint like `make check-lint` does.
+				"go.lintTool": "revive",
+				"go.lintFlags": [
+					"-config=/tracee/.revive.toml"
+				],
+				// clangd against the compile database `make bear` generates
+				// at the repo root, answering with the same clang the BPF
+				// objects build with.
+				"clangd.path": "clangd",
+				"clangd.checkUpdates": false,
+				"clangd.arguments": [
+					"--compile-commands-dir=/tracee",
+					"--query-driver=/usr/bin/clang",
+					"--background-index",
+					"--header-insertion=never"
+				],
+				// clangd owns C intellisense; keep cpptools (if present)
+				// out of the way.
+				"C_Cpp.intelliSenseEngine": "disabled"
+			}
+		}
+	}
+}
