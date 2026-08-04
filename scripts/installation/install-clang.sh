@@ -23,7 +23,12 @@ LLVM_FULL_VERSION="19.1.7"
 # Official source: https://llvm.org/release-keys.asc
 # See: https://github.com/llvm/llvm-project/releases (verification instructions)
 SCRIPT_DIR="${0%/*}"
+# Two different LLVM keys. The release key signs the pre-built release tarballs
+# (used by install_clang_from_llvm_release). The apt key signs the InRelease of
+# the apt.llvm.org repository (key 15CF4D18AF4F7421) and is what apt needs to
+# trust that repo. They are not interchangeable.
 LLVM_GPG_KEY_FILE="${SCRIPT_DIR}/keys/llvm-release-signing-key.asc"
+LLVM_APT_GPG_KEY_FILE="${SCRIPT_DIR}/keys/llvm-apt-signing-key.asc"
 
 # List of all LLVM/Clang tools we manage
 CLANG_TOOLS="cc clang clang++ llc lld clangd clang-format llvm-strip llvm-config ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf opt"
@@ -145,11 +150,13 @@ add_llvm_apt_repo() {
     apt-get update
     apt-get install -y --no-install-recommends wget gnupg software-properties-common
 
-    # Add LLVM GPG key from the vendored copy (never fetched at build time)
-    if [[ ! -f "${LLVM_GPG_KEY_FILE}" ]]; then
-        die "LLVM GPG signing key not found: ${LLVM_GPG_KEY_FILE}"
+    # Add the apt.llvm.org repository signing key from the vendored copy (never
+    # fetched at build time). This is the apt repo key, not the release-tarball
+    # key, so apt can verify the llvm-toolchain InRelease.
+    if [[ ! -f "${LLVM_APT_GPG_KEY_FILE}" ]]; then
+        die "LLVM apt signing key not found: ${LLVM_APT_GPG_KEY_FILE}"
     fi
-    cp "${LLVM_GPG_KEY_FILE}" /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+    cp "${LLVM_APT_GPG_KEY_FILE}" /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 
     # Detect Ubuntu codename
     local codename
