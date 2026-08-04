@@ -155,5 +155,11 @@ FWD_VARS := \
 	TEST \
 	TESTS
 
+# $(strip ...) collapses any internal whitespace, including newlines, to single
+# spaces. Some of these arrive as multi-line values (e.g. NETTESTS/TESTS are
+# defined as YAML folded scalars in the CI workflow, which keep a trailing
+# newline); a raw newline inside -e VAR='...' would split the generated recipe
+# line and leave the quote unterminated. These are all space-separated lists or
+# single tokens, so collapsing is safe.
 ENGINE_RUN_ENV := $(foreach v,$(FWD_VARS),\
-	$(if $(filter command line environment,$(origin $(v))),-e $(v)='$($(v))'))
+	$(if $(filter command line environment,$(origin $(v))),-e $(v)='$(strip $($(v)))'))
