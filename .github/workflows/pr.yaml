@@ -725,8 +725,14 @@ jobs:
     # must not skip the microVM). It builds its own ubuntu-fc image via 'make
     # image-fc' and needs nothing from any other job, so it carries no 'needs'.
     runs-on:
-      # Ubuntu 24.04 generic (6.11.0-29) [x86_64] - KVM-capable GRAAS AMI
-      - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      # Ubuntu 24.04 generic (6.11.0-29) [x86_64] - KVM-capable GRAAS AMI.
+      # The trailing _fcvm keeps this label distinct from integration-tests,
+      # which provisions off the same AMI id with the same run suffix; GRAAS
+      # spins up one ephemeral runner per unique label, so without a suffix the
+      # two jobs collide on a single single-use runner and this one hangs on
+      # "Waiting for a runner to pick up this job" (matrix does the same with
+      # its _${{ matrix.sufix }} token).
+      - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}_fcvm
       - EXECUTION_TYPE=LONG
       - INSTANCE_TYPE=LARGE
     permissions:
