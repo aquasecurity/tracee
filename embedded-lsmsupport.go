@@ -1,5 +1,4 @@
-//go:build lsmsupport
-// +build lsmsupport
+//go:build lsmsupport && !ebpfstub
 
 package tracee
 

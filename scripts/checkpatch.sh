@@ -5,6 +5,11 @@
 # Usage: ./scripts/checkpatch.sh [OPTIONS] [commit-ref]
 # If no commit-ref is provided, checks HEAD commit.
 #
+# All make targets invoked here containerize themselves (see the root
+# Makefile): the only host dependencies are git, make and a container
+# engine (docker or podman). Tool versions are pinned in the build
+# environment image.
+#
 
 set -euo pipefail
 
@@ -57,11 +62,13 @@ Options:
   --skip-code-analysis    Skip code analysis (linting, formatting, etc.)
   --skip-unit-tests       Skip unit tests
   --skip-pr-format        Skip PR commit formatting
-  --ignore-missing-tools  Continue even if optional tools are missing
   --fast                  Skip slow checks (static analysis + unit tests), run formatting and linting only
+  --distro DISTRO         Build environment distro for all checks (alpine|ubuntu, default: alpine)
 
 Environment Variables:
   BASE_REF                Git reference to compare against (auto-detected from remotes)
+  NATIVE                  NATIVE=1 runs the checks with the host toolchain instead
+                          of the containerized build environment
 
 Test Categories:
   1. Documentation Verification - Ensures .1.md and .1 man page files are synchronized
@@ -76,14 +83,12 @@ Examples:
   $0 abc123def                   # Check specific commit hash
   $0 --fast                      # Quick checks (formatting + linting only)
   $0 --skip-docs                 # Skip documentation verification
-  $0 --skip-code-analysis        # Skip code analysis if tools missing
-  $0 --ignore-missing-tools      # Continue despite missing tools
   BASE_REF=v1.0.0 $0             # Compare against v1.0.0 instead of auto-detected base
   $0 --help                      # Show this help
 
 Dependencies:
-  Required: go, make, git
-  Optional: revive, staticcheck, errcheck, govulncheck (will be skipped if not installed)
+  Required: make, git, and a container engine (docker or podman)
+  With NATIVE=1: make, git, go and the tools from the build environment image
 
 Exit Codes:
   0 - All tests passed
@@ -91,26 +96,11 @@ Exit Codes:
 EOF
 }
 
-# Extracts the tool name from make output when a tool is missing.
-# Reads from stdin and prints the tool name, or prints nothing if not found.
-# shellcheck disable=SC2329 # invoked indirectly via handle_missing_tool
-extract_missing_tool() {
-    local line
-    while IFS= read -r line; do
-        if [[ "${line}" == *"missing required tool"* ]]; then
-            echo "${line##*missing required tool }"
-            return 0
-        fi
-    done
-    return 1
-}
-
 # Options
 SKIP_DOCS=false
 SKIP_CODE_ANALYSIS=false
 SKIP_UNIT_TESTS=false
 SKIP_PR_FORMAT=false
-IGNORE_MISSING_TOOLS=false
 FAST_MODE=false
 
 # Parse arguments
@@ -136,8 +126,18 @@ while [[ $# -gt 0 ]]; do
         --skip-pr-format)
             SKIP_PR_FORMAT=true
             ;;
+        --distro)
+            shift
+            if [[ $# -eq 0 ]]; then
+                print_error "--distro requires an argument (alpine|ubuntu)"
+                exit 1
+            fi
+            export DISTRO="$1"
+            ;;
         --ignore-missing-tools)
-            IGNORE_MISSING_TOOLS=true
+            print_error "--ignore-missing-tools was removed: checks run in a container"
+            print_error "with all tools preinstalled. Use NATIVE=1 for a host-toolchain run."
+            exit 1
             ;;
         --fast)
             FAST_MODE=true
@@ -208,36 +208,6 @@ run_test_section() {
     fi
 }
 
-# Handles the "missing required tool" pattern shared across all check targets.
-# Arguments:
-#   $1 - make output
-#   $2 - install hint (e.g. "go install <package>")
-# Returns:
-#   0 if the tool is missing AND --ignore-missing-tools is set
-#   1 if the tool is missing but we should fail
-#   2 if the output does not contain a missing-tool message
-# shellcheck disable=SC2329 # invoked indirectly via verify_analyze_code/run_check_target
-handle_missing_tool() {
-    local output="$1"
-    local install_hint="$2"
-
-    local missing_tool
-    missing_tool="$(echo "${output}" | extract_missing_tool)" || return 2
-
-    print_warning "Missing required tool: ${missing_tool}"
-    if [[ -n "${install_hint}" ]]; then
-        print_info "${install_hint}"
-    fi
-
-    if ${IGNORE_MISSING_TOOLS}; then
-        print_warning "Ignoring missing tool error and continuing..."
-        return 0
-    fi
-
-    echo "${output}"
-    return 1
-}
-
 # shellcheck disable=SC2329 # invoked indirectly via run_test_section
 verify_docs() {
     print_info "Verifying documentation synchronization..."
@@ -250,24 +220,22 @@ verify_docs() {
     if ! bash scripts/verify_man_md_sync.sh --base-ref "${BASE_REF}" --target-ref "${GIT_REF}"; then
         print_error "Documentation verification failed"
         print_error "- .1.md changes require corresponding .1 changes"
-        print_info "Run 'make -f builder/Makefile.man man-run' to regenerate man pages"
+        print_info "Run 'make man' to regenerate man pages"
         return 1
     fi
 
     return 0
 }
 
-# Runs a single make check-* target with missing-tool handling.
+# Runs a single make target, capturing output so passing checks stay quiet.
 # Arguments:
 #   $1 - human-readable label (e.g. "Go vet")
 #   $2 - make target (e.g. "check-vet")
-#   $3 - install hint for missing tool (optional)
 # Returns 0 on success, 1 on failure.
 # shellcheck disable=SC2329 # invoked indirectly via verify_analyze_code
 run_check_target() {
     local label="$1"
     local target="$2"
-    local install_hint="${3:-}"
 
     local output
     local rc=0
@@ -278,12 +246,6 @@ run_check_target() {
         return 0
     fi
 
-    handle_missing_tool "${output}" "${install_hint}"
-    local mt_rc=$?
-    if ((mt_rc != 2)); then
-        return "${mt_rc}"
-    fi
-
     echo "${output}"
     print_error "  [fail] ${label} failed"
     return 1
@@ -292,61 +254,13 @@ run_check_target() {
 # shellcheck disable=SC2329 # invoked indirectly via run_test_section
 verify_analyze_code() {
     print_info "Verifying and analyzing code..."
+    print_info "Note: the build environment image is built automatically if needed (first time only)"
 
     print_info "Running formatting checks..."
-    local output
-    if output=$(make -f builder/Makefile.checkers fmt-check 2>&1); then
-        print_success "Code formatting passed"
-    else
-        print_error "Code formatting failed"
-
-        local missing_tool
-        if missing_tool="$(echo "${output}" | extract_missing_tool)"; then
-            print_warning "Missing required tool: ${missing_tool}"
-
-            case "${missing_tool}" in
-                "clang-format-12")
-                    print_info "clang-format-12 is required for eBPF C code formatting."
-                    print_info "Install using your system's official package manager:"
-                    print_info " Ubuntu/Debian: sudo apt-get update && sudo apt-get install clang-format-12"
-                    print_info " Fedora/CentOS: sudo dnf install clang-tools-extra"
-                    print_info "See https://clang.llvm.org/docs/ClangFormat.html for more details."
-                    ;;
-                "goimports-reviser")
-                    print_info "Install with: go install github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7" # v3.12.6
-                    ;;
-            esac
-
-            if ${IGNORE_MISSING_TOOLS}; then
-                print_warning "Ignoring missing tool error and continuing..."
-            else
-                return 1
-            fi
-        else
-            echo "${output}"
-            return 1
-        fi
-    fi
+    run_check_target "Code formatting" "check-fmt" || return 1
 
     print_info "Running linting checks..."
-    if output=$(make -f builder/Makefile.checkers lint-check 2>&1); then
-        print_success "Linting passed"
-    else
-        print_error "Linting failed"
-        handle_missing_tool "${output}" \
-            "Install with: go install github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d"
-        local mt_rc=$?
-        case "${mt_rc}" in
-            0) ;; # missing tool, --ignore-missing-tools is set
-            1)
-                return 1
-                ;;
-            *)
-                echo "${output}"
-                return 1
-                ;;
-        esac
-    fi
+    run_check_target "Linting" "check-lint" || return 1
 
     if ${FAST_MODE}; then
         print_info "Fast mode: skipping static analysis checks"
@@ -355,25 +269,17 @@ verify_analyze_code() {
 
     print_info "Running comprehensive code checks..."
 
-    print_info "  -> Building tracee binary (this may take a moment)..."
-
     print_info "  -> Running Go vet analysis..."
     run_check_target "Go vet" "check-vet" || return 1
 
     print_info "  -> Running StaticCheck analysis..."
-    run_check_target "StaticCheck" "check-staticcheck" \
-        "Install with: go install honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c" \
-        || return 1
+    run_check_target "StaticCheck" "check-staticcheck" || return 1
 
     print_info "  -> Running errcheck analysis..."
-    run_check_target "errcheck" "check-err" \
-        "Install with: go install github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34" \
-        || return 1
+    run_check_target "errcheck" "check-err" || return 1
 
     print_info "  -> Running govulncheck analysis..."
-    run_check_target "govulncheck" "check-vulncheck" \
-        "Install with: go install golang.org/x/vuln/cmd/govulncheck@d1f380186385b4f64e00313f31743df8e4b89a77" \
-        || return 1
+    run_check_target "govulncheck" "check-vulncheck" || return 1
 
     print_success "All code analysis checks passed"
 
@@ -450,7 +356,7 @@ pr_format() {
 check_dependencies() {
     print_info "Checking dependencies..."
 
-    local basic_tools=("go" "make" "git")
+    local basic_tools=("make" "git")
     local tool
     for tool in "${basic_tools[@]}"; do
         if ! command -v "${tool}" > /dev/null 2>&1; then
@@ -459,44 +365,29 @@ check_dependencies() {
         fi
     done
 
-    local go_bin_path
-    go_bin_path="$(go env GOPATH)/bin"
-    if [[ ":${PATH}:" != *":${go_bin_path}:"* ]]; then
-        print_info "Adding Go bin directory to PATH: ${go_bin_path}"
-        export PATH="${PATH}:${go_bin_path}"
+    if [[ "${NATIVE:-0}" = "1" ]]; then
+        print_info "NATIVE=1: using the host toolchain"
+        if ! command -v go > /dev/null 2>&1; then
+            print_error "go is required for NATIVE=1 but not installed"
+            return 1
+        fi
+        print_info "Go version: $(go version | grep -o 'go[0-9]\+\.[0-9]\+')"
+        return 0
     fi
 
-    local go_version
-    go_version=$(go version | grep -o 'go[0-9]\+\.[0-9]\+')
-    print_info "Go version: ${go_version}"
-
-    local optional_tools=(
-        "revive:github.com/mgechev/revive@8ece20b0789c517bd3a6742db0daa4dd5928146d:go install"               # v1.7.0
-        "staticcheck:honnef.co/go/tools/cmd/staticcheck@5af2e5fc3b08ba46027eb48ebddeba34dc0bd02c:go install" # 2025.1
-        "errcheck:github.com/kisielk/errcheck@11c27a7ce69d583465d80d808817d22d6653ee34:go install"           # v1.9.0
-        "govulncheck:golang.org/x/vuln/cmd/govulncheck@d1f380186385b4f64e00313f31743df8e4b89a77:go install"  # v1.1.4
-        "clang-format-12:Install via official package manager (e.g., 'sudo apt-get install clang-format-12'):Refer to your OS package manager"
-        "goimports-reviser:github.com/incu6us/goimports-reviser/v3@fa5587e51ba33c58734984cb41370a5b2582d5b7:go install" # v3.12.6
-    )
-
-    local tool_info tool_name tool_package install_method
-    for tool_info in "${optional_tools[@]}"; do
-        tool_name="${tool_info%%:*}"
-        tool_package="${tool_info#*:}"
-        install_method="${tool_info##*:}"
-        tool_package="${tool_package%:*}"
-
-        if ! command -v "${tool_name}" > /dev/null 2>&1; then
-            print_warning "${tool_name} not found."
-            if [[ "${install_method}" == "go install" ]]; then
-                print_info "  Install with: ${install_method} ${tool_package}"
-            else
-                print_info "  ${install_method} ${tool_package}"
-            fi
+    # containerized (default): a container engine is the only toolchain dependency
+    local engine
+    for engine in docker podman; do
+        if command -v "${engine}" > /dev/null 2>&1; then
+            print_info "Container engine: $(${engine} --version 2>/dev/null | head -n1)"
+            print_info "Note: all code quality tools run in the build environment image with pinned versions"
+            return 0
         fi
     done
 
-    return 0
+    print_error "No container engine found (docker or podman)"
+    print_info "Install one, or run with NATIVE=1 if the host has a full build toolchain"
+    return 1
 }
 
 main() {

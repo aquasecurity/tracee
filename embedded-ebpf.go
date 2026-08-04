@@ -1,5 +1,4 @@
-//go:build ebpf
-// +build ebpf
+//go:build ebpf && !ebpfstub
 
 package tracee
 
