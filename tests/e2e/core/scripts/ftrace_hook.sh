@@ -69,8 +69,18 @@ dir="tests/e2e/core/scripts/hooker"
 cd $dir || exit_err "could not cd to $dir"
 
 if [[ "$BUILD" == "true" ]]; then
-    info "Building ftrace hook module..."
-    make clean && make || exit_err "could not build ftrace hook module"
+    # E2E_PREBUILT_MODULE=1 (set by the microVM runner) means the .ko was built
+    # ahead of time with the running kernel's own toolchain - reuse it instead
+    # of rebuilding, which can fail when the local toolchain does not match the
+    # kernel (e.g. an Ubuntu userland building against a Fedora kernel tree).
+    if [[ "${E2E_PREBUILT_MODULE:-0}" == "1" && -f hooker.ko ]]; then
+        info "using prebuilt ftrace hook module (skipping build)"
+    else
+        info "Building ftrace hook module..."
+        if ! { make clean && make; }; then
+            exit_err "could not build ftrace hook module"
+        fi
+    fi
 fi
 
 if [[ "$INSTALL" == "true" ]]; then

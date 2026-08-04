@@ -64,8 +64,18 @@ dir="tests/e2e/core/scripts/hijack"
 cd $dir || exit_err "could not cd to $dir"
 
 if [[ "$BUILD" == "true" ]]; then
-    info "building syscall hijack module..."
-    make clean && make || exit_err "could not build module"
+    # E2E_PREBUILT_MODULE=1 (set by the microVM runner) means the .ko was built
+    # ahead of time with the running kernel's own toolchain - reuse it instead
+    # of rebuilding, which can fail when the local toolchain does not match the
+    # kernel (e.g. an Ubuntu userland building against a Fedora kernel tree).
+    if [[ "${E2E_PREBUILT_MODULE:-0}" == "1" && -f hijack.ko ]]; then
+        info "using prebuilt syscall hijack module (skipping build)"
+    else
+        info "building syscall hijack module..."
+        if ! { make clean && make; }; then
+            exit_err "could not build module"
+        fi
+    fi
 fi
 
 if [[ "$INSTALL" == "true" ]]; then
