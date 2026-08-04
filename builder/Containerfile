@@ -22,6 +22,12 @@
 ARG uid=1000
 ARG gid=1000
 
+# Used in the distro-test stage's FROM far below. BuildKit only substitutes an
+# ARG into a FROM when it is declared in the global scope, before the first
+# FROM, so it has to live up here rather than next to that stage. Override with
+# --build-arg DISTRO_TEST_IMAGE=... to test another rootfs.
+ARG DISTRO_TEST_IMAGE=fedora:43
+
 #
 # alpine line (primary: musl, static builds)
 #
@@ -341,7 +347,8 @@ CMD ["/bin/sh"]
 # static binary - use compiled-in detectors (tracee-e2e) for matrix runs.
 #
 
-ARG DISTRO_TEST_IMAGE=fedora:43
+# DISTRO_TEST_IMAGE is declared as a global ARG (before the first FROM), which
+# is what BuildKit requires to substitute it here.
 FROM ${DISTRO_TEST_IMAGE} AS distro-test
 LABEL AS=distro-test
 USER root
