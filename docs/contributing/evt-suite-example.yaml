@@ -1,0 +1,32 @@
+# Example event suite for evt stress (--events-file)
+# See evt-tool.md and evt-events-file-design.md for full format and options.
+
+name: example-suite
+description: Example scenarios for stress testing Tracee events
+
+scenarios:
+  - name: smoke
+    description: Minimal set for quick smoke test
+    events:
+      - security_file_open
+      - ptrace
+      - sched_process_exec
+
+  - name: filesystem
+    description: File and filesystem-related events
+    groups:
+      - name: file-ops
+        events:
+          - security_file_open:instances=5:ops=500
+          - magic_write:instances=2:ops=100
+      - name: vfs
+        events:
+          - vfs_write
+          - vfs_read
+
+  - name: lifecycle
+    description: Process and container lifecycle
+    events:
+      - sched_process_fork:instances=3:ops=200
+      - sched_process_exit
+      - sched_process_exec

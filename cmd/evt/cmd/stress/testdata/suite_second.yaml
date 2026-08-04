@@ -1,0 +1,9 @@
+name: second-suite
+scenarios:
+  - name: extra
+    events:
+      - sched_process_exec
+  - name: smoke
+    description: overrides first suite smoke
+    events:
+      - ptrace
