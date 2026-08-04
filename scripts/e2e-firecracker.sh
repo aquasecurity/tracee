@@ -309,5 +309,20 @@ if [ -z "${rc_str}" ]; then
     die "no exit-code sentinel from guest (firecracker rc=${fc_rc}); see the serial log above and ${artifacts_out}/e2e-serial.log"
 fi
 
-info "microVM e2e finished with rc=${rc_str} (guest logs under ${artifacts_out}/e2e-out)"
+# final summary: the kernel the microVM actually booted, the tests it was asked
+# to run, and the overall verdict. rc_str is run.sh's exit status from inside the
+# guest (0 = every selected test passed or cleanly skipped, non-zero = a failure);
+# the per-test run/skip/fail breakdown is in the streamed [guest] TEST SUMMARY
+# above. Kept x86_64 explicit since this tier is x86-only for now.
+if [ "${rc_str}" = "0" ]; then
+    status="PASSED"
+else
+    status="FAILED"
+fi
+info "==================== microVM summary ===================="
+info "  kernel:  ${KREL} (x86_64, ${FC_TRANSPORT} transport)"
+info "  tests:   ${INSTTESTS}"
+info "  result:  ${status} (rc=${rc_str})"
+info "  logs:    ${artifacts_out}/e2e-out"
+info "========================================================="
 exit "${rc_str}"
