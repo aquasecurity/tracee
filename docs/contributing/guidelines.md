@@ -21,13 +21,13 @@ Prerequisites: Docker installed and running locally.
 Build the container image:
 
 ```bash
-make -f ./builder/Makefile.mkdocs mkdocs-build
+make mkdocs-build
 ```
 
 Serve the container image:
 
 ```bash
-make -f ./builder/Makefile.mkdocs mkdocs-serve
+make mkdocs-serve
 ```
 
 Open `localhost:8000/tracee`
@@ -47,8 +47,8 @@ To contribute to the code:
 Before submitting code changes, ensure you follow these essential steps:
 
 1. **Generated Files**: If you've modified certain types of files, regenerate the corresponding outputs:
-   - **Man pages**: Run `make -f builder/Makefile.man` if you changed core code or documentation
-   - **Protocol buffers**: Run `make -f builder/Makefile.protoc` if you modified `.proto` files
+   - **Man pages**: Run `make man` if you changed core code or documentation
+   - **Protocol buffers**: Run `make protoc` if you modified `.proto` files
 
 2. **Code Quality**: Run comprehensive code quality checks:
    ```bash

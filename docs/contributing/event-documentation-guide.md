@@ -380,7 +380,7 @@ After creating or modifying event documentation, you **must** generate the corre
 
 ```bash
 # From the Tracee root directory
-make -f builder/Makefile.man
+make man
 ```
 
 This command:

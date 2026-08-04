@@ -8,28 +8,17 @@
     * **minikube:** Runs a single-node cluster in a VM
     * **MicroK8s:** Lightweight, snap-based Kubernetes
 
-    Tracee's Makefile provides convenient targets for setting up MicroK8s:
-
-    ```bash
-    make -f builder/Makefile.k8s help
-    ```
+    Tracee's Makefile provides convenient targets for the operator codegen
+    (they run in a dedicated controller-gen container automatically):
 
     ```text
-    To build the operator docker container:
-
-        $ make -f builder/Makefile.k8s build
-
     To generate the kubernetes manifests:
 
-        $ make -f builder/Makefile.k8s manifests
+        $ make k8s-manifests
 
     To generate operator code:
 
-        $ make -f builder/Makefile.k8s generate
-
-    Or simply:
-
-        $ make -f builder/Makefile.k8s
+        $ make k8s-generate
     ```
 
 2. **Deploy Tracee**

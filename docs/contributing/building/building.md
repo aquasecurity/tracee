@@ -1,9 +1,12 @@
-# Building from the source
+# Building from the source (host toolchain)
 
 !!! Note
-    Consider also visiting the following instructions:  
-    1. docker container as [building environment](./environment.md)  
-    2. building tracee [container images](./containers.md)
+    By default `make` runs every target inside the containerized
+    [building environment](./environment.md) - no host toolchain needed.
+    This page describes the `NATIVE=1` escape hatch for building with your
+    host's own toolchain. Consider also:  
+    1. the containerized [building environment](./environment.md) (default)  
+    2. building tracee [container images](./containers.md)  
     3. using [development images](./containers.md#development-images) for testing latest changes  
 
 1. Supported **Architectures**
@@ -22,14 +25,13 @@
     5. `libzstd-dev` for static build (libelf linkage)
     6. `clang-format-19` (specific version) for `fix-fmt`
 
-    > You might take a look at the following files to understand how to have a
-    > building environment:
+    > Take a look at the following files to understand how to replicate a
+    > working environment:
     >
-    > 1. [.github/actions/build-dependencies/action.yaml](https://github.com/aquasecurity/tracee/blob/main/.github/actions/build-dependencies/action.yaml)
-    > 1. [builder/Dockerfile.ubuntu-tracee-make](https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.ubuntu-tracee-make)
-    > 1. [builder/Dockerfile.alpine-tracee-make](https://github.com/aquasecurity/tracee/blob/main/builder/Dockerfile.alpine-tracee-make)
+    > 1. [builder/Containerfile](https://github.com/aquasecurity/tracee/blob/main/builder/Containerfile)
+    > 1. [scripts/installation/](https://github.com/aquasecurity/tracee/tree/main/scripts/installation)
     >
-    > Those are very good examples for you to replicate a working environment.
+    > They are the source of truth for the toolchain and its versions.
 
 3. **Clone** [tracee repository](https://github.com/aquasecurity/tracee/)
 
@@ -82,22 +84,27 @@
 
     ```
 
-5. Build **all** targets at once
+5. Build **all** targets at once with the host toolchain
 
     ```bash
-    make all
+    NATIVE=1 make all
     ```
+
+    !!! Note
+        Without `NATIVE=1` the build runs inside the containerized build
+        environment - which is fine too, and needs none of the dependencies
+        above. All examples below accept the same flag.
 
 6. Build a **static binary** by setting `STATIC=1`
 
     ```bash
-    STATIC=1 make all
+    NATIVE=1 STATIC=1 make all
     ```
 
 7. Build a **static binary** with [BTFHUB Support](https://github.com/aquasecurity/btfhub)
 
     ```bash
-    BTFHUB=1 STATIC=1 make all
+    NATIVE=1 BTFHUB=1 STATIC=1 make all
     ```
 
     !!! Note

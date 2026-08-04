@@ -45,9 +45,9 @@ make fix-fmt                   # Automatically fix code formatting issues
 
 **Individual Check Commands:**
 ```bash
-make -f builder/Makefile.checkers fmt-check     # Check code formatting only
-make -f builder/Makefile.checkers fmt-fix       # Fix code formatting automatically
-make -f builder/Makefile.checkers code-check    # Static code analysis only
+make check-fmt                                  # Check code formatting only
+make fix-fmt                                    # Fix code formatting automatically
+make check-code                                 # Static code analysis only
 ```
 
 **Direct Script Usage (Advanced):**
@@ -162,19 +162,19 @@ Many IDEs can be configured to run external scripts. Configure your IDE to run `
 ✗ Documentation verification failed
 - tracee.1.md change requires corresponding tracee.1 change
 ```
-*Solution*: Run `make -f builder/Makefile.man` to regenerate man pages.
+*Solution*: Run `make man` to regenerate man pages.
 
 **Formatting Issues**
 ```
 ✗ Go formatting issues found:
 ```
-*Solution*: Run `make fix-fmt` or `make -f builder/Makefile.checkers fmt-fix` to fix formatting automatically.
+*Solution*: Run `make fix-fmt` to fix formatting automatically.
 
 **Protocol Buffer Issues**
 ```
 ✗ Protobuf files need regeneration
 ```
-*Solution*: Run `make -f builder/Makefile.protoc` to regenerate Go code from `.proto` files.
+*Solution*: Run `make protoc` to regenerate Go code from `.proto` files.
 
 ### Performance Tips
 
