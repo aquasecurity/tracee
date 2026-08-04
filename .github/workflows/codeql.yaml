@@ -47,6 +47,10 @@ jobs:
       # property "github-codeql-file-coverage-on-prs" can still override
       # this to true (it is evaluated after the env var).
       CODEQL_ACTION_FILE_COVERAGE_ON_PRS: "false"
+      # CodeQL manual build-mode traces the compiler on the host: the build
+      # must NOT dispatch into the build container (the tracer would see
+      # nothing), so force the native toolchain installed below
+      NATIVE: "1"
 
     permissions:
       security-events: write

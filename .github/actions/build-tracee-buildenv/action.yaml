@@ -1,0 +1,65 @@
+name: Build Tracee Build Environment
+description: |
+  Restore the tracee-buildenv image from the actions cache, or build it via
+  'make image' and cache it for other jobs. The image is local-only (never
+  pushed to a registry); the cache key changes whenever the Containerfile or
+  an installation script changes, and 'make image' independently verifies the
+  image content hash label, so a stale restore can never be used.
+inputs:
+  distro:
+    description: "Build environment distro (alpine|ubuntu)"
+    required: false
+    default: "alpine"
+runs:
+  using: composite
+  steps:
+    - name: Compute cache key
+      id: key
+      shell: bash
+      run: |
+        # uid is part of the key: it is baked into the image as a build arg
+        # (GitHub-hosted runners are non-root, GRAAS AMIs run as root)
+        hash="${{ hashFiles('builder/Containerfile', 'scripts/lib*.sh', 'scripts/installation/**') }}"
+        echo "key=buildenv-${{ runner.os }}-${{ runner.arch }}-${{ inputs.distro }}-$(id -u)-${hash}" >> "${GITHUB_OUTPUT}"
+        echo "tarball=/tmp/tracee-buildenv-${{ inputs.distro }}.tar.zst" >> "${GITHUB_OUTPUT}"
+
+    - name: Restore image from cache
+      id: cache
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.key.outputs.tarball }}
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Load cached image
+      if: steps.cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: |
+        engine=$(command -v docker > /dev/null 2>&1 && echo docker || echo podman)
+        zstd -d --stdout "${{ steps.key.outputs.tarball }}" | ${engine} load
+        rm -f "${{ steps.key.outputs.tarball }}"
+
+    - name: Build image
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        make image DISTRO=${{ inputs.distro }}
+
+    - name: Save image for cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        engine=$(command -v docker > /dev/null 2>&1 && echo docker || echo podman)
+        ${engine} save tracee-buildenv:${{ inputs.distro }} | zstd -T0 > "${{ steps.key.outputs.tarball }}"
+
+    - name: Save image to cache
+      if: steps.cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.key.outputs.tarball }}
+        key: ${{ steps.key.outputs.key }}
+
+    - name: Clean up tarball
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        rm -f "${{ steps.key.outputs.tarball }}"

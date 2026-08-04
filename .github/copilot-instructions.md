@@ -39,7 +39,8 @@ make tracee-bench           # Benchmarking tool
 
 ```bash
 # Unit tests (takes ~6-8 seconds)
-make test-unit              # Fast, comprehensive unit tests
+make test-unit              # main-module unit tests (cmd/pkg/signatures)
+make tests-unit             # ALL unit tests: main module + every Go submodule
 
 # Integration tests (requires root privileges)
 sudo make test-integration  # Some tests skip without root

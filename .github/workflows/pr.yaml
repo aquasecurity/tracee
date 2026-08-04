@@ -118,6 +118,38 @@ jobs:
           echo "Runner label: ${RUNNER_LABEL}"
 
   #
+  # BUILD ENVIRONMENT IMAGE (built once per arch, cached for all other jobs)
+  #
+
+  build-buildenv:
+    name: Build Build Environment (x86_64)
+    runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ env.TRACEE_REF }}
+
+      - name: Build Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
+
+  build-buildenv-arm64:
+    name: Build Build Environment (ARM64)
+    runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04-arm') }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ env.TRACEE_REF }}
+
+      - name: Build Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
+
+  #
   # DOC VERIFICATION
   #
 
@@ -144,11 +176,14 @@ jobs:
   verify-analyze-code:
     name: Verify and Analyze Code
     if: inputs.upstream_libbpfgo != true
+    needs:
+      - build-buildenv
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     permissions:
       contents: read
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
+    env:
+      TRACEE_HOST_GOMODCACHE: /tmp/go-mod
+      TRACEE_HOST_GOCACHE: /tmp/go-cache
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -156,27 +191,21 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
 
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
+      - name: Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
 
       - name: Cache Go modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
+            ${{ env.TRACEE_HOST_GOMODCACHE }}
+            ${{ env.TRACEE_HOST_GOCACHE }}
           key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
 
-      - name: Lint
+      - name: Prepare Go cache dirs
         run: |
-          if test -z "$(gofmt -l .)"; then
-              echo "Congrats! There is nothing to fix."
-          else
-              echo "The following lines should be fixed."
-              gofmt -s -d .
-              exit 1
-          fi
+          mkdir -p "${TRACEE_HOST_GOMODCACHE}" "${TRACEE_HOST_GOCACHE}"
 
       - name: Lint (Revive)
         run: |
@@ -238,8 +267,9 @@ jobs:
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     permissions:
       contents: read
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
+    env:
+      TRACEE_HOST_GOMODCACHE: /tmp/go-mod
+      TRACEE_HOST_GOCACHE: /tmp/go-cache
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -247,17 +277,21 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
 
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
+      - name: Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
 
       - name: Cache Go modules
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
+            ${{ env.TRACEE_HOST_GOMODCACHE }}
+            ${{ env.TRACEE_HOST_GOCACHE }}
           key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
+
+      - name: Prepare Go cache dirs
+        run: |
+          mkdir -p "${TRACEE_HOST_GOMODCACHE}" "${TRACEE_HOST_GOCACHE}"
 
       - name: Build Tracee Benchmark Tool
         run: |
@@ -272,12 +306,14 @@ jobs:
     name: Unit Tests (x86_64)
     if: ${{ !cancelled() && !failure() }}
     needs:
+      - build-buildenv
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     permissions:
       contents: read
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
+    env:
+      TRACEE_HOST_GOMODCACHE: /tmp/go-mod
+      TRACEE_HOST_GOCACHE: /tmp/go-cache
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -286,8 +322,8 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
 
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
+      - name: Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
 
       - name: Swap to upstream libbpfgo
         if: inputs.upstream_libbpfgo == true
@@ -298,10 +334,14 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
+            ${{ env.TRACEE_HOST_GOMODCACHE }}
+            ${{ env.TRACEE_HOST_GOCACHE }}
           key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
+
+      - name: Prepare Go cache dirs
+        run: |
+          mkdir -p "${TRACEE_HOST_GOMODCACHE}" "${TRACEE_HOST_GOCACHE}"
 
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
@@ -310,30 +350,15 @@ jobs:
     name: Unit Tests (ARM64)
     if: ${{ !cancelled() && !failure() }}
     needs:
+      - build-buildenv-arm64
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_ARM64_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04-arm') }}
     permissions:
       contents: read
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
-      volumes:
-        - /opt:/opt:rw,rshared
-          # The following volume mounts are a workaround for GitHub Actions runner limitations.
-        # Some GitHub-hosted runners expect Node.js to be available at /__e/node20 or /__e/node24, which is not present in the base container.
-        # This mapping provides Node.js from the host's /opt directory to the expected location in the container.
-        # WARNING: This creates a fragile dependency on the runner's internal filesystem layout.
-        # If the runner environment changes, this workflow may break. Consider updating this step if a more robust solution becomes available.
-        - /opt:/__e/node20:ro,rshared
-        - /opt:/__e/node24:ro,rshared
+    env:
+      TRACEE_HOST_GOMODCACHE: /tmp/go-mod
+      TRACEE_HOST_GOCACHE: /tmp/go-cache
     steps:
-      - name: Allow Linux musl containers on ARM64 runners
-        run: |
-          sed -i "/^ID=/s/alpine/NotpineForGHA/" /etc/os-release
-          apk add nodejs --update-cache
-          mkdir -p /opt/bin
-          ln -s /usr/bin/node /opt/bin/node
-        shell: sh
-
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -341,8 +366,8 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
 
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
+      - name: Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
 
       - name: Swap to upstream libbpfgo
         if: inputs.upstream_libbpfgo == true
@@ -353,10 +378,14 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
+            ${{ env.TRACEE_HOST_GOMODCACHE }}
+            ${{ env.TRACEE_HOST_GOCACHE }}
           key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
+
+      - name: Prepare Go cache dirs
+        run: |
+          mkdir -p "${TRACEE_HOST_GOMODCACHE}" "${TRACEE_HOST_GOCACHE}"
 
       - name: Run Unit Tests
         uses: ./.github/actions/run-unit-tests
@@ -382,23 +411,16 @@ jobs:
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
-    # NOTE: Container execution disabled - running directly on host AMI which has all required tooling pre-installed.
-    # Re-enable container if host execution causes issues or for environment isolation.
-    # container:
-    #   image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
-    #   options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
+      # the containerized make mounts these as the in-container Go caches
+      TRACEE_HOST_GOMODCACHE: "/tmp/go/pkg/mod"
+      TRACEE_HOST_GOCACHE: "/tmp/go-cache"
+      # integration tests exercise the userland too (coreutils paths, PAM
+      # files, glibc ldd): use the ubuntu build environment
+      DISTRO: "ubuntu"
     steps:
       - name: Prepare Environment
         run: |
-          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
-
-      # NOTE: Git installation not needed when running on host - AMI already has git installed.
-      # - name: Install Git
-      #   run: |
-      #     export DEBIAN_FRONTEND=noninteractive
-      #     apt-get update
-      #     apt-get install -y --no-install-recommends git-core ca-certificates
-      #     update-ca-certificates
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}" "${TRACEE_HOST_GOMODCACHE}"
 
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -407,14 +429,15 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
 
-      # NOTE: Git ownership fix not needed when running on host (only required in containers).
-      # - name: Fix Git ownership
-      #   run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      # NOTE: Setup Tracee not needed - AMI has tooling pre-installed. Re-enable when tooling version
-      # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
-      # - name: Setup Tracee
-      #   uses: ./.github/actions/setup-tracee-ubuntu
+      # Restores the buildenv image from the actions cache or builds it
+      # (GRAAS instances are ephemeral; the uid-keyed cache entry is
+      # populated by the first integration run, not by build-buildenv).
+      # Integration tests use the ubuntu environment: they exercise the
+      # userland too (coreutils paths, PAM files, glibc ldd)
+      - name: Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
+        with:
+          distro: ubuntu
 
       - name: Swap to upstream libbpfgo
         if: inputs.upstream_libbpfgo == true
@@ -453,23 +476,16 @@ jobs:
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
-    # NOTE: Container execution disabled - running directly on host AMI which has all required tooling pre-installed.
-    # Re-enable container if host execution causes issues or for environment isolation.
-    # container:
-    #   image: ubuntu:24.04@sha256:353675e2a41babd526e2b837d7ec780c2a05bca0164f7ea5dbbd433d21d166fc
-    #   options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro -v /sys/kernel/debug:/sys/kernel/debug:rw -v /boot:/boot:ro
+      # the containerized make mounts these as the in-container Go caches
+      TRACEE_HOST_GOMODCACHE: "/tmp/go/pkg/mod"
+      TRACEE_HOST_GOCACHE: "/tmp/go-cache"
+      # integration tests exercise the userland too (coreutils paths, PAM
+      # files, glibc ldd): use the ubuntu build environment
+      DISTRO: "ubuntu"
     steps:
       - name: Prepare Environment
         run: |
-          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}"
-
-      # NOTE: Git installation not needed when running on host - AMI already has git installed.
-      # - name: Install Git
-      #   run: |
-      #     export DEBIAN_FRONTEND=noninteractive
-      #     apt-get update
-      #     apt-get install -y --no-install-recommends git-core ca-certificates
-      #     update-ca-certificates
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}" "${TRACEE_HOST_GOMODCACHE}"
 
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -478,14 +494,15 @@ jobs:
           ref: ${{ env.TRACEE_REF }}
           fetch-depth: 0
 
-      # NOTE: Git ownership fix not needed when running on host (only required in containers).
-      # - name: Fix Git ownership
-      #   run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
-
-      # NOTE: Setup Tracee not needed - AMI has tooling pre-installed. Re-enable when tooling version
-      # bump is required. If re-enabled, update action to auto-detect distro (Ubuntu/CentOS/Alpine/etc).
-      # - name: Setup Tracee
-      #   uses: ./.github/actions/setup-tracee-ubuntu
+      # Restores the buildenv image from the actions cache or builds it
+      # (GRAAS instances are ephemeral; the uid-keyed cache entry is
+      # populated by the first integration run, not by build-buildenv).
+      # Integration tests use the ubuntu environment: they exercise the
+      # userland too (coreutils paths, PAM files, glibc ldd)
+      - name: Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
+        with:
+          distro: ubuntu
 
       - name: Swap to upstream libbpfgo
         if: inputs.upstream_libbpfgo == true
@@ -515,13 +532,14 @@ jobs:
     name: Performance Tests
     if: ${{ !cancelled() && !failure() }}
     needs:
+      - build-buildenv
       - verify-analyze-code
     runs-on: ${{ vars.UBUNTU_X86_RUNNER_LABEL || (github.repository_owner == 'aquasecurity' && 'ubuntu-24.04') }}
     permissions:
       contents: read
-    container:
-      image: alpine/git:2.49.1@sha256:bd54f921f6d803dfa3a4fe14b7defe36df1b71349a3e416547e333aa960f86e3
-      options: --pid=host --cgroupns=host --privileged -v /etc/os-release:/etc/os-release-host:ro -v /var/run:/var/run:ro
+    env:
+      TRACEE_HOST_GOMODCACHE: /tmp/go-mod
+      TRACEE_HOST_GOCACHE: /tmp/go-cache
     steps:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -529,8 +547,8 @@ jobs:
           submodules: true
           ref: ${{ env.TRACEE_REF }}
 
-      - name: Setup Tracee
-        uses: ./.github/actions/setup-tracee-alpine
+      - name: Build Environment Image
+        uses: ./.github/actions/build-tracee-buildenv
 
       - name: Swap to upstream libbpfgo
         if: inputs.upstream_libbpfgo == true
@@ -541,11 +559,17 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
+            ${{ env.TRACEE_HOST_GOMODCACHE }}
+            ${{ env.TRACEE_HOST_GOCACHE }}
           key: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-alpine-${{ hashFiles('**/go.mod') }}-
 
+      - name: Prepare Go cache dirs
+        run: |
+          mkdir -p "${TRACEE_HOST_GOMODCACHE}" "${TRACEE_HOST_GOCACHE}"
+
+      # make test-performance runs in the privileged buildenv container
+      # (--pid=host --privileged, engine socket mounted) via the Makefile
       - name: Run Performance Tests
         run: |
           make test-performance
@@ -590,6 +614,9 @@ jobs:
       GOPATH: "/tmp/go"
       GOCACHE: "/tmp/go-cache"
       GOROOT: "/usr/local/go"
+      # kernel tests stay bare-host: the AMIs exist to exercise old distro
+      # kernels with minimal indirection and are pre-baked with the toolchain
+      NATIVE: "1"
     steps:
       - name: Prepare Environment
         run: |
@@ -679,3 +706,109 @@ jobs:
           job-name: ${{ matrix.job_name }}
           run-id: ${{ github.run_id }}
           run-attempt: ${{ github.run_attempt }}
+
+  #
+  # KERNEL-TAMPERING E2E TESTS (Firecracker microVM)
+  #
+  # The two core tests that build+insmod a real kernel module and read host
+  # dmesg (FTRACE_HOOK, HOOKED_SYSCALL) self-skip in the containerized
+  # test-e2e (containers share the host kernel). Here they run for real inside
+  # a throwaway Firecracker microVM, so a mistaken module or a leaked rmmod
+  # never touches the runner's kernel. x86_64 only (the test modules and the
+  # syscall-table hook are x86-specific); needs /dev/kvm on the runner.
+  #
+  kernel-tests-vm:
+    name: Kernel Tampering Tests (microVM, x86_64)
+    if: ${{ !cancelled() && !failure() }}
+    needs:
+      - verify-analyze-code
+    runs-on:
+      # Ubuntu 24.04 generic (6.11.0-29) [x86_64] - KVM-capable GRAAS AMI
+      - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
+      - EXECUTION_TYPE=LONG
+      - INSTANCE_TYPE=LARGE
+    permissions:
+      contents: read
+    env:
+      HOME: "/tmp/root"
+      GOPATH: "/tmp/go"
+      GOCACHE: "/tmp/go-cache"
+      GOROOT: "/usr/local/go"
+      # the containerized make mounts these as the in-container Go caches
+      TRACEE_HOST_GOMODCACHE: "/tmp/go/pkg/mod"
+      TRACEE_HOST_GOCACHE: "/tmp/go-cache"
+    steps:
+      - name: Prepare Environment
+        run: |
+          mkdir -p "${HOME}" "${GOPATH}" "${GOCACHE}" "${TRACEE_HOST_GOMODCACHE}"
+
+      - name: Checkout Code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          submodules: true
+          ref: ${{ env.TRACEE_REF }}
+          fetch-depth: 0
+
+      - name: "System Info"
+        run: ./scripts/system-info.sh --all
+        continue-on-error: true
+
+      - name: Swap to upstream libbpfgo
+        if: inputs.upstream_libbpfgo == true
+        uses: ./.github/actions/swap-upstream-libbpfgo
+
+      - name: Cache Go modules
+        if: inputs.upstream_libbpfgo != true
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ${{ env.GOPATH }}/pkg/mod
+            ${{ env.GOCACHE }}
+          key: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-
+
+      # the microVM boots the runner host's OWN kernel and compiles the test
+      # module against its build headers; this AMI's normal workload never
+      # builds modules, so the headers may be absent. Install them (best-effort
+      # - a pre-baked AMI already has them; if they are genuinely unavailable
+      # the runner skips with a clear message instead of building nothing).
+      - name: Install kernel headers
+        run: sudo apt-get update && sudo apt-get install -y "linux-headers-$(uname -r)"
+        continue-on-error: true
+
+      # opt-in VM-capable buildenv (firecracker + ext4/rsync tooling; no kernel
+      # is bundled - the runner boots the host's running kernel). Built inline
+      # rather than via build-tracee-buildenv, which only knows the plain
+      # alpine/ubuntu dev images. 'make image-fc' is a no-op if the content-hash
+      # label already matches.
+      - name: Build FC Environment Image
+        run: make image-fc
+
+      - name: Run Kernel Tampering Tests (microVM)
+        id: e2e-vm
+        run: |
+          make test-e2e-vm 2>&1 | tee /tmp/e2e-test-vm.log
+          rc=${PIPESTATUS[0]}
+          # a skip exits 0; surface it so a green check is not mistaken for
+          # "tests ran" (e.g. kernel not bootable, or headers unavailable)
+          if grep -q '\[e2e-vm\] SKIP:' /tmp/e2e-test-vm.log; then
+            echo "::warning title=microVM tests skipped::Kernel-tampering microVM tests did not run - see the SKIP line in the log."
+          fi
+          exit "${rc}"
+        shell: bash
+
+      - name: Upload microVM E2E Artifacts
+        if: always() && steps.e2e-vm.conclusion == 'failure'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: e2e-vm-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            /tmp/tracee/e2e-artifacts/**
+            /tmp/e2e-test-vm.log
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Cleanup Artifacts
+        if: always()
+        run: |
+          rm -rf /tmp/tracee/e2e-artifacts /tmp/e2e-test-vm.log 2> /dev/null || true

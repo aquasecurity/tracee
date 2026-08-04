@@ -6,8 +6,9 @@ runs:
   steps:
     - name: Run Full Unit Test Suite
       run: |
-        # Run comprehensive test suite for all modules (main + types + common + api)
-        make test-unit
+        # every internal Go module: main pkgs + the types/common/detectors/api/
+        # traceectl submodules (tests-unit = test-unit + tests-submodules)
+        make tests-unit
       shell: sh
     - name: Run Scripts Unit Tests
       run: |
