@@ -36,12 +36,12 @@ func Test_EventFilters(t *testing.T) {
 	// If a test case fails, ignore the leak since it's probably caused by the aborted test.
 	defer goleak.VerifyNone(t)
 
-	// Pre-pull Docker images to avoid transient failures during tests.
-	// This prevents race conditions and network issues when Docker tries to pull
-	// images while tests are running.
+	// Pre-pull the container images to avoid transient failures during tests.
+	// This prevents race conditions and network issues when the engine tries
+	// to pull images while tests are running.
 	for _, image := range []string{busyboxImage, ubuntuJammyPinnedImage} {
-		t.Logf("Pre-pulling Docker image: %s", image)
-		pullCmd := exec.Command("docker", "image", "pull", image)
+		t.Logf("Pre-pulling container image: %s", image)
+		pullCmd := exec.Command(testutils.ContainerEngine(), "image", "pull", image)
 		if err := pullCmd.Run(); err != nil {
 			t.Logf("Warning: failed to pre-pull image %s: %v (tests may still work if cached)", image, err)
 		}
@@ -84,18 +84,29 @@ func Test_EventFilters(t *testing.T) {
 			},
 			cmdEvents: []cmdEvents{
 				newCmdEvents(
-					"docker run -d --rm "+busyboxImage,
-					0,
+					// The container's FIRST exec (sh, pid 1) races the control
+					// plane: the container=new scope only matches after
+					// cgroup_mkdir has propagated to the in-kernel containers
+					// map, and a fast engine can exec before that lands
+					// (observed with rootful podman: the sh event is sometimes
+					// captured, sometimes not). Assert the post-grace exec of
+					// /bin/true instead - deterministically post-registration -
+					// with the tolerant matcher, since the racy sh event (and
+					// the forked /bin/sleep exec) may legitimately precede it.
+					// waitFor must cover the grace: the collector otherwise
+					// stops at 'at least 1 event' before the true exec fires.
+					"docker run -d --rm "+busyboxImage+" sh -c 'sleep 1 && exec /bin/true'",
+					3*time.Second,
 					10*time.Second, // give some time for the container to start (possibly downloading the image)
 					[]*pb.Event{
-						expectPbEvent(anyHost, "sh", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event")),
+						expectPbEvent(anyHost, "true", anyProcessorID, 1, 0, events.SchedProcessExec, orPolNames("container-event")),
 					},
 					[]string{}, // no sets
 				),
 			},
 			useSyscaller: false,
 			coolDown:     0,
-			test:         ExpectAllInOrderSequentially,
+			test:         ExpectAtLeastOneForEach,
 		},
 		{
 			name: "mntns/pidns: trace events only from mount/pid namespace 0",
@@ -798,6 +809,14 @@ func Test_EventFilters(t *testing.T) {
 			useSyscaller: false,
 			coolDown:     0,
 			test:         ExpectAtLeastOneForEach,
+			// the policy scope matches the docker daemon's executable: on
+			// daemonless engines (podman) no dockerd exists to emit setns
+			skipReason: func() string {
+				if !testutils.ProcessRunning("dockerd") {
+					return "requires a running docker daemon (dockerd) - daemonless engines cannot match exec=/usr/bin/dockerd"
+				}
+				return ""
+			},
 		},
 		{
 			name: "pid: trace new (should be empty)",
@@ -2322,6 +2341,12 @@ func Test_EventFilters(t *testing.T) {
 	// run tests cases
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.skipReason != nil {
+				if reason := tc.skipReason(); reason != "" {
+					t.Skip(reason)
+				}
+			}
+
 			// wait for the previous test to cool down
 			coolDown(t, tc.coolDown)
 
@@ -2358,7 +2383,7 @@ func Test_EventFilters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			t.Log("  --- started tracee ---")
+			testutils.LogTraceeStarted(t)
 			err = testutils.WaitForTraceeStart(trc)
 			if err != nil {
 				t.Fatal(err)
@@ -2397,7 +2422,7 @@ func Test_EventFilters(t *testing.T) {
 				t.Log(errStop)
 				failed = true
 			} else {
-				t.Log("  --- stopped tracee ---")
+				testutils.LogTraceeStopped(t)
 			}
 
 			if failed {
@@ -2428,6 +2453,10 @@ type testCase struct {
 	useSyscaller bool
 	coolDown     time.Duration // cool down before running the test case
 	test         func(t *testing.T, cmdEvents []cmdEvents, actual *testutils.EventBuffer, useSyscaller bool) error
+	// skipReason, when non-nil, is evaluated before the case runs; a
+	// non-empty return skips the case with that message (environment
+	// preconditions, e.g. a test that requires a running docker daemon)
+	skipReason func() string
 }
 
 type cmdEvents struct {

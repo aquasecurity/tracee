@@ -281,7 +281,7 @@ func Test_EventsDependencies(t *testing.T) {
 				cancel()
 				t.Fatal(err)
 			}
-			t.Log("  --- started tracee ---")
+			testutils.LogTraceeStarted(t)
 			err = testutils.WaitForTraceeStart(trc)
 			if err != nil {
 				cancel()
@@ -343,7 +343,7 @@ func Test_EventsDependencies(t *testing.T) {
 				t.Log(errStop)
 				failed = true
 			} else {
-				t.Log("  --- stopped tracee ---")
+				testutils.LogTraceeStopped(t)
 			}
 
 			if failed {

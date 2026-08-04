@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -23,10 +24,13 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	testutils.AssureIsRoot(t)
+	engine := testutils.RequireContainerEngine(t)
+	// Enrichment test: needs a running engine API socket (skips with instructions if absent).
+	engineID, engineSock := testutils.RequireContainerEngineSocket(t)
 
 	containerName := "tracee-test-container"
 	cleanupContainer := func() {
-		cmd := exec.Command("docker", "rm", "-f", containerName)
+		cmd := exec.Command(engine, "rm", "-f", containerName)
 		_ = cmd.Run()
 	}
 
@@ -36,7 +40,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
 	// Start by pulling the busybox image
-	pullCmd := exec.Command("docker", "pull", busyboxImage)
+	pullCmd := exec.Command(engine, "pull", busyboxImage)
 	err := pullCmd.Run()
 	require.NoError(t, err, "Failed to pull busybox image")
 
@@ -51,9 +55,9 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		EnrichmentEnabled: true, // Enable container enrichment for this test
 	}
 
-	// Register docker socket for the test
+	// Register the container engine socket for enrichment
 	cfg.Sockets = runtime.Sockets{}
-	cfg.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
+	cfg.Sockets.Register(engineID, engineSock)
 
 	// Enable container events (derived events from cgroup operations)
 	containerEvents := []events.ID{
@@ -70,7 +74,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	cfg.InitialPolicies = initialPolicies
 
 	// Start Tracee
-	t.Log("  --- started tracee ---")
+	testutils.LogTraceeStarted(t)
 	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
@@ -81,7 +85,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 		if err := testutils.WaitForTraceeStop(traceeInstance); err != nil {
 			t.Logf("Error stopping Tracee: %v", err)
 		} else {
-			t.Log("  --- stopped tracee ---")
+			testutils.LogTraceeStopped(t)
 		}
 	}()
 
@@ -108,7 +112,7 @@ func Test_ContainerCreateRemove(t *testing.T) {
 	}()
 
 	// Run a test container
-	runCmd := exec.Command("docker", "run", "--name", containerName, "-d", busyboxImage, "sleep", "5")
+	runCmd := exec.Command(engine, "run", "--name", containerName, "-d", busyboxImage, "sleep", "5")
 	err = runCmd.Run()
 	require.NoError(t, err, "Failed to start test container")
 
@@ -205,9 +209,12 @@ func Test_ExistingContainers(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	testutils.AssureIsRoot(t)
+	engine := testutils.RequireContainerEngine(t)
+	// Enrichment test: needs a running engine API socket (skips with instructions if absent).
+	engineID, engineSock := testutils.RequireContainerEngineSocket(t)
 
 	// Start by pulling the busybox image
-	pullCmd := exec.Command("docker", "pull", busyboxImage)
+	pullCmd := exec.Command(engine, "pull", busyboxImage)
 	err := pullCmd.Run()
 	require.NoError(t, err, "Failed to pull busybox image")
 
@@ -215,22 +222,37 @@ func Test_ExistingContainers(t *testing.T) {
 	testContainerName := "tracee-existing-container"
 
 	// Clean up any previous container with the same name
-	cleanupCmd := exec.Command("docker", "rm", "-f", testContainerName)
+	cleanupCmd := exec.Command(engine, "rm", "-f", testContainerName)
 	_ = cleanupCmd.Run()
 
 	// Start a long-running container
-	startCmd := exec.Command("docker", "run", "--name", testContainerName, "-d", busyboxImage, "sleep", "60")
+	startCmd := exec.Command(engine, "run", "--name", testContainerName, "-d", busyboxImage, "sleep", "60")
 	err = startCmd.Run()
 	require.NoError(t, err, "Failed to start existing container")
 
 	// Ensure container cleanup at the end
 	defer func() {
-		removeCmd := exec.Command("docker", "rm", "-f", testContainerName)
+		removeCmd := exec.Command(engine, "rm", "-f", testContainerName)
 		_ = removeCmd.Run()
 	}()
 
-	// Wait a bit to ensure container is fully started
-	time.Sleep(2 * time.Second)
+	// Wait until the container actually reports Running=true so its cgroup is fully
+	// established before Tracee starts and scans for existing containers. A fixed sleep
+	// races slow container/runtime startup and intermittently leaves the container
+	// undetected by the startup scan (yielding zero ExistingContainer events).
+	require.Eventually(t, func() bool {
+		out, err := exec.Command(engine, "inspect", "-f", "{{.State.Running}}", testContainerName).Output()
+		return err == nil && strings.TrimSpace(string(out)) == "true"
+	}, 15*time.Second, 200*time.Millisecond, "container did not reach Running state")
+
+	// The container ID identifies the test container in the events: unlike
+	// container_name it comes from the cgroup path, not from enrichment, so
+	// matching works on runtimes the enricher does not support yet (podman,
+	// issue #3850 - name assertions below stay conditional on enrichment).
+	idOut, err := exec.Command(engine, "inspect", "-f", "{{.Id}}", testContainerName).Output()
+	require.NoError(t, err, "Failed to get test container ID")
+	testContainerID := strings.TrimSpace(string(idOut))
+	require.NotEmpty(t, testContainerID, "Empty test container ID")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 
@@ -245,9 +267,9 @@ func Test_ExistingContainers(t *testing.T) {
 		EnrichmentEnabled: true, // Enable container enrichment for this test
 	}
 
-	// Register docker socket for the test
+	// Register the container engine socket for enrichment
 	cfg.Sockets = runtime.Sockets{}
-	cfg.Sockets.Register(runtime.Docker, "/var/run/docker.sock")
+	cfg.Sockets.Register(engineID, engineSock)
 
 	// Enable ExistingContainer event
 	existingContainerEvents := []events.ID{
@@ -263,7 +285,7 @@ func Test_ExistingContainers(t *testing.T) {
 	cfg.InitialPolicies = initialPolicies
 
 	// Start Tracee AFTER the container is already running
-	t.Log("  --- started tracee ---")
+	testutils.LogTraceeStarted(t)
 	traceeInstance, err := testutils.StartTracee(ctx, t, cfg, nil, nil)
 	require.NoError(t, err, "Failed to start Tracee")
 
@@ -273,7 +295,7 @@ func Test_ExistingContainers(t *testing.T) {
 		if err := testutils.WaitForTraceeStop(traceeInstance); err != nil {
 			t.Logf("Error stopping Tracee: %v", err)
 		} else {
-			t.Log("  --- stopped tracee ---")
+			testutils.LogTraceeStopped(t)
 		}
 	}()
 
@@ -322,19 +344,15 @@ func Test_ExistingContainers(t *testing.T) {
 			// Verify it has container-related arguments
 			assert.NotEmpty(t, evt.Data, "ExistingContainer should have arguments")
 
-			// Get the container name
-			var containerName string
+			// Match the test container by ID (enrichment-independent)
+			var containerID string
 			for _, arg := range evt.Data {
-				if arg.Name == "container_name" {
-					containerName = arg.GetStr()
+				if arg.Name == "container_id" {
+					containerID = arg.GetStr()
 					break
 				}
 			}
-			if containerName == "" {
-				t.Log("Failed to get container name")
-				continue
-			}
-			if containerName != testContainerName {
+			if containerID == "" || !strings.HasPrefix(testContainerID, containerID) {
 				continue
 			}
 			testContainerEvent = evt
@@ -346,31 +364,45 @@ func Test_ExistingContainers(t *testing.T) {
 
 	if testContainerEvent != nil {
 		// Check for expected fields
-		hasRuntime := false
+		runtimeVal := ""
 		hasContainerID := false
 		hasContainerName := false
 
 		for _, arg := range testContainerEvent.Data {
 			switch arg.Name {
 			case "runtime":
-				hasRuntime = true
-				t.Logf("  Runtime: %v", arg.GetStr())
+				runtimeVal = arg.GetStr()
+				t.Logf("  Runtime: %v", runtimeVal)
 			case "container_id":
 				hasContainerID = true
 				t.Logf("  Container ID: %v", arg.GetStr())
 			case "container_name":
-				hasContainerName = true
 				containerNameVal := arg.GetStr()
-				assert.True(t, containerNameVal == testContainerName,
-					"Container name should contain test container name")
-				t.Logf("  Container Name: %v", arg.Value)
+				if containerNameVal != "" {
+					hasContainerName = true
+					assert.True(t, containerNameVal == testContainerName,
+						"Container name should contain test container name")
+					t.Logf("  Container Name: %v", arg.Value)
+				}
 			case "container_image":
 				t.Logf("  Container Image: %v", arg.Value)
 			}
 		}
 
-		assert.True(t, hasRuntime, "ExistingContainer should have 'runtime' field")
+		assert.NotEmpty(t, runtimeVal, "ExistingContainer should have 'runtime' field")
 		assert.True(t, hasContainerID, "ExistingContainer should have 'container_id' field")
-		assert.True(t, hasContainerName, "ExistingContainer should have 'container_name' field")
+		// name comes from enrichment, which does not support every runtime
+		// yet (podman: issue #3850) - assert it only where supported. The
+		// EVENT's runtime field is the authority: the socket-derived engine
+		// id misclassifies podman's docker-compat socket as docker when the
+		// tests run in a container (the socket is mounted at the docker
+		// path).
+		if runtimeVal == "podman" {
+			if !hasContainerName {
+				t.Log("  ⚠️  Container name not populated (enrichment issue #3850)")
+			}
+		} else {
+			assert.True(t, hasContainerName, "ExistingContainer should have 'container_name' field")
+		}
 	}
 }
