@@ -14,13 +14,19 @@ import (
 	"github.com/aquasecurity/tracee/pkg/streams"
 )
 
-type Runner struct {
+// Runner is the interface for running tracee or replay operations
+type Runner interface {
+	Run(ctx context.Context) error
+}
+
+// TraceeRunner handles running tracee
+type TraceeRunner struct {
 	TraceeConfig config.Config
 	HTTP         *http.Server
 	GRPC         *grpc.Server
 }
 
-func (r Runner) Run(ctx context.Context) error {
+func (r TraceeRunner) Run(ctx context.Context) error {
 	// Create Tracee Singleton
 
 	t, err := tracee.New(r.TraceeConfig)
@@ -82,7 +88,7 @@ func (r Runner) Run(ctx context.Context) error {
 
 // shouldRunWithPrinter returns true only if there is at least one
 // stream with a destination which is not "ignore"
-func (r Runner) shouldRunWithPrinter() bool {
+func (r TraceeRunner) shouldRunWithPrinter() bool {
 	streamConfigs := r.TraceeConfig.Output.Streams
 	if len(streamConfigs) == 0 {
 		return false
@@ -109,7 +115,7 @@ func (r Runner) shouldRunWithPrinter() bool {
 // that any remaining events are drained when the context is cancelled.
 //
 // NOTE: This should only be called if at least a stream with a destination exists.
-func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
+func (r TraceeRunner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 	streamList := make([]*streams.Stream, 0)
 	printers := []printer.EventPrinter{}
 
@@ -155,6 +161,7 @@ func (r Runner) runWithPrinter(ctx context.Context, t *tracee.Tracee) error {
 	return err
 }
 
+// GetContainerMode returns the container mode based on the container filter enabled and enrichment enabled
 func GetContainerMode(containerFilterEnabled, enrichmentEnabled bool) config.ContainerMode {
 	if !containerFilterEnabled {
 		return config.ContainerModeDisabled

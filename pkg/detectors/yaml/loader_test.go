@@ -58,10 +58,53 @@ func TestLoadFromDirectory(t *testing.T) {
 		assert.Empty(t, result.Errors) // Non-existent directory is not an error
 	})
 
-	t.Run("file instead of directory", func(t *testing.T) {
+	t.Run("detector file path loads standalone", func(t *testing.T) {
 		result := LoadFromDirectory("testdata/valid_threat.yaml")
+		require.Empty(t, result.Errors)
+		require.Len(t, result.Detectors, 1)
+		assert.Equal(t, "TRC-TEST-001", result.Detectors[0].GetDefinition().ID)
+	})
+
+	t.Run("list file path loads standalone", func(t *testing.T) {
+		dir := t.TempDir()
+		path := dir + "/list.yaml"
+		content := "type: string_list\nname: TEST_STANDALONE_LIST\nvalues:\n  - /bin/sh\n"
+		require.NoError(t, os.WriteFile(path, []byte(content), 0o644))
+
+		result := LoadFromDirectory(path)
+		require.Empty(t, result.Errors)
+		require.Len(t, result.Lists, 1)
+		assert.Equal(t, "TEST_STANDALONE_LIST", result.Lists[0].Name)
+		assert.Equal(t, []string{"/bin/sh"}, result.Lists[0].Values)
+		assert.Equal(t, dir, result.Lists[0].SourceDir)
+	})
+
+	t.Run("invalid detector file path reports error", func(t *testing.T) {
+		result := LoadFromDirectory("testdata/invalid_missing_id.yaml")
 		assert.Empty(t, result.Detectors)
 		assert.NotEmpty(t, result.Errors)
+	})
+
+	t.Run("non-YAML file path reports error", func(t *testing.T) {
+		dir := t.TempDir()
+		path := dir + "/notyaml.txt"
+		require.NoError(t, os.WriteFile(path, []byte("hello"), 0o644))
+
+		result := LoadFromDirectory(path)
+		assert.Empty(t, result.Detectors)
+		require.Len(t, result.Errors, 1)
+		assert.Contains(t, result.Errors[0].Error(), "neither a directory nor a YAML file")
+	})
+
+	t.Run("file missing type field reports error", func(t *testing.T) {
+		dir := t.TempDir()
+		path := dir + "/untyped.yaml"
+		require.NoError(t, os.WriteFile(path, []byte("id: something\n"), 0o644))
+
+		result := LoadFromDirectory(path)
+		assert.Empty(t, result.Detectors)
+		require.Len(t, result.Errors, 1)
+		assert.Contains(t, result.Errors[0].Error(), "missing required field 'type'")
 	})
 }
 

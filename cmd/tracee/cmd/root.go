@@ -195,7 +195,7 @@ func initCmd() error {
 		flags.DetectorsFlag,
 		"d",
 		[]string{},
-		"[path...]\t\t\t\tConfigure YAML detector search directories",
+		"[path...]\t\t\t\tConfigure YAML detector search directories or files",
 	)
 	err = viper.BindPFlag(flags.DetectorsFlag, rootCmd.Flags().Lookup(flags.DetectorsFlag))
 	if err != nil {

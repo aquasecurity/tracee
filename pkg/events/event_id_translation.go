@@ -1,6 +1,8 @@
 package events
 
 import (
+	"sync"
+
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 )
 
@@ -604,4 +606,62 @@ func TranslateEventID(eventID int) pb.EventId {
 		return EventTranslationTable[ID(eventID)]
 	}
 	return pb.EventId(eventID)
+}
+
+// reverseTranslationMap maps protobuf Event IDs back to internal event IDs.
+// It is built lazily on first use (replay mode is the only caller today), so
+// regular tracee runs pay neither the memory nor the build cost.
+var (
+	reverseTranslationMap     map[pb.EventId]ID
+	reverseTranslationMapOnce sync.Once
+)
+
+// buildReverseTranslationMap builds the reverse of EventTranslationTable.
+// Zero-valued (unmapped) table slots are skipped: pb.EventId_unspecified (0)
+// must not resolve to an arbitrary unmapped internal ID. On duplicate protobuf
+// values the lowest internal ID wins, matching a first-match table scan.
+func buildReverseTranslationMap() {
+	reverseTranslationMap = make(map[pb.EventId]ID)
+	for internalID, protoID := range EventTranslationTable {
+		if protoID == pb.EventId_unspecified {
+			continue
+		}
+		if _, exists := reverseTranslationMap[protoID]; !exists {
+			reverseTranslationMap[protoID] = ID(internalID)
+		}
+	}
+}
+
+// TranslateFromProtoEventID translates a protobuf Event ID back to the corresponding internal event ID.
+// This is the reverse of TranslateEventID.
+//
+// For built-in events with protobuf mappings, it looks up the reverse of the
+// EventTranslationTable to find the matching internal ID. For events without protobuf
+// mappings, it returns the protobuf ID directly as an internal ID.
+//
+// Parameters:
+//   - protoEventID: The protobuf Event ID
+//
+// Returns:
+//   - The corresponding internal event ID, or Undefined for pb.EventId_unspecified
+func TranslateFromProtoEventID(protoEventID pb.EventId) ID {
+	// Unspecified carries no identity to translate back
+	if protoEventID == pb.EventId_unspecified {
+		return Undefined
+	}
+
+	// For events that don't have protobuf mappings, the protobuf ID equals the internal ID
+	protoIDInt := int(protoEventID)
+	if protoIDInt > int(MaxUserSpaceID) && protoIDInt != int(Unsupported) {
+		return ID(protoIDInt)
+	}
+
+	reverseTranslationMapOnce.Do(buildReverseTranslationMap)
+
+	if internalID, found := reverseTranslationMap[protoEventID]; found {
+		return internalID
+	}
+
+	// If not found, return the protobuf ID as-is (for events without mappings)
+	return ID(protoIDInt)
 }

@@ -48,6 +48,7 @@ nav:
                                   - events: docs/flags/list-events.1.md
                                   - detectors: docs/flags/list-detectors.1.md
                                   - policies: docs/flags/list-policies.1.md
+                            - replay: docs/flags/replay.1.md
                             - version: docs/flags/version.1.md
                             - man: docs/flags/man.1.md
           - Policies:
