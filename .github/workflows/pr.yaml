@@ -811,12 +811,14 @@ jobs:
         continue-on-error: true
 
       # opt-in VM-capable buildenv (firecracker + ext4/rsync tooling; no kernel
-      # is bundled - the runner boots the host's running kernel). Built inline
-      # rather than via build-tracee-buildenv, which only knows the plain
-      # alpine/ubuntu dev images. 'make image-fc' is a no-op if the content-hash
-      # label already matches.
+      # is bundled - the runner boots the host's running kernel). Restored from
+      # the actions cache keyed by the Containerfile + install scripts; only a
+      # cache miss pays the firecracker+tooling build, which on a fresh
+      # ephemeral runner is far slower than loading the cached image.
       - name: Build FC Environment Image
-        run: make image-fc
+        uses: ./.github/actions/build-tracee-buildenv
+        with:
+          fc: 'true'
 
       - name: Run Kernel Tampering Tests (microVM)
         id: e2e-vm

@@ -1,15 +1,23 @@
 name: Build Tracee Build Environment
 description: |
   Restore the tracee-buildenv image from the actions cache, or build it via
-  'make image' and cache it for other jobs. The image is local-only (never
-  pushed to a registry); the cache key changes whenever the Containerfile or
-  an installation script changes, and 'make image' independently verifies the
-  image content hash label, so a stale restore can never be used.
+  'make image' (or 'make image-fc' when fc=true) and cache it for other jobs.
+  The image is local-only (never pushed to a registry); the cache key changes
+  whenever the Containerfile or an installation script changes, and the make
+  target independently verifies the image content hash label, so a stale restore
+  can never be used.
 inputs:
   distro:
     description: "Build environment distro (alpine|ubuntu)"
     required: false
     default: "alpine"
+  fc:
+    description: |
+      Build/cache the VM-capable ubuntu-fc image ('make image-fc') instead of a
+      plain dev image. Downloading the cached image is far cheaper than the
+      firecracker+tooling build, and the fc image rarely drifts.
+    required: false
+    default: "false"
 runs:
   using: composite
   steps:
@@ -20,8 +28,19 @@ runs:
         # uid is part of the key: it is baked into the image as a build arg
         # (GitHub-hosted runners are non-root, GRAAS AMIs run as root)
         hash="${{ hashFiles('builder/Containerfile', 'scripts/lib*.sh', 'scripts/installation/**') }}"
-        echo "key=buildenv-${{ runner.os }}-${{ runner.arch }}-${{ inputs.distro }}-$(id -u)-${hash}" >> "${GITHUB_OUTPUT}"
-        echo "tarball=/tmp/tracee-buildenv-${{ inputs.distro }}.tar.zst" >> "${GITHUB_OUTPUT}"
+        if [ "${{ inputs.fc }}" = "true" ]; then
+          # the fc image is arch-native and always ubuntu-based; a separate key
+          # namespace ('fc') keeps it distinct from the plain dev-image entries
+          echo "key=buildenv-fc-${{ runner.os }}-${{ runner.arch }}-$(id -u)-${hash}" >> "${GITHUB_OUTPUT}"
+          echo "tarball=/tmp/tracee-buildenv-ubuntu-fc.tar.zst" >> "${GITHUB_OUTPUT}"
+          echo "tag=tracee-buildenv:ubuntu-fc" >> "${GITHUB_OUTPUT}"
+          echo "build=make image-fc" >> "${GITHUB_OUTPUT}"
+        else
+          echo "key=buildenv-${{ runner.os }}-${{ runner.arch }}-${{ inputs.distro }}-$(id -u)-${hash}" >> "${GITHUB_OUTPUT}"
+          echo "tarball=/tmp/tracee-buildenv-${{ inputs.distro }}.tar.zst" >> "${GITHUB_OUTPUT}"
+          echo "tag=tracee-buildenv:${{ inputs.distro }}" >> "${GITHUB_OUTPUT}"
+          echo "build=make image DISTRO=${{ inputs.distro }}" >> "${GITHUB_OUTPUT}"
+        fi
 
     - name: Restore image from cache
       id: cache
@@ -42,14 +61,14 @@ runs:
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        make image DISTRO=${{ inputs.distro }}
+        ${{ steps.key.outputs.build }}
 
     - name: Save image for cache
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: |
         engine=$(command -v docker > /dev/null 2>&1 && echo docker || echo podman)
-        ${engine} save tracee-buildenv:${{ inputs.distro }} | zstd -T0 > "${{ steps.key.outputs.tarball }}"
+        ${engine} save ${{ steps.key.outputs.tag }} | zstd -T0 > "${{ steps.key.outputs.tarball }}"
 
     - name: Save image to cache
       if: steps.cache.outputs.cache-hit != 'true'
