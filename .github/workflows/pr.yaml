@@ -719,9 +719,11 @@ jobs:
   #
   kernel-tests-vm:
     name: Kernel Tampering Tests (microVM, x86_64)
-    if: ${{ !cancelled() && !failure() }}
-    needs:
-      - verify-analyze-code
+    # Independent kernel coverage, exactly like the kernel-tests AMI matrix:
+    # this answers "does tracee work against a real kernel", not "does the code
+    # lint", so it is deliberately NOT gated on verify-analyze-code (a red lint
+    # must not skip the microVM). It builds its own ubuntu-fc image via 'make
+    # image-fc' and needs nothing from any other job, so it carries no 'needs'.
     runs-on:
       # Ubuntu 24.04 generic (6.11.0-29) [x86_64] - KVM-capable GRAAS AMI
       - graas_ami-03dbff05cae3a30d0_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}
