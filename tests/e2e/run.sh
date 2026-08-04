@@ -581,6 +581,8 @@ fi
 # ==============================================================================
 print_test_header "CHECKING TESTS RESULTS"
 anyerror=""
+passed_tests=""
+skipped_tests=""
 
 # Check core test results
 for TEST in ${INSTTESTS_CORE}; do
@@ -590,6 +592,7 @@ for TEST in ${INSTTESTS_CORE}; do
     # Check for skip conditions
     if core_should_skip_test "${TEST}"; then
         info "skipped ${TEST} test"
+        skipped_tests="${skipped_tests}${TEST} "
         print_test_separator
         continue
     fi
@@ -603,6 +606,7 @@ for TEST in ${INSTTESTS_CORE}; do
     info
     if [[ ${found} -eq 1 ]]; then
         info "${TEST}: SUCCESS"
+        passed_tests="${passed_tests}${TEST} "
     else
         anyerror="${anyerror}${TEST},"
         info "${TEST}: FAILED, critical logs from tracee:"
@@ -621,6 +625,7 @@ for TEST in ${INSTTESTS_EXTENDED}; do
     # Check for skip conditions
     if extended_should_skip_test "${TEST}"; then
         info "skipped ${TEST} test"
+        skipped_tests="${skipped_tests}${TEST} "
         print_test_separator
         continue
     fi
@@ -634,6 +639,7 @@ for TEST in ${INSTTESTS_EXTENDED}; do
     info
     if [[ ${found} -eq 1 ]]; then
         info "${TEST}: SUCCESS"
+        passed_tests="${passed_tests}${TEST} "
     else
         anyerror="${anyerror}${TEST},"
         info "${TEST}: FAILED, critical logs from tracee:"
@@ -647,7 +653,26 @@ done
 info
 
 # ==============================================================================
-# Cleanup and Summary
+# PHASE 9: TEST SUMMARY
+# ==============================================================================
+# Consolidated view of what actually ran versus what self-skipped (missing
+# kernel headers, wrong arch, an absent kernel feature, ...). Every e2e path -
+# the containerized run, the AMI matrix, and the Firecracker microVM - funnels
+# through this script, so the run/skip breakdown shows up in CI here instead of
+# staying buried in the per-test setup logs above. The per-test skip reasons
+# are printed during SETUP; this is the roll-up.
+print_test_header "TEST SUMMARY"
+failed_tests="${anyerror%,}"
+failed_tests="${failed_tests//,/ }"
+passed_tests="${passed_tests% }"
+skipped_tests="${skipped_tests% }"
+info "Ran:     ${passed_tests:-none}"
+info "Skipped: ${skipped_tests:-none}"
+info "Failed:  ${failed_tests:-none}"
+print_test_separator
+
+# ==============================================================================
+# Cleanup and Final Verdict
 # ==============================================================================
 cleanup_test_artifact_files "${KEEP_ARTIFACTS}" "${outputfile}" "${logfile}"
 rm -rf "${TRACEE_TMP_DIR}"
