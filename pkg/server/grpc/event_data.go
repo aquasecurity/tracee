@@ -400,12 +400,12 @@ func getSockaddr(v map[string]string) (*pb.EventValue, error) {
 		sockaddr = &pb.SockAddr{
 			SaFamily: pb.SaFamilyT_AF_INET,
 			SinPort:  uint32(sinport),
-			SinAddr:  v["sin_addr"],
+			SinAddr:  sanitizeStringForProtobuf(v["sin_addr"]),
 		}
 	case "AF_UNIX":
 		sockaddr = &pb.SockAddr{
 			SaFamily: pb.SaFamilyT_AF_UNIX,
-			SunPath:  v["sun_path"],
+			SunPath:  sanitizeStringForProtobuf(v["sun_path"]),
 		}
 	case "AF_INET6":
 		sinport, err := strconv.ParseUint(v["sin6_port"], 10, 32)
@@ -428,7 +428,7 @@ func getSockaddr(v map[string]string) (*pb.EventValue, error) {
 			Sin6Port:     uint32(sinport),
 			Sin6Flowinfo: uint32(sin6Flowinfo),
 			Sin6Scopeid:  uint32(sin6Scopeid),
-			Sin6Addr:     v["sin6_addr"],
+			Sin6Addr:     sanitizeStringForProtobuf(v["sin6_addr"]),
 		}
 	}
 

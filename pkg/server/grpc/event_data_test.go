@@ -3,8 +3,10 @@ package grpc
 import (
 	"reflect"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -1109,6 +1111,94 @@ func Test_sanitizeValueForProtobuf(t *testing.T) {
 
 			result := sanitizeValueForProtobuf(tt.input)
 			tt.validate(t, result)
+		})
+	}
+}
+
+// Test_getSockaddr_InvalidUTF8 reproduces issue #5292: a getsockname
+// (sockaddr_t) argument can carry non-UTF-8 bytes in sun_path / sin_addr /
+// sin6_addr. Those land in proto3 string fields, which require valid UTF-8,
+// so proto.Marshal fails with "string field contains invalid UTF-8" and the
+// StreamEvents gRPC stream dies. After sanitization the resulting message must
+// marshal cleanly while valid paths stay byte-for-byte unchanged.
+func Test_getSockaddr_InvalidUTF8(t *testing.T) {
+	t.Parallel()
+
+	// Abstract AF_UNIX socket paths begin with a NUL byte and may contain
+	// arbitrary binary bytes; 0x80 is a lone continuation byte and is not
+	// valid UTF-8 on its own.
+	invalidSunPath := "\x00abstract\x80\xff/sock"
+
+	tests := []struct {
+		name     string
+		argValue map[string]string
+		assertFn func(t *testing.T, sa *pb.SockAddr)
+	}{
+		{
+			name:     "AF_UNIX invalid sun_path",
+			argValue: map[string]string{"sa_family": "AF_UNIX", "sun_path": invalidSunPath},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.True(t, utf8.ValidString(sa.GetSunPath()), "sanitized sun_path must be valid UTF-8")
+			},
+		},
+		{
+			name:     "AF_UNIX valid sun_path unchanged",
+			argValue: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.Equal(t, "/tmp/socket", sa.GetSunPath(), "valid sun_path must be unchanged")
+			},
+		},
+		{
+			name:     "AF_INET invalid sin_addr",
+			argValue: map[string]string{"sa_family": "AF_INET", "sin_addr": "1.2.3.4\xff", "sin_port": "80"},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.True(t, utf8.ValidString(sa.GetSinAddr()), "sanitized sin_addr must be valid UTF-8")
+				assert.Equal(t, uint32(80), sa.GetSinPort(), "valid sin_port must be unchanged")
+			},
+		},
+		{
+			name: "AF_INET6 invalid sin6_addr",
+			argValue: map[string]string{
+				"sa_family": "AF_INET6", "sin6_addr": "fe80::\xc0", "sin6_port": "443",
+				"sin6_flowinfo": "0", "sin6_scopeid": "0",
+			},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.True(t, utf8.ValidString(sa.GetSin6Addr()), "sanitized sin6_addr must be valid UTF-8")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			data, err := getEventData(trace.Event{
+				Args: []trace.Argument{
+					{
+						ArgMeta: trace.ArgMeta{Name: "address", Type: "struct sockaddr*"},
+						Value:   tt.argValue,
+					},
+				},
+			})
+			assert.NoError(t, err)
+
+			var sockaddr *pb.SockAddr
+			for _, d := range data {
+				if sa := d.GetSockaddr(); sa != nil {
+					sockaddr = sa
+					break
+				}
+			}
+			assert.NotNil(t, sockaddr)
+			tt.assertFn(t, sockaddr)
+
+			// The whole point of #5292: the converted message must survive
+			// proto.Marshal. Before the fix this returns
+			// "string field contains invalid UTF-8".
+			event := &pb.Event{Data: data}
+			_, err = proto.Marshal(event)
+			assert.NoError(t, err, "proto.Marshal must not fail on sanitized sockaddr")
 		})
 	}
 }
