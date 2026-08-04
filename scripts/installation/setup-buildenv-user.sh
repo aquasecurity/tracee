@@ -46,6 +46,17 @@ alias ls="ls --color"
 set -o vi
 EOF
 ln -sf /home/tracee/.bashrc /home/tracee/.profile
+
+# pre-create the Go cache and module-cache mount points, and thereby the
+# enclosing .cache, so the engine bind-mounts onto tracee-owned directories.
+# Without this the docker daemon (real root) creates the missing parent
+# /home/tracee/.cache as root when it sets up the go-build mount, and a tool
+# that writes a sibling cache there - staticcheck's /home/tracee/.cache/
+# staticcheck - can no longer mkdir it as the tracee user. The chown below
+# gives these the host uid/gid. (Rootless podman is unaffected: its --user
+# root maps to the caller, so mount parents come out caller-owned anyway.)
+mkdir -p /home/tracee/.cache/go-build /home/tracee/go/pkg/mod
+
 chown -R "${uid}:${gid}" /home/tracee
 
 # the mounted source tree may be owned by a different uid than the one make
