@@ -1,9 +1,11 @@
 #
-# Creates the official tracee containers.
+# Creates the official tracee containers (the only images from this repo that
+# are pushed to a registry). Local dev/CI images live in builder/Containerfile.
+#
+# Plain Dockerfile v1 syntax only - builds with both docker and podman.
 #
 
 ARG BTFHUB=0
-ARG FLAVOR=tracee-core
 
 #
 # tracee-base
@@ -15,7 +17,7 @@ USER root
 
 # Upgrade busybox to fix CVE-2024-58251
 # TODO: Remove this when Alpine releases a new version with busybox >= 1.37.0-r20
-RUN apk update && apk upgrade --available busybox busybox-binsh ssl_client
+RUN apk --no-cache upgrade --available busybox busybox-binsh ssl_client
 
 # install base environment
 
@@ -33,23 +35,16 @@ FROM tracee-base AS tracee-make-base
 LABEL AS=tracee-make-base
 USER root
 
-# Install all dependencies using centralized script
-COPY scripts/ /tmp/scripts/
-RUN /tmp/scripts/installation/install-deps-alpine.sh
+# Install build dependencies using centralized scripts
+COPY scripts/installation/ /tmp/scripts/installation/
+COPY scripts/lib*.sh /tmp/scripts/
+RUN /tmp/scripts/installation/install-deps-alpine.sh --base && \
+    /tmp/scripts/installation/install-deps-alpine.sh --toolchain
 
-# Set up Go environment variables for container
-RUN echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile && \
-    echo 'export GOROOT=/usr/local/go' >> /etc/profile && \
-    echo 'export GOPATH=$HOME/go' >> /etc/profile && \
-    echo 'export GOTOOLCHAIN=auto' >> /etc/profile && \
-    echo 'export PATH=$PATH:$GOPATH/bin' >> /etc/profile
+ENV GOTOOLCHAIN="auto"
 
-# install bpftool from btfhub
-
-RUN cd /tmp && \
-    git clone https://github.com/aquasecurity/btfhub.git && \
-    cd ./btfhub && \
-    ./3rdparty/bpftool.sh
+# install bpftool from btfhub (pinned commit)
+RUN /tmp/scripts/installation/install-bpftool.sh
 
 #
 # tracee-make
@@ -62,12 +57,14 @@ ARG STATIC
 ARG RELEASE_VERSION
 USER root
 ENV HOME=/tracee
+# build natively inside the stage, never dispatch into another container
+ENV TRACEE_BUILDENV=1
+ENV TRACEE_BUILDENV_DISTRO=alpine
 WORKDIR /tracee
 
 COPY . /tracee
 
-RUN source /etc/profile && \
-    make clean && \
+RUN make clean && \
     BTFHUB=$BTFHUB STATIC=$STATIC RELEASE_VERSION=$RELEASE_VERSION make tracee && \
     make tracee-operator && \
     make signatures && \
@@ -93,12 +90,3 @@ COPY --from=tracee-make /tracee/docs/man/ /tracee/docs/man/
 COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
 
 ENTRYPOINT ["/tracee/entrypoint.sh"]
-
-#
-# tracee
-#
-
-FROM $FLAVOR
-USER root
-ENV HOME=/tracee
-WORKDIR /tracee

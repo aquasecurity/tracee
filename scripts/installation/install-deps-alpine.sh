@@ -16,7 +16,6 @@ install_base_packages() {
     info "Installing base packages"
     require_cmds apk
 
-    apk update
     apk add --no-cache \
         bash \
         build-base \
@@ -45,6 +44,8 @@ install_base_packages() {
     # BusyBox applets - link directly to busybox so applet name is detected correctly
     ln -sf /bin/busybox /usr/bin/uname
     ln -sf /bin/busybox /usr/bin/date
+    ln -sf /bin/busybox /usr/bin/echo
+    ln -sf /bin/bash /usr/bin/bash
 
     info "Base packages installed successfully"
 }
@@ -67,33 +68,9 @@ install_go_tools() {
     bash "${SCRIPT_DIR}/install-go-tools.sh"
 }
 
-check_docker() {
-    info "Checking Docker availability"
-
-    # Check if Docker is already installed
-    if command -v docker > /dev/null 2>&1; then
-        info "Docker already installed: $(docker --version)"
-    else
-        info "Docker not found. Installing from Alpine repositories..."
-        apk add docker docker-cli-compose
-        info "Docker installed successfully"
-    fi
-    
-    # Add user to docker group if USER_NAME is set and not root
-    if [ -n "${USER_NAME}" ] && [ "${USER_NAME}" != "root" ]; then
-        if getent group docker >/dev/null 2>&1; then
-            addgroup "${USER_NAME}" docker
-            info "Added ${USER_NAME} to docker group"
-        else
-            info "Docker group not found, skipping group assignment"
-        fi
-    fi
-}
-
 verify_installation() {
     info "Verifying installation"
 
-    # Check critical tools (Docker is optional)
     require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck govulncheck
 
     # Show versions
@@ -103,25 +80,41 @@ verify_installation() {
     clang-format --version | head -n1
     staticcheck -version
 
-    # Check Docker availability (optional)
-    if command -v docker > /dev/null 2>&1; then
-        docker --version
-    else
-        info "Docker not available (will be provided by GitHub Actions)"
-    fi
-
     info "All tools verified successfully"
+}
+
+# Stage modes let the container build environments (builder/Containerfile)
+# install dependencies layer by layer; the default installs everything.
+usage() {
+    echo "usage: $0 [--base|--toolchain|--go-tools|--all]"
+    exit 1
 }
 
 main() {
     info "=== Tracee Dependencies Installation ==="
 
-    install_base_packages
-    install_golang
-    install_clang
-    install_go_tools
-    check_docker
-    verify_installation
+    case "${1:---all}" in
+        --base)
+            install_base_packages
+            ;;
+        --toolchain)
+            install_golang
+            install_clang
+            ;;
+        --go-tools)
+            install_go_tools
+            ;;
+        --all)
+            install_base_packages
+            install_golang
+            install_clang
+            install_go_tools
+            verify_installation
+            ;;
+        *)
+            usage
+            ;;
+    esac
 
     info "=== Tracee dependencies installation completed successfully! ==="
 }

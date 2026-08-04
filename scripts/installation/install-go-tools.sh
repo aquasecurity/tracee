@@ -17,6 +17,8 @@ REVIVE_VERSION="8ece20b0789c517bd3a6742db0daa4dd5928146d" # v1.7.0
 GOIMPORTS_REVISER_VERSION="fa5587e51ba33c58734984cb41370a5b2582d5b7" # v3.12.6
 ERRCHECK_VERSION="11c27a7ce69d583465d80d808817d22d6653ee34" # v1.9.0
 GOVULNCHECK_VERSION="d1f380186385b4f64e00313f31743df8e4b89a77" # v1.1.4
+GOPLS_VERSION="5c4433be420451410e8cfd968eda32a818dac087" # gopls/v0.21.1
+DELVE_VERSION="498ee9c27223fed032af8856f7a62590a63b9439" # v1.25.2
 
 install_go_tools() {
     info "Installing Go development tools"
@@ -53,6 +55,16 @@ install_go_tools() {
     info "Installing govulncheck ${GOVULNCHECK_VERSION}"
     go install "golang.org/x/vuln/cmd/govulncheck@${GOVULNCHECK_VERSION}"
     cp "$GOPATH/bin/govulncheck" /usr/bin/
+
+    # Install gopls (language server for the lsp-go / editor-attach targets)
+    info "Installing gopls ${GOPLS_VERSION}"
+    go install "golang.org/x/tools/gopls@${GOPLS_VERSION}"
+    cp "$GOPATH/bin/gopls" /usr/bin/
+
+    # Install delve (Go debugger for the editor-attach targets)
+    info "Installing delve ${DELVE_VERSION}"
+    go install "github.com/go-delve/delve/cmd/dlv@${DELVE_VERSION}"
+    cp "$GOPATH/bin/dlv" /usr/bin/
 
     # Clean up GOPATH
     rm -rf "$GOPATH"

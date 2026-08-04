@@ -143,10 +143,13 @@ add_llvm_apt_repo() {
 
     # Install prerequisites
     apt-get update
-    apt-get install -y wget gnupg software-properties-common
+    apt-get install -y --no-install-recommends wget gnupg software-properties-common
 
-    # Add LLVM GPG key
-    wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc > /dev/null
+    # Add LLVM GPG key from the vendored copy (never fetched at build time)
+    if [[ ! -f "${LLVM_GPG_KEY_FILE}" ]]; then
+        die "LLVM GPG signing key not found: ${LLVM_GPG_KEY_FILE}"
+    fi
+    cp "${LLVM_GPG_KEY_FILE}" /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 
     # Detect Ubuntu codename
     local codename
@@ -179,19 +182,28 @@ install_clang_ubuntu() {
     # Verify Ubuntu-specific commands are available
     require_cmds apt-get update-alternatives ln rm
 
-    # Add LLVM repository for newer Clang versions
-    add_llvm_apt_repo
-
-    # Install base LLVM and Clang packages
-    apt-get install -y \
+    # Prefer the distro's own packages (recent Ubuntu ships clang 19+);
+    # fall back to apt.llvm.org for releases that do not (the LLVM repo
+    # does not serve every codename, so it cannot be the first choice)
+    apt-get update
+    if ! apt-get install -y --no-install-recommends \
         llvm-${CLANG_VERSION} \
         llvm-${CLANG_VERSION}-tools \
         llvm-${CLANG_VERSION}-dev \
         clang-${CLANG_VERSION} \
-        clang-tools-${CLANG_VERSION}
+        clang-tools-${CLANG_VERSION}; then
+        info "Distro packages for Clang ${CLANG_VERSION} not available, using apt.llvm.org"
+        add_llvm_apt_repo
+        apt-get install -y --no-install-recommends \
+            llvm-${CLANG_VERSION} \
+            llvm-${CLANG_VERSION}-tools \
+            llvm-${CLANG_VERSION}-dev \
+            clang-${CLANG_VERSION} \
+            clang-tools-${CLANG_VERSION}
+    fi
 
     # Try to install clang-format-19 directly (separate package)
-    if apt-get install -y clang-format-${CLANG_VERSION}; then
+    if apt-get install -y --no-install-recommends clang-format-${CLANG_VERSION}; then
         info "clang-format-${CLANG_VERSION} installed successfully"
     else
         warn "clang-format-${CLANG_VERSION} package not available"

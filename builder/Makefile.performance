@@ -24,7 +24,9 @@ PYRODIR := $(PERFDIR)/dashboard
 # tools
 #
 
-CMD_DOCKER := docker
+# container engine: docker or podman (auto-detected, docker first);
+# 'podman compose' requires podman-compose or the docker-compose provider
+CMD_DOCKER ?= $(shell command -v docker > /dev/null 2>&1 && echo docker || echo podman)
 CMD_PS := ps
 
 .check_%:
@@ -110,7 +112,7 @@ dashboard-stop: | \
 		exit 0
 	fi
 	echo "STOPPING Node Exporter, Prometheus, Grafana and Pyroscope"
-	$(CMD_DOCKER) ps -q -f 'name=tracee' | xargs docker rm -f
+	$(CMD_DOCKER) ps -q -f 'name=tracee' | xargs $(CMD_DOCKER) rm -f
 #
 # clean
 #
@@ -118,4 +120,4 @@ dashboard-stop: | \
 .PHONY: clean
 clean:
 	rm -f .check_tree
-	rm -f .check_$(CMD_CLANG_FMT)
+	rm -f .check_$(CMD_DOCKER)

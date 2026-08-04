@@ -19,7 +19,8 @@ MAKEFLAGS += --no-print-directory
 # tools
 #
 
-CMD_DOCKER ?= docker
+# container engine: docker or podman (auto-detected, docker first)
+CMD_DOCKER ?= $(shell command -v docker > /dev/null 2>&1 && echo docker || echo podman)
 
 .check_%:
 #
@@ -72,7 +73,7 @@ help:
 #
 
 EVT_TRIGGER_RUNNER_IMAGE ?= evt-trigger-runner:latest
-EVT_TRIGGER_RUNNER_DOCKERFILE = builder/Dockerfile.evt-trigger-runner
+EVT_TRIGGER_RUNNER_DOCKERFILE = builder/Containerfile
 
 .PHONY: build
 build: \

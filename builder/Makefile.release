@@ -19,7 +19,8 @@ MAKEFLAGS += --no-print-directory
 #
 
 CMD_CHECKSUM ?= sha256sum
-CMD_DOCKER ?= docker
+# container engine: docker or podman (auto-detected, docker first)
+CMD_DOCKER ?= $(shell command -v docker > /dev/null 2>&1 && echo docker || echo podman)
 CMD_GIT ?= git
 CMD_GITHUB ?= gh
 CMD_MKDIR ?= mkdir
@@ -57,8 +58,7 @@ ifeq ($(UNAME_M),aarch64)
 endif
 
 ifeq ($(ALTARCH),)
-	@echo "can't find architecture"
-	exit 1
+$(error unsupported architecture: $(UNAME_M))
 endif
 
 #
@@ -217,8 +217,8 @@ snapshot: \
 
 .PHONY: alpine-prepare
 alpine-prepare:
-	$(MAKE) -f builder/Makefile.tracee-make alpine-prepare && \
-		$(MAKE) -f builder/Makefile.tracee-make alpine-prepare ARG="clean"
+	$(MAKE) image DISTRO=alpine && \
+		$(MAKE) clean
 
 .PHONY: build-tracee-container
 build-tracee-container: alpine-prepare
@@ -232,21 +232,21 @@ build-tracee-container: alpine-prepare
 
 .PHONY: ubuntu-prepare
 ubuntu-prepare:
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare && \
-		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+	$(MAKE) image DISTRO=ubuntu && \
+		$(MAKE) clean
 
 .PHONY: build-tracee-binary-static
 build-tracee-binary-static: ubuntu-prepare
 # static
 	BTFHUB=0 STATIC=1 STRIP_BPF_DEBUG=$(STRIP_BPF_DEBUG) RELEASE_VERSION=$(RELEASE_VERSION) \
-		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="tracee" && \
+		$(MAKE) tracee DISTRO=ubuntu && \
 		$(CMD_MV) dist/tracee dist/tracee-static
 
 .PHONY: build-tracee-binary-shared
 build-tracee-binary-shared: ubuntu-prepare
 # shared libs
 	BTFHUB=0 STATIC=0 STRIP_BPF_DEBUG=$(STRIP_BPF_DEBUG) RELEASE_VERSION=$(RELEASE_VERSION) \
-		$(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+		$(MAKE) all DISTRO=ubuntu
 
 .PHONY: copy-man
 copy-man: \

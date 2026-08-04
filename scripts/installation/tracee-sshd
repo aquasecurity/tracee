@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+#
+# Entry point for the tracee dev box (see `make dev`). It runs sshd so editors
+# that only speak Remote-SSH can attach; engine-native attach (podman exec,
+# TRAMP's podman method, VS Code attach) needs none of this.
+#
+# You always log in as the uid-matched 'tracee' user, so files you create in
+# the repo stay yours. sudo (passwordless in the image) gives root.
+#
+# Two paths, chosen by the uid the container starts with:
+#   - Non-root: podman rootless with --userns=keep-id. You are already the
+#     uid-matched user inside, so sshd runs unprivileged.
+#   - Root: docker or rootful podman, where the container starts as root and
+#     hands the ssh session to the baked 'tracee' user.
+set -euo pipefail
+
+port="${SSH_PORT:-2222}"
+home=/home/tracee
+
+# A stable host key keeps the box's ssh fingerprint constant across restarts,
+# so clients do not hit "host key changed" on every `make dev`. `make dev`
+# mounts one from the repo; without it, fall back to an ephemeral key.
+mkdir -p /tmp/tracee-sshd
+hostkey=/tmp/tracee-sshd/hostkey
+if [ -f /run/tracee/hostkey ]; then
+    install -m 600 /run/tracee/hostkey "${hostkey}"
+elif [ ! -f "${hostkey}" ]; then
+    ssh-keygen -q -t ed25519 -f "${hostkey}" -N ""
+fi
+
+# SetEnv re-establishes the in-container markers for ssh logins (a fresh ssh
+# session does not inherit the image ENV), so `make` inside runs natively
+# instead of trying to dispatch.
+common_opts=(
+    -D -e -p "${port}"
+    -h "${hostkey}"
+    -o PasswordAuthentication=no
+    -o AuthorizedKeysFile=/run/tracee/authorized_keys
+    -o "SetEnv=TRACEE_BUILDENV=1 TRACEE_BUILDENV_DISTRO=${TRACEE_BUILDENV_DISTRO:-}"
+)
+
+if [ "$(id -u)" -ne 0 ]; then
+    # keep-id path: the home volume may arrive root-owned on first use
+    me="$(id -un)"
+    sudo -n chown "$(id -u):$(id -g)" "${home}" 2> /dev/null || true
+    exec /usr/sbin/sshd "${common_opts[@]}" \
+        -o UsePAM=no \
+        -o "PidFile=/tmp/tracee-sshd/sshd.pid" \
+        -o "AllowUsers=${me}"
+fi
+
+# Root path: the uid-matched 'tracee' user is baked into the image
+chown "$(stat -c '%u:%g' /tracee 2> /dev/null || echo tracee:tracee)" "${home}" || true
+mkdir -p /run/sshd
+exec /usr/sbin/sshd "${common_opts[@]}" \
+    -o PermitRootLogin=no \
+    -o StrictModes=no \
+    -o AllowUsers=tracee

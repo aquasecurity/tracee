@@ -26,7 +26,7 @@ install_base_packages() {
 
     wait_for_apt_locks
     apt-get update
-    apt-get install -y \
+    apt-get install -y --no-install-recommends \
         bsdutils \
         build-essential \
         pkgconf \
@@ -42,9 +42,13 @@ install_base_packages() {
         ca-certificates \
         wget \
         linux-tools-common \
+        linux-headers-generic \
         iputils-ping \
         netcat-openbsd \
-        bpftrace
+        bpftrace \
+        sudo \
+        rsync \
+        findutils
 
     info "Base packages installed successfully"
 }
@@ -73,7 +77,7 @@ install_docker() {
 
     # Install lsb-release for Ubuntu codename detection
     apt-get update
-    apt-get install -y lsb-release
+    apt-get install -y --no-install-recommends lsb-release
 
     # Add Docker GPG key (from local vendored copy) and repository
     rm -f /usr/share/keyrings/docker-archive-keyring.gpg
@@ -82,7 +86,7 @@ install_docker() {
 
     wait_for_apt_locks
     apt-get update
-    apt-get install -y docker-ce-cli
+    apt-get install -y --no-install-recommends docker-ce-cli
 
     info "Docker installed successfully"
 }
@@ -174,16 +178,47 @@ verify_installation() {
     info "All tools verified successfully"
 }
 
+# Stage modes let the container build environments (builder/Containerfile)
+# install dependencies layer by layer; the default installs everything
+# (Vagrant VMs and Ubuntu hosts).
+usage() {
+    echo "usage: $0 [--base|--toolchain|--go-tools|--docker-cli|--ctr|--all]"
+    exit 1
+}
+
 main() {
     info "=== Tracee Dependencies Installation (Ubuntu/Debian) ==="
 
-    install_base_packages
-    install_golang
-    install_clang
-    install_go_tools
-    install_docker
-    install_containerd_cli
-    verify_installation
+    case "${1:---all}" in
+        --base)
+            install_base_packages
+            ;;
+        --toolchain)
+            install_golang
+            install_clang
+            ;;
+        --go-tools)
+            install_go_tools
+            ;;
+        --docker-cli)
+            install_docker
+            ;;
+        --ctr)
+            install_containerd_cli
+            ;;
+        --all)
+            install_base_packages
+            install_golang
+            install_clang
+            install_go_tools
+            install_docker
+            install_containerd_cli
+            verify_installation
+            ;;
+        *)
+            usage
+            ;;
+    esac
 
     info "=== Tracee dependencies installation completed successfully! ==="
 }

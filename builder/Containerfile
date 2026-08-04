@@ -1,0 +1,361 @@
+# Tracee local build/dev/CI images - single multi-stage Containerfile.
+#
+# Every image built from this file is LOCAL ONLY (never pushed to a registry).
+# The official (pushed) tracee runtime image lives in Containerfile.release.
+#
+# Engine contract: plain Dockerfile v1 syntax only - no '# syntax=' directive,
+# no 'RUN --mount', no heredocs - so it builds identically with docker and
+# podman/buildah. Build with a --target so unrelated stages are skipped:
+#
+#   <engine> build -f builder/Containerfile --target <stage> -t <tag> \
+#       --build-arg uid=$(id -u) --build-arg gid=$(id -g) .
+#
+# Stage graph (see 'make images' / mk/images.mk for tags):
+#
+#   alpine-base -> alpine-toolchain -> alpine-checkers -> alpine-dev
+#   ubuntu-base -> ubuntu-toolchain -> ubuntu-checkers -> ubuntu-dev
+#   ubuntu-base -> man
+#   golang      -> protoc, k8s
+#   alpine-toolchain -> evt-builder -> evt-trigger-runner
+#   mkdocs (independent)
+
+ARG uid=1000
+ARG gid=1000
+
+#
+# alpine line (primary: musl, static builds)
+#
+
+FROM alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS alpine-base
+LABEL AS=alpine-base
+USER root
+
+# Upgrade busybox to fix CVE-2024-58251
+# TODO: Remove this when Alpine releases a new version with busybox >= 1.37.0-r20
+RUN apk --no-cache upgrade --available busybox busybox-binsh ssl_client
+
+COPY scripts/installation/ /tmp/scripts/installation/
+COPY scripts/lib*.sh /tmp/scripts/
+RUN /tmp/scripts/installation/install-deps-alpine.sh --base
+
+FROM alpine-base AS alpine-toolchain
+LABEL AS=alpine-toolchain
+USER root
+
+RUN /tmp/scripts/installation/install-deps-alpine.sh --toolchain
+RUN /tmp/scripts/installation/install-bpftool.sh
+
+ENV GOTOOLCHAIN="auto"
+
+FROM alpine-toolchain AS alpine-checkers
+LABEL AS=alpine-checkers
+USER root
+
+RUN /tmp/scripts/installation/install-deps-alpine.sh --go-tools
+
+FROM alpine-checkers AS alpine-dev
+LABEL AS=alpine-dev
+USER root
+
+# extra tools for testing things, plus bear (compile_commands.json for
+# clangd) and sshd (the optional dev-box attach path, see 'make dev')
+RUN apk --no-cache add man-pages man-pages-posix bash-completion vim iproute2 vlan bridge-utils net-tools \
+    netcat-openbsd iputils wget lynx w3m stress-ng bear openssh-server
+
+RUN install -m 755 /tmp/scripts/installation/tracee-sshd /usr/local/bin/tracee-sshd
+
+# docker CLI only: container-runtime access goes through the host engine
+# socket mounted at /var/run/docker.sock (docker, or podman's compat API)
+RUN apk --no-cache add docker-cli
+
+ARG uid
+ARG gid
+RUN /tmp/scripts/installation/setup-buildenv-user.sh "${uid}" "${gid}"
+
+# in-container detection for the root Makefile: recipes run natively here
+# instead of dispatching into another container
+ENV TRACEE_BUILDENV=1
+ENV TRACEE_BUILDENV_DISTRO=alpine
+
+USER tracee
+ENV HOME=/home/tracee
+WORKDIR /tracee
+
+#
+# ubuntu line (glibc, shared builds)
+#
+
+FROM ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c06ba2cef9ebffbc7092d90 AS ubuntu-base
+LABEL AS=ubuntu-base
+USER root
+
+ARG DEBIAN_FRONTEND="noninteractive"
+ENV DEBCONF_NOWARNINGS="yes"
+
+COPY scripts/installation/ /tmp/scripts/installation/
+COPY scripts/lib*.sh /tmp/scripts/
+RUN /tmp/scripts/installation/install-deps-ubuntu.sh --base && \
+    rm -rf /var/lib/apt/lists/*
+
+FROM ubuntu-base AS ubuntu-toolchain
+LABEL AS=ubuntu-toolchain
+USER root
+
+ARG DEBIAN_FRONTEND="noninteractive"
+
+RUN /tmp/scripts/installation/install-deps-ubuntu.sh --toolchain && \
+    rm -rf /var/lib/apt/lists/*
+RUN /tmp/scripts/installation/install-bpftool.sh && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV GOTOOLCHAIN="auto"
+
+FROM ubuntu-toolchain AS ubuntu-checkers
+LABEL AS=ubuntu-checkers
+USER root
+
+RUN /tmp/scripts/installation/install-deps-ubuntu.sh --go-tools
+
+FROM ubuntu-checkers AS ubuntu-dev
+LABEL AS=ubuntu-dev
+USER root
+
+ARG DEBIAN_FRONTEND="noninteractive"
+
+# extra tools for testing things, plus bear (compile_commands.json for
+# clangd) and sshd (the optional dev-box attach path, see 'make dev')
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    man bash-completion vim iproute2 vlan bridge-utils net-tools \
+    netcat-openbsd iputils-ping wget lynx w3m stress bear openssh-server && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN install -m 755 /tmp/scripts/installation/tracee-sshd /usr/local/bin/tracee-sshd
+
+# docker CLI only: container-runtime access goes through the host engine
+# socket mounted at /var/run/docker.sock (docker, or podman's compat API)
+RUN /tmp/scripts/installation/install-deps-ubuntu.sh --docker-cli && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG uid
+ARG gid
+RUN /tmp/scripts/installation/setup-buildenv-user.sh "${uid}" "${gid}"
+
+# in-container detection for the root Makefile: recipes run natively here
+# instead of dispatching into another container
+ENV TRACEE_BUILDENV=1
+ENV TRACEE_BUILDENV_DISTRO=ubuntu
+
+USER tracee
+ENV HOME=/home/tracee
+WORKDIR /tracee
+
+#
+# ubuntu-fc: opt-in VM-capable environment for the kernel-tampering E2E tests
+# (FTRACE_HOOK, HOOKED_SYSCALL). Adds Firecracker and the ext4/rsync tooling
+# the runner (scripts/e2e-firecracker.sh) needs to assemble a throwaway microVM
+# rootfs. No kernel is bundled: the runner boots the HOST's running kernel
+# (extracted from /boot/vmlinuz-$(uname -r), which is bind-mounted in). Kept
+# off the default dev images so everyday builds stay lean; built only for
+# `make test-e2e-vm`.
+#
+
+FROM ubuntu-checkers AS ubuntu-fc
+LABEL AS=ubuntu-fc
+USER root
+
+ARG DEBIAN_FRONTEND="noninteractive"
+
+# rootfs assembly + module loading + guest-init + e2e tooling (jq is required
+# by run.sh; binutils=readelf for vmlinux extraction; kmod=insmod/rmmod;
+# procps/iproute2/sudo used by the guest init and the module test scripts)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    e2fsprogs rsync kmod sudo iproute2 procps binutils jq zstd xz-utils && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN /tmp/scripts/installation/install-firecracker.sh
+
+ARG uid
+ARG gid
+RUN /tmp/scripts/installation/setup-buildenv-user.sh "${uid}" "${gid}"
+
+ENV TRACEE_BUILDENV=1
+ENV TRACEE_BUILDENV_DISTRO=ubuntu
+# the microVM runner must run as root (mkfs, firecracker, /dev/kvm); it is
+# only reached via the privileged test-e2e-vm path
+USER root
+WORKDIR /tracee
+
+#
+# man: pandoc for man page generation (make man)
+#
+
+FROM ubuntu-base AS man
+LABEL AS=man
+USER root
+
+ARG DEBIAN_FRONTEND="noninteractive"
+
+# When bumping PANDOC_VERSION, update the corresponding checksum files in
+# scripts/installation/checksums/ (pandoc releases publish no official
+# checksums; compute from the canonical release asset)
+ARG PANDOC_VERSION="3.2"
+
+RUN PANDOC_DEB="pandoc-${PANDOC_VERSION}-1-$(dpkg --print-architecture).deb" && \
+    wget -q "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/${PANDOC_DEB}" && \
+    sha256sum -c "/tmp/scripts/installation/checksums/${PANDOC_DEB}.sha256" && \
+    dpkg -i "${PANDOC_DEB}" && \
+    rm -f "${PANDOC_DEB}"
+
+ENV TRACEE_BUILDENV=1
+WORKDIR /tracee
+
+#
+# protoc: protobuf compiler + Go codegen plugins (make protoc)
+#
+
+FROM golang:1.26.5@sha256:d52df9c279840adf958d017ebb275651ed8338b953d39817bc3633a2e6b1bbcc AS protoc
+LABEL AS=protoc
+
+# Release tag (shared minor.patch): the per-language major is not part of it,
+# e.g. release 35.1 is C++ 7.35.1 - https://protobuf.dev/support/version-support
+# When bumping PROTOC_VERSION, update the corresponding checksum files in
+# scripts/installation/checksums/ (cross-check against the sha256 digests in
+# the GitHub release API for the tag)
+ARG PROTOC_VERSION="35.1"
+ARG PROTOC_ZIP="protoc-${PROTOC_VERSION}-linux-x86_64.zip"
+
+COPY scripts/installation/checksums/ /tmp/checksums/
+RUN apt update -y && \
+    apt install -y --no-install-recommends unzip && \
+    rm -rf /var/lib/apt/lists/*
+RUN wget -q https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP} && \
+    sha256sum -c "/tmp/checksums/${PROTOC_ZIP}.sha256" && \
+    unzip ${PROTOC_ZIP} -d /usr/local && \
+    rm -f ${PROTOC_ZIP}
+
+# Update guide for the codegen plugins below:
+#
+# - protoc-gen-go is part of the google.golang.org/protobuf module and shares
+#   its version: pin the commit of the tag matching the protobuf version in
+#   go.mod (https://github.com/protocolbuffers/protobuf-go/releases).
+#
+# - protoc-gen-go-grpc is a nested module of grpc-go versioned independently
+#   from grpc itself (tags cmd/protoc-gen-go-grpc/vX.Y.Z): pin the commit of
+#   the plugin release shipped with the grpc version in go.mod - see the
+#   `version` constant in cmd/protoc-gen-go-grpc/main.go at that grpc tag.
+#   Do not pin grpc release commits: they resolve to pseudo-versions that
+#   fail sum.golang.org verification.
+#
+# - protoc-gen-go-json (mfridman fork, continuation of the archived mitchellh
+#   plugin): pin the commit of the latest release
+#   (https://github.com/mfridman/protoc-gen-go-json/releases).
+#
+# After bumping, regenerate with: make protoc
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@96a179180f0ad6bba9b1e7b6e38d0affb0168e9a # v1.36.11
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@1c63fa5f5492fb6cb4cabf9847999ce469505f49 # protoc-gen-go-grpc v1.6.2
+RUN go install github.com/mfridman/protoc-gen-go-json@d4d13d829d9034a255ae5ab0568876d5da33f6ef # v1.6.0
+
+ENV TRACEE_BUILDENV=1
+WORKDIR /tracee
+
+#
+# k8s: controller-gen for operator codegen (make k8s-manifests / k8s-generate)
+#
+
+FROM golang:1.26.5@sha256:d52df9c279840adf958d017ebb275651ed8338b953d39817bc3633a2e6b1bbcc AS k8s
+LABEL AS=k8s
+
+RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@c71f90318f2c818b93a4458e42f7c4da416d5368 # v0.17.0
+
+ENV TRACEE_BUILDENV=1
+WORKDIR /tracee
+
+#
+# evt-trigger-runner: runtime image used by 'evt stress' to run event
+# triggers in isolation (image name hard-coded in cmd/evt)
+#
+
+FROM alpine-toolchain AS evt-builder
+LABEL AS=evt-builder
+USER root
+
+# build natively inside the stage, never dispatch
+ENV TRACEE_BUILDENV=1
+ENV TRACEE_BUILDENV_DISTRO=alpine
+WORKDIR /tracee
+
+COPY . .
+
+RUN make clean-evt && \
+    make evt
+
+FROM alpine:3.23.4@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 AS evt-trigger-runner
+LABEL AS=evt-trigger-runner
+
+# Install dependencies needed by trigger scripts
+RUN apk add --no-cache \
+    bash \
+    coreutils \
+    procps \
+    iputils \
+    netcat-openbsd \
+    util-linux \
+    findutils \
+    grep \
+    strace \
+    bpftrace \
+    sudo \
+    && rm -rf /var/cache/apk/*
+
+RUN mkdir -p /usr/local/bin /usr/local/share/evt-triggers
+
+COPY --from=evt-builder /tracee/dist/evt /usr/local/bin/evt
+COPY --from=evt-builder /tracee/dist/evt-triggers /usr/local/share/evt-triggers
+
+RUN chmod +x /usr/local/bin/evt && \
+    find /usr/local/share/evt-triggers -type f -name "*.sh" -exec chmod +x {} \; && \
+    ln -s /usr/local/share/evt-triggers /usr/local/bin/evt-triggers
+
+# Set PATH so trigger scripts can find themselves
+ENV PATH="/usr/local/share/evt-triggers:/usr/local/share/evt-triggers/common:${PATH}"
+
+CMD ["/bin/sh"]
+
+#
+# distro-test: thin rootfs for running a STATICALLY built tracee on any
+# major distro userland (fedora, rhel/ubi, suse, debian, ...). The toolchain
+# never enters these images and neither does the binary: build once with
+# 'STATIC=1 make tracee' in the alpine buildenv, then bind-mount the binary
+# at run time, so the rootfs image never rebuilds. One parameterized stage
+# serves the whole matrix:
+#
+#   <engine> build -f builder/Containerfile --target distro-test \
+#       --build-arg DISTRO_TEST_IMAGE=fedora:43 -t tracee-test:fedora-43 .
+#   <engine> run --privileged ... \
+#       -v $PWD/dist/tracee:/usr/local/bin/tracee:ro tracee-test:fedora-43
+#
+# Note: the host kernel is what tracee actually exercises; these images only
+# vary the userland. Go plugin signatures (builtin.so) cannot be loaded by a
+# static binary - use compiled-in detectors (tracee-e2e) for matrix runs.
+#
+
+ARG DISTRO_TEST_IMAGE=fedora:43
+FROM ${DISTRO_TEST_IMAGE} AS distro-test
+LABEL AS=distro-test
+USER root
+
+WORKDIR /tracee
+ENTRYPOINT ["/usr/local/bin/tracee"]
+
+#
+# mkdocs: documentation site build/serve (independent stage)
+#
+
+FROM squidfunk/mkdocs-material:9.7.6@sha256:868ad4d39fb5865b72d00173ade00f4eae2b38dde7ff790a011cc44ce4a8ff8e AS mkdocs
+LABEL AS=mkdocs
+
+RUN pip install --upgrade pip
+RUN pip install git+https://github.com/jimporter/mike.git@6b876a40892f6d16d984247821d5a3ae85745e36 # v2.1.3
+RUN pip install git+https://github.com/fralau/mkdocs-macros-plugin.git@b906a368ecfd5cd25abcbea0a37f7a23944a8355 # v1.3.7

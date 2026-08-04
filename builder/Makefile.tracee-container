@@ -40,7 +40,8 @@ endif
 # tools
 #
 
-CMD_DOCKER ?= docker
+# container engine: docker or podman (auto-detected, docker first)
+CMD_DOCKER ?= $(shell command -v docker > /dev/null 2>&1 && echo docker || echo podman)
 
 .check_%:
 #
@@ -113,7 +114,7 @@ ifeq ($(SNAPSHOT),1)
 endif
 
 TRACEE_CONT_NAME = tracee:$(TAG)
-TRACEE_CONT_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
+TRACEE_CONT_DOCKERFILE = builder/Containerfile.release
 
 .PHONY: build-tracee
 build-tracee: \
@@ -127,7 +128,6 @@ build-tracee: \
 		--build-arg=BTFHUB=$(BTFHUB) \
 		--build-arg=STATIC=$(STATIC) \
 		--build-arg=RELEASE_VERSION=$(RELEASE_VERSION) \
-		--build-arg=FLAVOR=tracee-core \
 		--target tracee-core \
 		.
 
