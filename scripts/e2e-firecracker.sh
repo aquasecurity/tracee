@@ -49,7 +49,12 @@ skip_exit() {
 
 [ "$(uname -m)" = "x86_64" ] || die "the module e2e tests are x86_64-only"
 [ "$(id -u)" -eq 0 ] || die "must run as root (privileged build environment)"
-[ -c /dev/kvm ] || die "/dev/kvm not available - need a KVM-capable host"
+# No /dev/kvm means this host cannot run Firecracker at all (on AWS that means
+# a non-bare-metal instance type - nested virt / KVM is only exposed on *.metal
+# instances). Treat it like the other "cannot boot here" conditions: skip and
+# succeed rather than fail, so a runner that simply lacks KVM does not turn the
+# job red. The CI step greps for this SKIP line and raises a visible warning.
+[ -c /dev/kvm ] || skip_exit "/dev/kvm not available - the microVM needs a KVM-capable host (an AWS bare-metal '*.metal' instance)"
 command -v firecracker > /dev/null || die "firecracker not installed (ubuntu-fc image)"
 command -v mkfs.ext4 > /dev/null || die "mkfs.ext4 not found (e2fsprogs)"
 command -v debugfs > /dev/null || die "debugfs not found (e2fsprogs)"
@@ -212,7 +217,10 @@ sysctl -w kernel.kptr_restrict=0 kernel.dmesg_restrict=0 >/dev/null 2>&1 || true
 ulimit -n 1048576 2>/dev/null || ulimit -n 65536 2>/dev/null || true
 echo "[guest] nofile limit: \$(ulimit -n)"
 
-export TRACEE_BUILDENV=1 TRACEE_BUILDENV_DISTRO=ubuntu HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# E2E_MICROVM marks this as the throwaway-microVM guest so lib-core.sh lets the
+# kernel-module tampering tests actually run here; TRACEE_BUILDENV=1 alone would
+# read as an ordinary shared-kernel container, where they are skipped.
+export TRACEE_BUILDENV=1 E2E_MICROVM=1 TRACEE_BUILDENV_DISTRO=ubuntu HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export E2E_PREBUILT_MODULE=${PREBUILT_MODULE}
 if ! cd /tracee; then
     echo "[guest] ERROR: /tracee is missing or not a directory in the rootfs"

@@ -132,8 +132,23 @@ core_test_setup() {
 
     case ${test} in
         HOOKED_SYSCALL)
+            # Kernel-module tampering: builds and insmods a module against the
+            # RUNNING kernel and overwrites the syscall table. That must never
+            # happen in a build-env container that shares the host kernel - it
+            # runs only natively (the AMI matrix) or in the throwaway microVM
+            # ('make test-e2e-vm'). Gate on that explicitly, independent of
+            # whether kernel headers happen to be present: 'make tests-e2e'
+            # bundles test-e2e-vm and so mounts the host kernel tree in, exposing
+            # /lib/modules to the plain containerized test-e2e and defeating the
+            # no-headers self-skip below. TRACEE_BUILDENV=1 marks a build-env
+            # container (the microVM guest sets it too, but additionally sets
+            # E2E_MICROVM=1); a native AMI run sets neither.
+            if [[ "${TRACEE_BUILDENV:-}" == "1" && "${E2E_MICROVM:-}" != "1" ]]; then
+                info "skip hooked_syscall test in a shared-kernel container (run it via 'make test-e2e-vm' or natively)"
+                core_skip_hooked_syscall=1
+            fi
             # TODO: install kernel headers in the AMI images
-            if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
+            if [[ "${core_skip_hooked_syscall}" -eq 0 && ! -d /lib/modules/${KERNEL}/build ]]; then
                 info "skip hooked_syscall test, no kernel headers"
                 core_skip_hooked_syscall=1
             fi
@@ -151,8 +166,15 @@ core_test_setup() {
             ;;
 
         FTRACE_HOOK)
+            # kernel-module tampering - see HOOKED_SYSCALL above: never build and
+            # insmod against a shared host kernel in a container; only natively
+            # or in the microVM guest (which sets E2E_MICROVM=1).
+            if [[ "${TRACEE_BUILDENV:-}" == "1" && "${E2E_MICROVM:-}" != "1" ]]; then
+                info "skip ftrace_hook test in a shared-kernel container (run it via 'make test-e2e-vm' or natively)"
+                core_skip_ftrace_hook=1
+            fi
             # TODO: install kernel headers in the AMI images
-            if [[ ! -d /lib/modules/${KERNEL}/build ]]; then
+            if [[ "${core_skip_ftrace_hook}" -eq 0 && ! -d /lib/modules/${KERNEL}/build ]]; then
                 info "skip ftrace_hook test, no kernel headers"
                 core_skip_ftrace_hook=1
             fi
