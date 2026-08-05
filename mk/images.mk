@@ -74,7 +74,7 @@ images:
 		$(MAKE) image DISTRO=$${distro} || exit 1; \
 	done
 
-# opt-in VM-capable image (firecracker + ext4 tooling) for test-e2e-vm;
+# opt-in VM-capable image (firecracker + qemu + ext4 tooling) for test-e2e-vm;
 # separate tag/stage from the plain dev images
 .PHONY: image-fc
 image-fc:

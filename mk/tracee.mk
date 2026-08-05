@@ -1001,7 +1001,7 @@ tests-unit::
 	if [ "$$fail" -ne 0 ]; then echo "[tests-unit] one or more unit suites FAILED (see above)"; exit 1; fi; \
 	echo "[tests-unit] all unit tests passed"
 
-# the E2E family in ONE run (core + net + kernel + the microVM tampering tests,
+# the E2E family in ONE run (core + net + kernel + the VM tampering tests,
 # last). Like `tests`, a single privileged goal -> ONE container, ONE sudo. Same
 # run-all semantics. Routed through the ubuntu-fc image (see mk/dispatch.mk).
 TESTS_E2E += test-e2e test-e2e-net test-e2e-kernel test-e2e-vm
@@ -1022,7 +1022,7 @@ tests-e2e::
 # dispatches into ONE container (see mk/dispatch.mk: PRIVILEGED_GOALS + the fc
 # image path) - so the engine escalates with sudo exactly ONCE and every suite
 # then runs inside that one long-lived root container, no re-prompt. The
-# kernel-tampering suite (test-e2e-vm) runs last, in the microVM. Run-all: a
+# kernel-tampering suite (test-e2e-vm) runs last, in the VM. Run-all: a
 # failing suite does not stop the others; the aggregate exit code is non-zero if
 # any failed. (test-performance and test-upstream-libbpfgo are intentionally
 # left out - a benchmark and a CI-only libbpfgo-swap variant; run them directly.)
@@ -1224,7 +1224,7 @@ test-e2e-kernel:: \
 	./tests/e2e/run-kernel.sh $(E2E_ARGS)
 
 # kernel-tampering core tests (build+insmod real .ko, read host dmesg) run in
-# a throwaway Firecracker microVM instead of against the live kernel. Builds
+# a throwaway VM instead of against the live kernel. Builds
 # the same prerequisites as test-e2e; the runner assembles a rootfs from this
 # (ubuntu-fc) environment and boots the HOST's running kernel. x86_64 only -
 # the modules are x86-only, so skip cleanly elsewhere. INSTTESTS overrides the
@@ -1239,7 +1239,7 @@ test-e2e-vm:: \
 		echo "skip test-e2e-vm: kernel-module tests are x86_64-only (got $(UNAME_M))"; \
 		exit 0; \
 	fi
-	@echo "Running kernel-tampering E2E tests in a Firecracker microVM..."
+	@echo "Running kernel-tampering E2E tests in an isolated VM (Firecracker/KVM, or QEMU/TCG without /dev/kvm)..."
 	$(if $(INSTTESTS),INSTTESTS='$(INSTTESTS)') ./scripts/e2e-firecracker.sh
 
 #

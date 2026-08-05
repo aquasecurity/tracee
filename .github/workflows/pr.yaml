@@ -708,24 +708,24 @@ jobs:
           run-attempt: ${{ github.run_attempt }}
 
   #
-  # KERNEL-TAMPERING E2E TESTS (Firecracker microVM)
+  # KERNEL-TAMPERING E2E TESTS (VM: Firecracker/KVM or QEMU/TCG)
   #
   # The two core tests that build+insmod a real kernel module and read host
   # dmesg (FTRACE_HOOK, HOOKED_SYSCALL) self-skip in the containerized
   # test-e2e (containers share the host kernel). Here they run for real inside
-  # a throwaway Firecracker microVM, so a mistaken module or a leaked rmmod
-  # never touches the runner's kernel. Needs /dev/kvm on the runner.
+  # a throwaway VM, so a mistaken module or a leaked rmmod never touches the
+  # runner's kernel. Firecracker when the runner has /dev/kvm, else QEMU/TCG.
   #
   # Arch is a matrix so adding one is a single entry, not a duplicated job.
   # Only x86_64 is enabled today: the test modules and the syscall-table hook
   # are x86-specific. The arm64 entry is authored but commented out (below).
   #
   kernel-tests-vm:
-    name: Kernel Tampering Tests (microVM, ${{ matrix.arch }})
+    name: Kernel Tampering Tests (VM, ${{ matrix.arch }})
     # Independent kernel coverage, exactly like the kernel-tests AMI matrix:
     # this answers "does tracee work against a real kernel", not "does the code
     # lint", so it is deliberately NOT gated on verify-analyze-code (a red lint
-    # must not skip the microVM). It builds its own ubuntu-fc image via 'make
+    # must not skip the VM tier). It builds its own ubuntu-fc image via 'make
     # image-fc' and needs nothing from any other job, so it carries no 'needs'.
     strategy:
       fail-fast: false
@@ -801,7 +801,7 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-
 
-      # the microVM boots the runner host's OWN kernel and compiles the test
+      # the VM boots the runner host's OWN kernel and compiles the test
       # module against its build headers; this AMI's normal workload never
       # builds modules, so the headers may be absent. Install them (best-effort
       # - a pre-baked AMI already has them; if they are genuinely unavailable
@@ -810,17 +810,17 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y "linux-headers-$(uname -r)"
         continue-on-error: true
 
-      # opt-in VM-capable buildenv (firecracker + ext4/rsync tooling; no kernel
-      # is bundled - the runner boots the host's running kernel). Restored from
-      # the actions cache keyed by the Containerfile + install scripts; only a
-      # cache miss pays the firecracker+tooling build, which on a fresh
+      # opt-in VM-capable buildenv (firecracker + qemu + ext4/rsync tooling; no
+      # kernel is bundled - the runner boots the host's running kernel). Restored
+      # from the actions cache keyed by the Containerfile + install scripts; only
+      # a cache miss pays the firecracker+qemu+tooling build, which on a fresh
       # ephemeral runner is far slower than loading the cached image.
       - name: Build FC Environment Image
         uses: ./.github/actions/build-tracee-buildenv
         with:
           fc: 'true'
 
-      - name: Run Kernel Tampering Tests (microVM)
+      - name: Run Kernel Tampering Tests (VM)
         id: e2e-vm
         run: |
           make test-e2e-vm 2>&1 | tee /tmp/e2e-test-vm.log
@@ -828,12 +828,12 @@ jobs:
           # a skip exits 0; surface it so a green check is not mistaken for
           # "tests ran" (e.g. kernel not bootable, or headers unavailable)
           if grep -q '\[e2e-vm\] SKIP:' /tmp/e2e-test-vm.log; then
-            echo "::warning title=microVM tests skipped::Kernel-tampering microVM tests did not run - see the SKIP line in the log."
+            echo "::warning title=VM tests skipped::Kernel-tampering VM tests did not run - see the SKIP line in the log."
           fi
           exit "${rc}"
         shell: bash
 
-      - name: Upload microVM E2E Artifacts
+      - name: Upload VM E2E Artifacts
         if: always() && steps.e2e-vm.conclusion == 'failure'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

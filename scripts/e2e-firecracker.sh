@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Run the kernel-tampering E2E core tests (default FTRACE_HOOK, HOOKED_SYSCALL)
-# inside a throwaway microVM, so the module insmod/rmmod and the host dmesg
+# inside a throwaway VM, so the module insmod/rmmod and the host dmesg
 # reads happen in an ephemeral kernel instead of the developer's or CI runner's
 # live kernel.
 #
@@ -12,7 +12,7 @@
 #     *.metal). Much slower, but needs no KVM, so the tampering tests still run
 #     instead of being skipped. Override the choice with E2E_VMM=firecracker|qemu.
 #
-# Either way the microVM boots the HOST's CURRENTLY-RUNNING kernel (from
+# Either way the VM boots the HOST's CURRENTLY-RUNNING kernel (from
 # /boot/vmlinuz-$(uname -r)) - not a pinned download. The VMM only buys
 # isolation here; kernel *diversity* still comes from the CI AMI matrix, and
 # booting the running kernel means each host (an AMI, or a dev laptop) exercises
@@ -114,7 +114,7 @@ if [ -r "${kcfg}" ]; then
     kon() { grep -q "^$1=y" "${kcfg}"; }
     for f in CONFIG_MODULES CONFIG_MODULE_UNLOAD CONFIG_KPROBES CONFIG_KALLSYMS_ALL \
         CONFIG_FUNCTION_TRACER CONFIG_DYNAMIC_FTRACE CONFIG_UPROBES CONFIG_VIRTIO_BLK; do
-        kon "${f}" || skip_exit "running kernel lacks ${f}=y - cannot run the tampering tests in a microVM"
+        kon "${f}" || skip_exit "running kernel lacks ${f}=y - cannot run the tampering tests in a VM"
     done
     grep -q "^CONFIG_MODULE_SIG_FORCE=y" "${kcfg}" &&
         skip_exit "running kernel forces module signatures (MODULE_SIG_FORCE=y) - the unsigned test module would be rejected"
@@ -204,7 +204,7 @@ cp -a "${kbuild}" "${stage}$(dirname "${kbuild}")/" # the headers/build tree at 
 #    into dist/ (test-e2e-vm's prereqs) in the SAME build context the guest uses
 #    (TRACEE_BUILDENV_DISTRO=ubuntu -> dist/.ctx/ubuntu), so with all sources,
 #    dist/ and the stamps present at their host mtimes the in-guest make is a
-#    no-op. That matters because the microVM has NO network: a real rebuild would
+#    no-op. That matters because the VM has NO network: a real rebuild would
 #    try to fetch Go modules and fail. .git (344M) is skipped - only the cosmetic
 #    version string needs it.
 info "copying repo working tree..."
@@ -232,7 +232,7 @@ cat > "${stage}/usr/local/sbin/e2e-init" << INIT
 # under /run or any tmpfs, which is gone the moment the VM stops.
 mkdir -p /e2e-out
 
-# stop the microVM so the VMM exits. This build-env rootfs ships no
+# stop the VM so the VMM exits. This build-env rootfs ships no
 # poweroff/halt/reboot binary, so use the kernel's SysRq. Use 'b' (REBOOT), not
 # 'o' (poweroff): the guest resets via the emulated 8042 controller, which both
 # Firecracker (reboot=k) and QEMU (-no-reboot) treat as "stop the VM and exit".
@@ -300,7 +300,7 @@ mkfs.ext4 -q -F -L e2eroot -d "${stage}" "${rootfs}" "${img_mb}M"
 #    FILE, not a pipe - piping stalls Firecracker's startup) and tail it live;
 #    the guest init's SysRq-b reboot makes the VMM exit. A timeout guards a guest
 #    that never exits.
-info "booting ${VMM} microVM (guest console streams below; up to ${vm_timeout}s)..."
+info "booting ${VMM} VM (guest console streams below; up to ${vm_timeout}s)..."
 : > "${serial}"
 (tail -n +1 -f "${serial}" 2> /dev/null | sed 's/^/[guest] /') &
 tail_pid=$!
@@ -382,7 +382,7 @@ if [ -z "${rc_str}" ]; then
     die "no exit-code sentinel from guest (${VMM} rc=${vm_rc}); see the serial log above and ${artifacts_out}/e2e-serial.log"
 fi
 
-# final summary: the backend, the kernel the microVM actually booted, the tests
+# final summary: the backend, the kernel the VM actually booted, the tests
 # it was asked to run, and the overall verdict. rc_str is run.sh's exit status
 # from inside the guest (0 = every selected test passed or cleanly skipped,
 # non-zero = a failure); the per-test run/skip/fail breakdown is in the streamed
@@ -397,7 +397,7 @@ if [ "${VMM}" = "firecracker" ]; then
 else
     accel="TCG (software emulation, no KVM)"
 fi
-info "==================== microVM summary ===================="
+info "==================== VM summary ===================="
 info "  backend: ${VMM} (${accel})"
 info "  kernel:  ${KREL} (x86_64, ${FC_TRANSPORT} transport)"
 info "  tests:   ${INSTTESTS}"

@@ -72,10 +72,10 @@ ifneq ($(filter test-integration,$(BUILDENV_GOALS)),)
 endif
 
 # test-e2e-vm (and the `tests` aggregate, which includes it) run in the opt-in
-# VM-capable image (firecracker + ext4 tooling), a distinct stage/tag from the
+# VM-capable image (firecracker + qemu + ext4 tooling), a distinct stage/tag from the
 # plain dev images - a superset of :ubuntu, so the non-VM suites in `tests` run
 # in it fine too, keeping the whole aggregate in ONE container (one sudo). The
-# microVM boots the HOST's running kernel, so bind-mount its image, config,
+# VM boots the HOST's running kernel, so bind-mount its image, config,
 # modules and build headers read-only for the runner to extract vmlinux and
 # assemble the guest rootfs (only for these goals - other runs never see them).
 BUILDENV_TARGET := $(DISTRO)-dev

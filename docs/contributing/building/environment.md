@@ -66,7 +66,7 @@ installation script changes:
 | Image | Stage | Targets |
 |---|---|---|
 | `tracee-buildenv:alpine` (default) / `:ubuntu` | `alpine-dev` / `ubuntu-dev` | builds, checks, unit tests, `bear`, all `test-*` (integration defaults to `:ubuntu`), `run*`, `shell`, the dev box, `lsp-*` |
-| `tracee-buildenv:ubuntu-fc` | `ubuntu-fc` | `test-e2e-vm`, `image-fc` (adds Firecracker + ext4/rsync tooling on top of `:ubuntu`; boots the host's running kernel, no kernel bundled; opt-in, kept off the default dev images) |
+| `tracee-buildenv:ubuntu-fc` | `ubuntu-fc` | `test-e2e-vm`, `image-fc` (adds Firecracker + QEMU + ext4/rsync tooling on top of `:ubuntu`; boots the host's running kernel, no kernel bundled; opt-in, kept off the default dev images) |
 | `tracee-man:latest` | `man` | `man` |
 | `tracee-protoc:latest` | `protoc` | `protoc` |
 | `tracee-k8s:latest` | `k8s` | `k8s-manifests`, `k8s-generate` |
@@ -104,7 +104,7 @@ which is a real root requirement:
 * `shell` (interactive, gets the same privileged profile)
 
 `make tests` runs the whole suite - unit, integration, compatibility, the E2E
-family, and the kernel-tampering microVM tests (`test-e2e-vm`, last) - in a
+family, and the kernel-tampering VM tests (`test-e2e-vm`, last) - in a
 **single** privileged container, so the engine escalates with `sudo` exactly
 once and every suite then runs inside that one root container without
 re-prompting. It continues past a failing suite and exits non-zero if any
@@ -121,38 +121,44 @@ Engine specifics:
   rootful store), and transiently starts the rootful podman API socket so
   containers the tests spawn execute as real uid 0.
 
-## Kernel-tampering tests run in a microVM
+## Kernel-tampering tests run in a VM
 
 Two E2E core tests genuinely mutate kernel state - `FTRACE_HOOK` and
 `HOOKED_SYSCALL` build a real kernel module, `insmod` it (one overwrites the
 syscall table system-wide), and read host `dmesg`. Because containers share
 the host kernel, `make test-e2e` self-skips those two on a developer or CI
-box; they run for real only inside a throwaway **Firecracker microVM** via:
+box; they run for real only inside a throwaway **VM** via:
 
 ```bash
-make test-e2e-vm                        # both module tests (x86_64, needs /dev/kvm)
+make test-e2e-vm                        # both module tests (x86_64)
 INSTTESTS='FTRACE_HOOK' make test-e2e-vm  # select a subset
 ```
 
-The microVM boots the **host's currently-running kernel** - not a pinned
-download. Firecracker only provides isolation here; kernel *diversity* still
-comes from the CI AMI matrix, and booting the running kernel means each host
-(a CI AMI, or your laptop) exercises exactly the kernel it already runs, just
-sandboxed. `scripts/e2e-firecracker.sh` extracts an uncompressed `vmlinux`
-from `/boot/vmlinuz-$(uname -r)` (`scripts/installation/extract-vmlinux.sh`,
-cached under `/tmp/tracee/.fc-cache`), assembles an ephemeral ext4 rootfs from
-the `ubuntu-fc` image (`make image-fc` - Firecracker plus ext4/rsync tooling)
-overlaid with the host kernel's modules and build headers, the built
-`tracee-e2e`/`lsm-check`, and the repo's e2e subset, boots the microVM, runs
-`tests/e2e/run.sh` inside it, and reads the exit code back out - so a mistaken
-module or a leaked `rmmod` never touches the host kernel.
+The VM boots the **host's currently-running kernel** - not a pinned download.
+The VM only provides isolation here; kernel *diversity* still comes from the CI
+AMI matrix, and booting the running kernel means each host (a CI AMI, or your
+laptop) exercises exactly the kernel it already runs, just sandboxed. Two
+backends are selected at run time (override with `E2E_VMM=firecracker|qemu`):
+**Firecracker** when the host exposes `/dev/kvm` (fast), else a **QEMU + TCG**
+software-emulation fallback that needs no KVM (slower, but the tests still run
+instead of skipping - e.g. on non-bare-metal cloud instances, where AWS only
+exposes `/dev/kvm` on `*.metal`). `scripts/e2e-firecracker.sh` assembles an
+ephemeral ext4 rootfs from the `ubuntu-fc` image (`make image-fc` - Firecracker
++ QEMU plus ext4/rsync tooling) overlaid with the host kernel's modules and
+build headers, the built `tracee-e2e`/`lsm-check`, and the repo's e2e subset,
+boots the VM, runs `tests/e2e/run.sh` inside it, and reads the exit code back
+out - so a mistaken module or a leaked `rmmod` never touches the host kernel.
+(Firecracker needs an uncompressed `vmlinux`, extracted from
+`/boot/vmlinuz-$(uname -r)` via `scripts/installation/extract-vmlinux.sh` and
+cached under `/tmp/tracee/.fc-cache`; QEMU boots the `vmlinuz` directly.)
 
-The root disk rides virtio-mmio when the running kernel has `VIRTIO_MMIO=y`
-(Ubuntu's generic kernel) or Firecracker's PCI bus (`enable_pci`) when it only
-has `VIRTIO_PCI=y` (e.g. Fedora, where virtio-mmio is a module). x86_64 only
-(the modules and the syscall-table hook are x86-specific); on aarch64, or on a
-host whose running kernel cannot boot Firecracker or forces module signatures,
-the target prints a skip notice and exits 0.
+Under Firecracker the root disk rides virtio-mmio when the running kernel has
+`VIRTIO_MMIO=y` (Ubuntu's generic kernel) or Firecracker's PCI bus
+(`enable_pci`) when it only has `VIRTIO_PCI=y` (e.g. Fedora, where virtio-mmio
+is a module); QEMU always uses virtio-blk over PCI (q35). x86_64 only (the
+modules and the syscall-table hook are x86-specific); on aarch64, or on a host
+whose running kernel cannot boot the VM or forces module signatures, the target
+prints a skip notice and exits 0.
 
 ## Common operations
 
