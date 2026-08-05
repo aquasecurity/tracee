@@ -67,38 +67,6 @@ env:
   # Go 1.26 randomizes the heap base address, breaking the eBPF stack_pivot
   # detector's Go heap recognition (see plans/tracee/stack-pivot-go126-issue.md).
   GOEXPERIMENT: norandomizedheapbase64
-  TESTS: >
-    TRC-102
-    TRC-103
-    TRC-104
-    TRC-105
-    TRC-107
-    TRC-1010
-    TRC-1014
-    TRC-1016
-    TRC-1018
-    TRC-1022
-  ARM64_TESTS: >
-    TRC-102
-    TRC-103
-    TRC-104
-    TRC-105
-    TRC-107
-    TRC-1010
-    TRC-1014
-    TRC-1016
-    TRC-1018
-  NETTESTS: >
-    IPv4
-    IPv6
-    TCP
-    UDP
-    ICMP
-    ICMPv6
-    DNS
-    HTTP
-    HTTPRequest
-    HTTPResponse
 
 jobs:
 
@@ -617,6 +585,44 @@ jobs:
       # kernel tests stay bare-host: the AMIs exist to exercise old distro
       # kernels with minimal indirection and are pre-baked with the toolchain
       NATIVE: "1"
+      # test-selection lists scoped to THIS job (the only one that runs the
+      # kernel/net suites). Kept out of the workflow-level env so they do not
+      # leak into every other job's container dispatch. These extend the
+      # run-kernel.sh/run-net.sh built-in defaults (e.g. TRC-1022, HTTPRequest/
+      # HTTPResponse); ARM64_TESTS is the reduced set used for aarch64 matrix
+      # entries (see the "Environment Variables" step).
+      TESTS: >
+        TRC-102
+        TRC-103
+        TRC-104
+        TRC-105
+        TRC-107
+        TRC-1010
+        TRC-1014
+        TRC-1016
+        TRC-1018
+        TRC-1022
+      ARM64_TESTS: >
+        TRC-102
+        TRC-103
+        TRC-104
+        TRC-105
+        TRC-107
+        TRC-1010
+        TRC-1014
+        TRC-1016
+        TRC-1018
+      NETTESTS: >
+        IPv4
+        IPv6
+        TCP
+        UDP
+        ICMP
+        ICMPv6
+        DNS
+        HTTP
+        HTTPRequest
+        HTTPResponse
     steps:
       - name: Prepare Environment
         run: |
