@@ -180,11 +180,14 @@ ARG DEBIAN_FRONTEND="noninteractive"
 # VM-only additions on top of ubuntu-dev: rootfs assembly + module loading +
 # guest-init tooling (jq is required by run.sh; binutils=readelf for vmlinux
 # extraction; kmod=insmod/rmmod; procps/sudo used by the guest init and the
-# module test scripts). The docker CLI, iproute2, netcat and the rest of the
-# e2e tooling are inherited from ubuntu-dev.
+# module test scripts). qemu-system-x86 is the KVM-less fallback VMM: when the
+# host has no /dev/kvm (e.g. a non bare-metal cloud instance) the runner boots
+# the guest under QEMU's TCG software emulator instead of Firecracker. The
+# docker CLI, iproute2, netcat and the rest of the e2e tooling come from
+# ubuntu-dev.
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    e2fsprogs rsync kmod sudo procps binutils jq zstd xz-utils && \
+    e2fsprogs rsync kmod sudo procps binutils jq zstd xz-utils qemu-system-x86 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN /tmp/scripts/installation/install-firecracker.sh
