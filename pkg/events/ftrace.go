@@ -36,7 +36,18 @@ const (
 
 var (
 	reportedFtraceHooks *lru.Cache[string, []trace.Argument]
-	FtraceWakeupChan    = make(chan struct{})
+	// Buffered (size 1) so a module-load wakeup is COALESCED rather than
+	// dropped when the scanner goroutine is mid-scan. The sender
+	// (processDoInitModule) still does a non-blocking select-send, so this does
+	// NOT reintroduce the pipeline deadlock fixed in #5341 - a full buffer just
+	// falls through to its default. With an unbuffered channel the send lands
+	// only if the scanner happens to be parked in its select at that instant;
+	// under a slow/CPU-starved scanner it is missed, and detection then relies
+	// on the random 10-300s timer, which rarely fires inside the module's brief
+	// hook window (observed as 0 ftrace_hook events under QEMU/TCG). One slot is
+	// enough: coalescing many loads into a single pending re-scan is correct,
+	// since each scan reads the whole enabled_functions.
+	FtraceWakeupChan = make(chan struct{}, 1)
 )
 
 func init() {
