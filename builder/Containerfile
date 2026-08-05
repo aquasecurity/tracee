@@ -133,7 +133,7 @@ ARG DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     man bash-completion vim iproute2 vlan bridge-utils net-tools \
-    netcat-openbsd iputils-ping wget lynx w3m stress bear openssh-server && \
+    netcat-openbsd iputils-ping bind9-dnsutils wget lynx w3m stress bear openssh-server && \
     rm -rf /var/lib/apt/lists/*
 
 RUN install -m 755 /tmp/scripts/installation/tracee-sshd /usr/local/bin/tracee-sshd
