@@ -1,28 +1,38 @@
 #!/usr/bin/env bash
 #
 # Run the kernel-tampering E2E core tests (default FTRACE_HOOK, HOOKED_SYSCALL)
-# inside a throwaway Firecracker microVM, so the module insmod/rmmod and the
-# host dmesg reads happen in an ephemeral kernel instead of the developer's or
-# CI runner's live kernel.
+# inside a throwaway microVM, so the module insmod/rmmod and the host dmesg
+# reads happen in an ephemeral kernel instead of the developer's or CI runner's
+# live kernel.
 #
-# The microVM boots the HOST's CURRENTLY-RUNNING kernel (extracted from
-# /boot/vmlinuz-$(uname -r)) - not a pinned download. Firecracker only buys
+# Two backends, chosen at run time by whether the host exposes /dev/kvm:
+#   - Firecracker (KVM): the default when /dev/kvm is present. Boots in ~125ms.
+#   - QEMU + TCG (software emulation): the fallback when /dev/kvm is absent
+#     (e.g. a non bare-metal cloud instance - AWS only exposes /dev/kvm on
+#     *.metal). Much slower, but needs no KVM, so the tampering tests still run
+#     instead of being skipped. Override the choice with E2E_VMM=firecracker|qemu.
+#
+# Either way the microVM boots the HOST's CURRENTLY-RUNNING kernel (from
+# /boot/vmlinuz-$(uname -r)) - not a pinned download. The VMM only buys
 # isolation here; kernel *diversity* still comes from the CI AMI matrix, and
 # booting the running kernel means each host (an AMI, or a dev laptop) exercises
 # exactly the kernel it already runs, just sandboxed. That is what lets these
 # tests run locally at all.
 #
 # Runs INSIDE the privileged ubuntu-fc build environment, which carries
-# firecracker + the ext4/rsync tooling and has the host's kernel image, modules
-# and build headers bind-mounted in (see mk/dispatch.mk FC_HOST_KERNEL_MOUNTS).
+# firecracker + qemu + the ext4/rsync tooling and has the host's kernel image,
+# modules and build headers bind-mounted in (see mk/dispatch.mk
+# FC_HOST_KERNEL_MOUNTS).
 #
 #   INSTTESTS           test selection passed to run.sh (default the 2 module tests)
+#   E2E_VMM             force firecracker or qemu (default: auto by /dev/kvm)
 #   FC_VCPUS / FC_MEM   guest sizing (default 2 / 2048)
+#   FC_TIMEOUT          overall VM wall-clock budget (default 300 KVM / 1500 TCG)
 #
 # Mechanism: assemble an ext4 rootfs from THIS container's userland
 # (rsync --one-file-system skips /proc /sys /dev and bind mounts), overlay the
 # host kernel's modules+headers and a repo subset, drop a guest init that runs
-# the tests and writes an rc sentinel, boot Firecracker, then read the sentinel
+# the tests and writes an rc sentinel, boot the VMM, then read the sentinel
 # back with debugfs (no loop-mount needed - container-friendly).
 
 set -euo pipefail
@@ -39,9 +49,9 @@ die() {
     echo "[e2e-vm] ERROR: $*" >&2
     exit 1
 }
-# a host whose running kernel genuinely cannot boot Firecracker (or would
-# refuse the unsigned module) is not a failure - skip clearly and succeed, the
-# same way the arch guard does. The CI AMIs (Ubuntu generic) never hit this.
+# a host whose running kernel genuinely cannot boot the guest (or would refuse
+# the unsigned module) is not a failure - skip clearly and succeed, the same way
+# the arch guard does. The CI AMIs (Ubuntu generic) never hit this.
 skip_exit() {
     echo "[e2e-vm] SKIP: $*"
     exit 0
@@ -49,13 +59,38 @@ skip_exit() {
 
 [ "$(uname -m)" = "x86_64" ] || die "the module e2e tests are x86_64-only"
 [ "$(id -u)" -eq 0 ] || die "must run as root (privileged build environment)"
-# No /dev/kvm means this host cannot run Firecracker at all (on AWS that means
-# a non-bare-metal instance type - nested virt / KVM is only exposed on *.metal
-# instances). Treat it like the other "cannot boot here" conditions: skip and
-# succeed rather than fail, so a runner that simply lacks KVM does not turn the
-# job red. The CI step greps for this SKIP line and raises a visible warning.
-[ -c /dev/kvm ] || skip_exit "/dev/kvm not available - the microVM needs a KVM-capable host (an AWS bare-metal '*.metal' instance)"
-command -v firecracker > /dev/null || die "firecracker not installed (ubuntu-fc image)"
+
+# VMM selection: Firecracker when KVM is available (fast), else QEMU/TCG (slow
+# but KVM-free). Override with E2E_VMM.
+if [ -n "${E2E_VMM:-}" ]; then
+    VMM="${E2E_VMM}"
+elif [ -c /dev/kvm ]; then
+    VMM=firecracker
+else
+    VMM=qemu
+fi
+
+case "${VMM}" in
+    firecracker)
+        [ -c /dev/kvm ] || die "E2E_VMM=firecracker requires /dev/kvm"
+        command -v firecracker > /dev/null || die "firecracker not installed (ubuntu-fc image)"
+        # KVM boots fast; keep the tight budget.
+        vm_timeout="${FC_TIMEOUT:-300}"
+        guest_startup_timeout=30
+        guest_shutdown_timeout=35
+        ;;
+    qemu)
+        command -v qemu-system-x86_64 > /dev/null || die "qemu-system-x86_64 not installed (ubuntu-fc image)"
+        [ -c /dev/kvm ] || info "no /dev/kvm - using QEMU with TCG software emulation (slow)"
+        # TCG runs the guest CPU ~10-30x slower, so widen the wall-clock budget
+        # and the in-guest tracee start/stop timeouts (fixed test sleeps are
+        # wall-clock and unaffected; only CPU-bound work - boot, BPF load - is).
+        vm_timeout="${FC_TIMEOUT:-1500}"
+        guest_startup_timeout=180
+        guest_shutdown_timeout=120
+        ;;
+    *) die "unknown E2E_VMM=${VMM} (want 'firecracker' or 'qemu')" ;;
+esac
 command -v mkfs.ext4 > /dev/null || die "mkfs.ext4 not found (e2fsprogs)"
 command -v debugfs > /dev/null || die "debugfs not found (e2fsprogs)"
 command -v rsync > /dev/null || die "rsync not found"
@@ -72,7 +107,7 @@ kmoddir="/lib/modules/${KREL}"
 kbuild="$(readlink -f "${kmoddir}/build" 2> /dev/null || true)"
 [ -n "${kbuild}" ] && [ -d "${kbuild}" ] || skip_exit "kernel build headers (${kmoddir}/build) not available - install kernel-devel/linux-headers for ${KREL}"
 
-# 0. is the running kernel Firecracker-bootable and will it take an unsigned
+# 0. is the running kernel bootable as a guest and will it take an unsigned
 #    module? Decide the virtio transport from its config.
 FC_TRANSPORT=pci
 if [ -r "${kcfg}" ]; then
@@ -83,16 +118,24 @@ if [ -r "${kcfg}" ]; then
     done
     grep -q "^CONFIG_MODULE_SIG_FORCE=y" "${kcfg}" &&
         skip_exit "running kernel forces module signatures (MODULE_SIG_FORCE=y) - the unsigned test module would be rejected"
-    # Firecracker presents the root disk over virtio-mmio classically; newer
-    # versions can put it on a PCI bus (enable_pci). Prefer whichever the
-    # running kernel has built in - Ubuntu generic has MMIO=y, Fedora ships
-    # VIRTIO_MMIO=m but VIRTIO_PCI=y.
-    if kon CONFIG_VIRTIO_MMIO; then
+    has_mmio=0
+    has_pci=0
+    kon CONFIG_VIRTIO_MMIO && has_mmio=1
+    kon CONFIG_VIRTIO_PCI && has_pci=1
+    if [ "${VMM}" = "qemu" ]; then
+        # QEMU uses a q35 machine with virtio-blk over PCI.
+        [ "${has_pci}" = 1 ] || skip_exit "running kernel lacks VIRTIO_PCI=y - QEMU q35 cannot expose the virtio root disk"
+        FC_TRANSPORT=pci
+    elif [ "${has_mmio}" = 1 ]; then
+        # Firecracker presents the root disk over virtio-mmio classically; newer
+        # versions can put it on a PCI bus (enable_pci). Prefer whichever the
+        # running kernel has built in - Ubuntu generic has MMIO=y, Fedora ships
+        # VIRTIO_MMIO=m but VIRTIO_PCI=y.
         FC_TRANSPORT=mmio
-    elif kon CONFIG_VIRTIO_PCI; then
+    elif [ "${has_pci}" = 1 ]; then
         FC_TRANSPORT=pci
     else
-        skip_exit "running kernel has neither VIRTIO_MMIO=y nor VIRTIO_PCI=y built in - Firecracker could not expose the root disk"
+        skip_exit "running kernel has neither VIRTIO_MMIO=y nor VIRTIO_PCI=y built in - cannot expose the root disk"
     fi
 else
     info "warning: ${kcfg} unreadable; assuming PCI transport and proceeding"
@@ -104,19 +147,22 @@ rootfs="${work}/rootfs.ext4"
 serial="${work}/serial.log"
 trap 'rm -rf "${work}"' EXIT
 
-info "kernel ${KREL} (${FC_TRANSPORT} transport); tests: ${INSTTESTS}"
+info "backend ${VMM}; kernel ${KREL} (${FC_TRANSPORT} transport); tests: ${INSTTESTS}"
 
-# 1. uncompressed vmlinux (Firecracker needs an ELF, not the bzImage). Cache it
-#    in the host-bind-mounted /tmp/tracee, keyed by version+size, so repeated
-#    runs skip the decompress.
-cache_dir="${FC_CACHE_DIR:-/tmp/tracee/.fc-cache}"
-VMLINUX="${cache_dir}/vmlinux-${KREL}-$(stat -c %s "${vmlinuz}")"
-if [ ! -s "${VMLINUX}" ]; then
-    info "extracting vmlinux from ${vmlinuz}..."
-    mkdir -p "${cache_dir}"
-    "${SCRIPT_DIR}/installation/extract-vmlinux.sh" "${vmlinuz}" > "${VMLINUX}.part" ||
-        { rm -f "${VMLINUX}.part"; die "could not extract an ELF vmlinux from ${vmlinuz}"; }
-    mv -f "${VMLINUX}.part" "${VMLINUX}"
+# 1. Firecracker needs an uncompressed vmlinux ELF (not the bzImage); extract it
+#    once and cache it in the host-bind-mounted /tmp/tracee, keyed by version+
+#    size. QEMU boots the bzImage (${vmlinuz}) directly, so it skips this.
+VMLINUX=""
+if [ "${VMM}" = "firecracker" ]; then
+    cache_dir="${FC_CACHE_DIR:-/tmp/tracee/.fc-cache}"
+    VMLINUX="${cache_dir}/vmlinux-${KREL}-$(stat -c %s "${vmlinuz}")"
+    if [ ! -s "${VMLINUX}" ]; then
+        info "extracting vmlinux from ${vmlinuz}..."
+        mkdir -p "${cache_dir}"
+        "${SCRIPT_DIR}/installation/extract-vmlinux.sh" "${vmlinuz}" > "${VMLINUX}.part" ||
+            { rm -f "${VMLINUX}.part"; die "could not extract an ELF vmlinux from ${vmlinuz}"; }
+        mv -f "${VMLINUX}.part" "${VMLINUX}"
+    fi
 fi
 
 # 2. base userland = this container's rootfs (skip virtual fs and bind mounts
@@ -186,14 +232,15 @@ cat > "${stage}/usr/local/sbin/e2e-init" << INIT
 # under /run or any tmpfs, which is gone the moment the VM stops.
 mkdir -p /e2e-out
 
-# stop the microVM so Firecracker exits. This build-env rootfs ships no
+# stop the microVM so the VMM exits. This build-env rootfs ships no
 # poweroff/halt/reboot binary, so use the kernel's SysRq. Use 'b' (REBOOT), not
-# 'o' (poweroff): with reboot=k the guest resets via the 8042 controller, which
-# Firecracker treats as shutdown and exits. SysRq 'o' needs an ACPI/pm_power_off
-# handler Firecracker's board does not provide, so it HALTS the CPU without ever
-# exiting Firecracker (the run then hangs). rc + logs are synced first, and it
-# is a throwaway rootfs, so a hard reset loses nothing. If SysRq is somehow off,
-# returning from init makes PID1 exit -> panic=1 -> reboot -> exit anyway.
+# 'o' (poweroff): the guest resets via the emulated 8042 controller, which both
+# Firecracker (reboot=k) and QEMU (-no-reboot) treat as "stop the VM and exit".
+# SysRq 'o' needs an ACPI/pm_power_off handler these minimal boards do not
+# provide, so it HALTS the CPU without exiting the VMM (the run then hangs). rc +
+# logs are synced first, and it is a throwaway rootfs, so a hard reset loses
+# nothing. If SysRq is somehow off, returning from init makes PID1 exit ->
+# panic=1 -> reboot -> exit anyway.
 poweroff_vm() {
     sync
     sleep 1   # let the serial FIFO drain before the reset truncates output
@@ -222,6 +269,9 @@ echo "[guest] nofile limit: \$(ulimit -n)"
 # read as an ordinary shared-kernel container, where they are skipped.
 export TRACEE_BUILDENV=1 E2E_MICROVM=1 TRACEE_BUILDENV_DISTRO=ubuntu HOME=/root PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export E2E_PREBUILT_MODULE=${PREBUILT_MODULE}
+# under QEMU/TCG the guest CPU is emulated, so tracee's startup and shutdown are
+# far slower than the run.sh defaults; the host sizes these for the backend.
+export TRACEE_STARTUP_TIMEOUT=${guest_startup_timeout} TRACEE_SHUTDOWN_TIMEOUT=${guest_shutdown_timeout}
 if ! cd /tracee; then
     echo "[guest] ERROR: /tracee is missing or not a directory in the rootfs"
     ls -la / > /e2e-out/root-ls.txt 2>&1
@@ -246,21 +296,31 @@ size_kb=$(du -sk "${stage}" | cut -f1)
 img_mb=$(((size_kb / 1024) * 3 / 2 + 512)) # 1.5x + headroom
 mkfs.ext4 -q -F -L e2eroot -d "${stage}" "${rootfs}" "${img_mb}M"
 
-# 7. Firecracker config (no network: the 2 module tests need none). The root
-#    disk rides virtio-mmio by default; on a kernel that only has virtio built
-#    for PCI we enable Firecracker's PCI bus and drop pci=off so it enumerates.
-#    PCI is turned on by the --enable-pci CLI flag (v1.13.1) - it is NOT a
-#    machine-config field, which accepts only vcpu_count/mem_size_mib/smt/
-#    cpu_template/track_dirty_pages/huge_pages.
-machine_cfg="\"vcpu_count\": ${FC_VCPUS}, \"mem_size_mib\": ${FC_MEM}"
-if [ "${FC_TRANSPORT}" = "pci" ]; then
-    fc_pci_flag="--enable-pci"
-    pci_arg=""
-else
-    fc_pci_flag=""
-    pci_arg="pci=off "
-fi
-cat > "${work}/fc.json" << FCJSON
+# 7. boot the guest. Both backends stream the guest console to ${serial} (a
+#    FILE, not a pipe - piping stalls Firecracker's startup) and tail it live;
+#    the guest init's SysRq-b reboot makes the VMM exit. A timeout guards a guest
+#    that never exits.
+info "booting ${VMM} microVM (guest console streams below; up to ${vm_timeout}s)..."
+: > "${serial}"
+(tail -n +1 -f "${serial}" 2> /dev/null | sed 's/^/[guest] /') &
+tail_pid=$!
+set +e
+if [ "${VMM}" = "firecracker" ]; then
+    # Firecracker config (no network: the 2 module tests need none). The root
+    # disk rides virtio-mmio by default; on a kernel that only has virtio built
+    # for PCI we enable Firecracker's PCI bus and drop pci=off so it enumerates.
+    # PCI is turned on by the --enable-pci CLI flag (v1.13.1) - it is NOT a
+    # machine-config field, which accepts only vcpu_count/mem_size_mib/smt/
+    # cpu_template/track_dirty_pages/huge_pages.
+    machine_cfg="\"vcpu_count\": ${FC_VCPUS}, \"mem_size_mib\": ${FC_MEM}"
+    if [ "${FC_TRANSPORT}" = "pci" ]; then
+        fc_pci_flag="--enable-pci"
+        pci_arg=""
+    else
+        fc_pci_flag=""
+        pci_arg="pci=off "
+    fi
+    cat > "${work}/fc.json" << FCJSON
 {
   "boot-source": {
     "kernel_image_path": "${VMLINUX}",
@@ -272,34 +332,39 @@ cat > "${work}/fc.json" << FCJSON
   "machine-config": { ${machine_cfg} }
 }
 FCJSON
-
-# 8. boot; Firecracker exits when the guest reboots (SysRq b + reboot=k) or
-#    panics (panic=1). Firecracker's serial console must go to a FILE (or pty),
-#    NOT a pipe - piping its stdout stalls VM startup. So redirect the console
-#    to ${serial} and get live visibility by following that file in the
-#    background (the tests take tens of seconds: tracee start, BPF load, the
-#    fixed detection waits). A timeout guards against a guest that never exits.
-info "booting Firecracker microVM (guest console streams below; ~1-2 min)..."
-: > "${serial}"
-(tail -n +1 -f "${serial}" 2> /dev/null | sed 's/^/[guest] /') &
-tail_pid=$!
-set +e
-# stdin from /dev/null, NOT the container's -it TTY: under `timeout` Firecracker
-# runs outside the TTY's foreground process group, so touching the TTY (tcsetattr
-# to set up the serial console) raises SIGTTOU and stops it before the VM starts.
-# The guest init is autonomous and needs no console input, so detaching stdin is
-# free and removes the TTY interaction entirely.
-timeout "${FC_TIMEOUT:-300}" \
-    firecracker --no-api ${fc_pci_flag} --config-file "${work}/fc.json" \
-    < /dev/null > "${serial}" 2>&1
-fc_rc=$?
+    # stdin from /dev/null, NOT the container's -it TTY: under `timeout`
+    # Firecracker runs outside the TTY's foreground process group, so touching
+    # the TTY (tcsetattr to set up the serial console) raises SIGTTOU and stops
+    # it before the VM starts. The guest init is autonomous and needs no console
+    # input, so detaching stdin is free and removes the TTY interaction entirely.
+    timeout "${vm_timeout}" \
+        firecracker --no-api ${fc_pci_flag} --config-file "${work}/fc.json" \
+        < /dev/null > "${serial}" 2>&1
+    vm_rc=$?
+else
+    # QEMU + TCG: a q35 machine with virtio-blk over PCI, booting the host
+    # bzImage directly (no vmlinux extraction). The guest console goes to
+    # ${serial} via the file chardev; QEMU's own diagnostics go to qemu.log.
+    # reboot=t (triple fault) + -no-reboot make QEMU exit on the guest's SysRq-b.
+    timeout "${vm_timeout}" \
+        qemu-system-x86_64 \
+        -machine q35 -accel tcg -cpu max \
+        -m "${FC_MEM}" -smp "${FC_VCPUS}" \
+        -kernel "${vmlinuz}" \
+        -append "console=ttyS0 root=/dev/vda rw init=/usr/local/sbin/e2e-init reboot=t panic=1" \
+        -drive "file=${rootfs},format=raw,if=virtio" \
+        -display none -serial "file:${serial}" -monitor none -no-reboot \
+        < /dev/null > "${work}/qemu.log" 2>&1
+    vm_rc=$?
+    [ -s "${work}/qemu.log" ] && sed 's/^/[qemu] /' "${work}/qemu.log"
+fi
 set -e
 sleep 1 # let the follower flush the final lines before we kill it
 kill "${tail_pid}" 2> /dev/null || true
 wait "${tail_pid}" 2> /dev/null || true
-[ "${fc_rc}" = "124" ] && info "WARNING: Firecracker hit the ${FC_TIMEOUT:-300}s timeout (guest did not reboot/exit)"
+[ "${vm_rc}" = "124" ] && info "WARNING: ${VMM} hit the ${vm_timeout}s timeout (guest did not reboot/exit)"
 
-# 9. read the rc sentinel + guest logs back from the ext4 image (debugfs, no
+# 8. read the rc sentinel + guest logs back from the ext4 image (debugfs, no
 #    mount). The guest wrote them to /e2e-out, a real dir on the disk. Extract
 #    into /tmp/tracee: the privileged run bind-mounts it from the host, so
 #    artifacts survive the container and CI can upload them.
@@ -314,20 +379,26 @@ debugfs -R "rdump /e2e-out ${artifacts_out}" "${rootfs}" > /dev/null 2>&1 || tru
 
 rc_str="$(debugfs -R 'cat /e2e-out/e2e-rc' "${rootfs}" 2> /dev/null | tr -dc '0-9')"
 if [ -z "${rc_str}" ]; then
-    die "no exit-code sentinel from guest (firecracker rc=${fc_rc}); see the serial log above and ${artifacts_out}/e2e-serial.log"
+    die "no exit-code sentinel from guest (${VMM} rc=${vm_rc}); see the serial log above and ${artifacts_out}/e2e-serial.log"
 fi
 
-# final summary: the kernel the microVM actually booted, the tests it was asked
-# to run, and the overall verdict. rc_str is run.sh's exit status from inside the
-# guest (0 = every selected test passed or cleanly skipped, non-zero = a failure);
-# the per-test run/skip/fail breakdown is in the streamed [guest] TEST SUMMARY
-# above. Kept x86_64 explicit since this tier is x86-only for now.
+# final summary: the backend, the kernel the microVM actually booted, the tests
+# it was asked to run, and the overall verdict. rc_str is run.sh's exit status
+# from inside the guest (0 = every selected test passed or cleanly skipped,
+# non-zero = a failure); the per-test run/skip/fail breakdown is in the streamed
+# [guest] TEST SUMMARY above. Kept x86_64 explicit since this tier is x86-only.
 if [ "${rc_str}" = "0" ]; then
     status="PASSED"
 else
     status="FAILED"
 fi
+if [ "${VMM}" = "firecracker" ]; then
+    accel="KVM"
+else
+    accel="TCG (software emulation, no KVM)"
+fi
 info "==================== microVM summary ===================="
+info "  backend: ${VMM} (${accel})"
 info "  kernel:  ${KREL} (x86_64, ${FC_TRANSPORT} transport)"
 info "  tests:   ${INSTTESTS}"
 info "  result:  ${status} (rc=${rc_str})"

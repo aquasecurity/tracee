@@ -88,8 +88,12 @@ done
 ARCH=$(uname -m)
 export ARCH
 export KERNEL # Set later, used by core_test_setup
-TRACEE_STARTUP_TIMEOUT=30
-TRACEE_SHUTDOWN_TIMEOUT=35 # Same as tracee_stop.sh default timeout
+# Overridable via the environment: the Firecracker/QEMU microVM runner bumps
+# these on the QEMU-TCG (software-emulated, no KVM) path, where tracee startup
+# and graceful shutdown are much slower than the 30s/35s a native or KVM run
+# needs.
+TRACEE_STARTUP_TIMEOUT="${TRACEE_STARTUP_TIMEOUT:-30}"
+TRACEE_SHUTDOWN_TIMEOUT="${TRACEE_SHUTDOWN_TIMEOUT:-35}" # Same as tracee_stop.sh default timeout
 BPF_BUFFER_FLUSH_WAIT=5 # 5 seconds is a generous amount of time
 SCRIPT_TMP_DIR=/tmp
 TRACEE_TMP_DIR=/tmp/tracee
