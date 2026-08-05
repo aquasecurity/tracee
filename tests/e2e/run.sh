@@ -675,7 +675,10 @@ print_test_separator
 # Cleanup and Final Verdict
 # ==============================================================================
 cleanup_test_artifact_files "${KEEP_ARTIFACTS}" "${outputfile}" "${logfile}"
-rm -rf "${TRACEE_TMP_DIR}"
+# clear the workdir contents rather than removing it: it may be a bind mount
+# (the containerized e2e run mounts /tmp/tracee), where removing the mountpoint
+# itself fails with EBUSY.
+find "${TRACEE_TMP_DIR}" -mindepth 1 -delete 2> /dev/null || true
 
 info
 if [[ "${anyerror}" != "" ]]; then

@@ -187,7 +187,13 @@ fi
 
 info "Running Tracee"
 
-rm -rf "${TRACEE_WORKDIR}" || die "Failed to remove ${TRACEE_WORKDIR}"
+# TRACEE_WORKDIR may be a bind mount (the containerized e2e run mounts
+# /tmp/tracee from the host so artifacts survive the container). Removing the
+# mountpoint itself fails with EBUSY, so clear its contents instead - equivalent
+# to a fresh workdir both natively and in-container - and ensure it exists.
+mkdir -p "${TRACEE_WORKDIR}" || die "Failed to create ${TRACEE_WORKDIR}"
+find "${TRACEE_WORKDIR}" -mindepth 1 -delete 2> /dev/null \
+    || die "Failed to clear ${TRACEE_WORKDIR}"
 
 # Build positional parameters for tracee execution
 # This approach preserves argument boundaries correctly without needing eval
