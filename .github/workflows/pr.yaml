@@ -815,14 +815,12 @@ jobs:
       # for free the moment a bare-metal runner is available - do NOT gate/skip
       # it on /dev/kvm.
 
-      # the VM boots the runner host's OWN kernel and compiles the test
-      # module against its build headers; this AMI's normal workload never
-      # builds modules, so the headers may be absent. Install them (best-effort
-      # - a pre-baked AMI already has them; if they are genuinely unavailable
-      # the runner skips with a clear message instead of building nothing).
-      - name: Install kernel headers
-        run: sudo apt-get update && sudo apt-get install -y "linux-headers-$(uname -r)"
-        continue-on-error: true
+      # No kernel-headers install step: the AMI is pre-baked with the running
+      # kernel's build headers - the native kernel-tests job builds the same
+      # tampering-test modules with NO install step and passes on this kernel
+      # (FTRACE_HOOK/HOOKED_SYSCALL in its Ran: list). If an AMI ever lacks them,
+      # e2e-vm.sh skip_exits cleanly ("kernel build headers not available")
+      # rather than failing.
 
       # opt-in VM-capable buildenv (firecracker + qemu + ext4/rsync tooling; no
       # kernel is bundled - the runner boots the host's running kernel). Restored
