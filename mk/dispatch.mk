@@ -25,7 +25,7 @@ include mk/dev.mk
 HOST_ONLY_GOALS += \
 	help \
 	clean \
-	image images image-fc image-distro-test clean-images \
+	image images image-vm image-distro-test clean-images \
 	fix-cache-perms \
 	stop-buildenv \
 	shell \
@@ -79,13 +79,13 @@ endif
 # modules and build headers read-only for the runner to extract vmlinux and
 # assemble the guest rootfs (only for these goals - other runs never see them).
 BUILDENV_TARGET := $(DISTRO)-dev
-FC_HOST_KERNEL_MOUNTS :=
+VM_HOST_KERNEL_MOUNTS :=
 ifneq ($(filter test-e2e-vm tests tests-e2e,$(BUILDENV_GOALS)),)
   override DISTRO := ubuntu
-  override BUILDENV_IMAGE := tracee-buildenv:ubuntu-fc
-  BUILDENV_TARGET := ubuntu-fc
+  override BUILDENV_IMAGE := tracee-buildenv:ubuntu-vm
+  BUILDENV_TARGET := ubuntu-vm
   FC_KREL := $(shell uname -r)
-  FC_HOST_KERNEL_MOUNTS := \
+  VM_HOST_KERNEL_MOUNTS := \
     $(if $(wildcard /boot/vmlinuz-$(FC_KREL)),-v /boot/vmlinuz-$(FC_KREL):/boot/vmlinuz-$(FC_KREL):ro) \
     $(if $(wildcard /lib/modules/$(FC_KREL)),-v /lib/modules/$(FC_KREL):/lib/modules/$(FC_KREL):ro) \
     $(if $(wildcard /usr/src),-v /usr/src:/usr/src:ro)
@@ -138,7 +138,7 @@ ENGINE := $(if $(NEED_PRIV),$(ENGINE_PRIV),$(CONTAINER_ENGINE))
 ENGINE_RUN_USERNS := $(if $(NEED_PRIV),,$(if $(ENGINE_ROOTLESS),$(ENGINE_RUN_ROOTLESS)))
 
 ENGINE_RUN_ARGS = $(ENGINE_RUN_BASE) $(ENGINE_RUN_USERNS) $(ENGINE_RUN_GOCACHE) \
-	$(if $(NEED_PRIV),$(ENGINE_RUN_PRIV),$(ENGINE_RUN_INIT)) $(FC_HOST_KERNEL_MOUNTS) \
+	$(if $(NEED_PRIV),$(ENGINE_RUN_PRIV),$(ENGINE_RUN_INIT)) $(VM_HOST_KERNEL_MOUNTS) \
 	$(ENGINE_RUN_ENV) $(ENGINE_TTY)
 
 # purpose images run as root inside (no baked user); under rootless podman

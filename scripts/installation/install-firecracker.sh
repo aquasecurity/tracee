@@ -1,9 +1,9 @@
 #!/bin/sh
 
 # Install the Firecracker microVM binary (and jailer) from a pinned release,
-# checksum-verified against a vendored sha256. Used by the ubuntu-fc build
+# checksum-verified against a vendored sha256. Used by the ubuntu-vm build
 # environment stage to run the kernel-tampering E2E tests in a throwaway VM
-# (see scripts/e2e-firecracker.sh).
+# (see scripts/e2e-vm.sh).
 
 set -e
 

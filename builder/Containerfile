@@ -157,22 +157,22 @@ ENV HOME=/home/tracee
 WORKDIR /tracee
 
 #
-# ubuntu-fc: opt-in VM-capable environment for the kernel-tampering E2E tests
+# ubuntu-vm: opt-in VM-capable environment for the kernel-tampering E2E tests
 # (FTRACE_HOOK, HOOKED_SYSCALL). Built ON TOP OF ubuntu-dev (not ubuntu-checkers)
 # so it is a SUPERSET of the normal dev image: 'make tests-e2e' runs the whole
 # e2e suite inside this single image, and the containerized core/net/kernel
 # tests need the dev image's docker CLI and tooling (e.g. CONTAINERS_DATA_STORE
 # and run-kernel.sh drive containers through the host engine socket mounted at
 # /var/run/docker.sock). test-e2e-vm then adds the microVM on top. Firecracker
-# and the ext4/rsync tooling below let scripts/e2e-firecracker.sh assemble a
+# and the ext4/rsync tooling below let scripts/e2e-vm.sh assemble a
 # throwaway rootfs; no kernel is bundled - the runner boots the HOST's running
 # kernel (extracted from /boot/vmlinuz-$(uname -r), bind-mounted in). Still
 # opt-in (built only for test-e2e-vm / tests-e2e), so everyday 'make image' dev
 # builds stay on the leaner ubuntu-dev.
 #
 
-FROM ubuntu-dev AS ubuntu-fc
-LABEL AS=ubuntu-fc
+FROM ubuntu-dev AS ubuntu-vm
+LABEL AS=ubuntu-vm
 USER root
 
 ARG DEBIAN_FRONTEND="noninteractive"

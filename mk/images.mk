@@ -76,9 +76,9 @@ images:
 
 # opt-in VM-capable image (firecracker + qemu + ext4 tooling) for test-e2e-vm;
 # separate tag/stage from the plain dev images
-.PHONY: image-fc
-image-fc:
-	@$(call ensure_image,tracee-buildenv:ubuntu-fc,ubuntu-fc,$(CONTAINER_ENGINE))
+.PHONY: image-vm
+image-vm:
+	@$(call ensure_image,tracee-buildenv:ubuntu-vm,ubuntu-vm,$(CONTAINER_ENGINE))
 
 .PHONY: image-distro-test
 image-distro-test:
@@ -97,10 +97,10 @@ image-distro-test:
 clean-images:
 	-$(CONTAINER_ENGINE) image rm -f \
 		$(foreach d,$(SUPPORTED_DISTROS),tracee-buildenv:$(d)) \
-		tracee-buildenv:ubuntu-fc \
+		tracee-buildenv:ubuntu-vm \
 		tracee-man:latest tracee-protoc:latest tracee-k8s:latest \
 		tracee-mkdocs:latest 2> /dev/null
 	$(if $(ENGINE_ROOTLESS),@echo "[buildenv] cleaning the rootful engine store - authentication may be prompted")
 	$(if $(ENGINE_ROOTLESS),-sudo $(CONTAINER_ENGINE) image rm -f \
 		$(foreach d,$(SUPPORTED_DISTROS),tracee-buildenv:$(d)) \
-		tracee-buildenv:ubuntu-fc 2> /dev/null)
+		tracee-buildenv:ubuntu-vm 2> /dev/null)

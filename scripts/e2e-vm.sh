@@ -19,15 +19,15 @@
 # exactly the kernel it already runs, just sandboxed. That is what lets these
 # tests run locally at all.
 #
-# Runs INSIDE the privileged ubuntu-fc build environment, which carries
+# Runs INSIDE the privileged ubuntu-vm build environment, which carries
 # firecracker + qemu + the ext4/rsync tooling and has the host's kernel image,
 # modules and build headers bind-mounted in (see mk/dispatch.mk
-# FC_HOST_KERNEL_MOUNTS).
+# VM_HOST_KERNEL_MOUNTS).
 #
 #   INSTTESTS           test selection passed to run.sh (default the 2 module tests)
 #   E2E_VMM             force firecracker or qemu (default: auto by /dev/kvm)
-#   FC_VCPUS / FC_MEM   guest sizing (default 2 / 2048)
-#   FC_TIMEOUT          overall VM wall-clock budget (default 300 KVM / 1500 TCG)
+#   VM_VCPUS / VM_MEM   guest sizing (default 2 / 2048)
+#   VM_TIMEOUT          overall VM wall-clock budget (default 300 KVM / 1500 TCG)
 #
 # Mechanism: assemble an ext4 rootfs from THIS container's userland
 # (rsync --one-file-system skips /proc /sys /dev and bind mounts), overlay the
@@ -41,8 +41,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 INSTTESTS="${INSTTESTS:-FTRACE_HOOK HOOKED_SYSCALL}"
-FC_VCPUS="${FC_VCPUS:-2}"
-FC_MEM="${FC_MEM:-2048}"
+VM_VCPUS="${VM_VCPUS:-2}"
+VM_MEM="${VM_MEM:-2048}"
 
 info() { echo "[e2e-vm] $*"; }
 die() {
@@ -73,19 +73,19 @@ fi
 case "${VMM}" in
     firecracker)
         [ -c /dev/kvm ] || die "E2E_VMM=firecracker requires /dev/kvm"
-        command -v firecracker > /dev/null || die "firecracker not installed (ubuntu-fc image)"
+        command -v firecracker > /dev/null || die "firecracker not installed (ubuntu-vm image)"
         # KVM boots fast; keep the tight budget.
-        vm_timeout="${FC_TIMEOUT:-300}"
+        vm_timeout="${VM_TIMEOUT:-300}"
         guest_startup_timeout=30
         guest_shutdown_timeout=35
         ;;
     qemu)
-        command -v qemu-system-x86_64 > /dev/null || die "qemu-system-x86_64 not installed (ubuntu-fc image)"
+        command -v qemu-system-x86_64 > /dev/null || die "qemu-system-x86_64 not installed (ubuntu-vm image)"
         [ -c /dev/kvm ] || info "no /dev/kvm - using QEMU with TCG software emulation (slow)"
         # TCG runs the guest CPU ~10-30x slower, so widen the wall-clock budget
         # and the in-guest tracee start/stop timeouts (fixed test sleeps are
         # wall-clock and unaffected; only CPU-bound work - boot, BPF load - is).
-        vm_timeout="${FC_TIMEOUT:-1500}"
+        vm_timeout="${VM_TIMEOUT:-1500}"
         guest_startup_timeout=180
         guest_shutdown_timeout=120
         ;;
@@ -109,7 +109,7 @@ kbuild="$(readlink -f "${kmoddir}/build" 2> /dev/null || true)"
 
 # 0. is the running kernel bootable as a guest and will it take an unsigned
 #    module? Decide the virtio transport from its config.
-FC_TRANSPORT=pci
+VM_TRANSPORT=pci
 if [ -r "${kcfg}" ]; then
     kon() { grep -q "^$1=y" "${kcfg}"; }
     for f in CONFIG_MODULES CONFIG_MODULE_UNLOAD CONFIG_KPROBES CONFIG_KALLSYMS_ALL \
@@ -125,15 +125,15 @@ if [ -r "${kcfg}" ]; then
     if [ "${VMM}" = "qemu" ]; then
         # QEMU uses a q35 machine with virtio-blk over PCI.
         [ "${has_pci}" = 1 ] || skip_exit "running kernel lacks VIRTIO_PCI=y - QEMU q35 cannot expose the virtio root disk"
-        FC_TRANSPORT=pci
+        VM_TRANSPORT=pci
     elif [ "${has_mmio}" = 1 ]; then
         # Firecracker presents the root disk over virtio-mmio classically; newer
         # versions can put it on a PCI bus (enable_pci). Prefer whichever the
         # running kernel has built in - Ubuntu generic has MMIO=y, Fedora ships
         # VIRTIO_MMIO=m but VIRTIO_PCI=y.
-        FC_TRANSPORT=mmio
+        VM_TRANSPORT=mmio
     elif [ "${has_pci}" = 1 ]; then
-        FC_TRANSPORT=pci
+        VM_TRANSPORT=pci
     else
         skip_exit "running kernel has neither VIRTIO_MMIO=y nor VIRTIO_PCI=y built in - cannot expose the root disk"
     fi
@@ -147,7 +147,7 @@ rootfs="${work}/rootfs.ext4"
 serial="${work}/serial.log"
 trap 'rm -rf "${work}"' EXIT
 
-info "backend ${VMM}; kernel ${KREL} (${FC_TRANSPORT} transport); tests: ${INSTTESTS}"
+info "backend ${VMM}; kernel ${KREL} (${VM_TRANSPORT} transport); tests: ${INSTTESTS}"
 
 # 1. Firecracker needs an uncompressed vmlinux ELF (not the bzImage); extract it
 #    once and cache it in the host-bind-mounted /tmp/tracee, keyed by version+
@@ -312,8 +312,8 @@ if [ "${VMM}" = "firecracker" ]; then
     # PCI is turned on by the --enable-pci CLI flag (v1.13.1) - it is NOT a
     # machine-config field, which accepts only vcpu_count/mem_size_mib/smt/
     # cpu_template/track_dirty_pages/huge_pages.
-    machine_cfg="\"vcpu_count\": ${FC_VCPUS}, \"mem_size_mib\": ${FC_MEM}"
-    if [ "${FC_TRANSPORT}" = "pci" ]; then
+    machine_cfg="\"vcpu_count\": ${VM_VCPUS}, \"mem_size_mib\": ${VM_MEM}"
+    if [ "${VM_TRANSPORT}" = "pci" ]; then
         fc_pci_flag="--enable-pci"
         pci_arg=""
     else
@@ -349,7 +349,7 @@ else
     timeout "${vm_timeout}" \
         qemu-system-x86_64 \
         -machine q35 -accel tcg -cpu max \
-        -m "${FC_MEM}" -smp "${FC_VCPUS}" \
+        -m "${VM_MEM}" -smp "${VM_VCPUS}" \
         -kernel "${vmlinuz}" \
         -append "console=ttyS0 root=/dev/vda rw init=/usr/local/sbin/e2e-init reboot=t panic=1" \
         -drive "file=${rootfs},format=raw,if=virtio" \
@@ -399,7 +399,7 @@ else
 fi
 info "==================== VM summary ===================="
 info "  backend: ${VMM} (${accel})"
-info "  kernel:  ${KREL} (x86_64, ${FC_TRANSPORT} transport)"
+info "  kernel:  ${KREL} (x86_64, ${VM_TRANSPORT} transport)"
 info "  tests:   ${INSTTESTS}"
 info "  result:  ${status} (rc=${rc_str})"
 info "  logs:    ${artifacts_out}/e2e-out"

@@ -1,7 +1,7 @@
 name: Build Tracee Build Environment
 description: |
   Restore the tracee-buildenv image from the actions cache, or build it via
-  'make image' (or 'make image-fc' when fc=true) and cache it for other jobs.
+  'make image' (or 'make image-vm' when vm=true) and cache it for other jobs.
   The image is local-only (never pushed to a registry); the cache key changes
   whenever the Containerfile or an installation script changes, and the make
   target independently verifies the image content hash label, so a stale restore
@@ -11,11 +11,11 @@ inputs:
     description: "Build environment distro (alpine|ubuntu)"
     required: false
     default: "alpine"
-  fc:
+  vm:
     description: |
-      Build/cache the VM-capable ubuntu-fc image ('make image-fc') instead of a
+      Build/cache the VM-capable ubuntu-vm image ('make image-vm') instead of a
       plain dev image. Downloading the cached image is far cheaper than the
-      firecracker+tooling build, and the fc image rarely drifts.
+      firecracker+qemu+tooling build, and the vm image rarely drifts.
     required: false
     default: "false"
 runs:
@@ -28,13 +28,13 @@ runs:
         # uid is part of the key: it is baked into the image as a build arg
         # (GitHub-hosted runners are non-root, GRAAS AMIs run as root)
         hash="${{ hashFiles('builder/Containerfile', 'scripts/lib*.sh', 'scripts/installation/**') }}"
-        if [ "${{ inputs.fc }}" = "true" ]; then
-          # the fc image is arch-native and always ubuntu-based; a separate key
-          # namespace ('fc') keeps it distinct from the plain dev-image entries
-          echo "key=buildenv-fc-${{ runner.os }}-${{ runner.arch }}-$(id -u)-${hash}" >> "${GITHUB_OUTPUT}"
-          echo "tarball=/tmp/tracee-buildenv-ubuntu-fc.tar.zst" >> "${GITHUB_OUTPUT}"
-          echo "tag=tracee-buildenv:ubuntu-fc" >> "${GITHUB_OUTPUT}"
-          echo "build=make image-fc" >> "${GITHUB_OUTPUT}"
+        if [ "${{ inputs.vm }}" = "true" ]; then
+          # the vm image is arch-native and always ubuntu-based; a separate key
+          # namespace ('vm') keeps it distinct from the plain dev-image entries
+          echo "key=buildenv-vm-${{ runner.os }}-${{ runner.arch }}-$(id -u)-${hash}" >> "${GITHUB_OUTPUT}"
+          echo "tarball=/tmp/tracee-buildenv-ubuntu-vm.tar.zst" >> "${GITHUB_OUTPUT}"
+          echo "tag=tracee-buildenv:ubuntu-vm" >> "${GITHUB_OUTPUT}"
+          echo "build=make image-vm" >> "${GITHUB_OUTPUT}"
         else
           echo "key=buildenv-${{ runner.os }}-${{ runner.arch }}-${{ inputs.distro }}-$(id -u)-${hash}" >> "${GITHUB_OUTPUT}"
           echo "tarball=/tmp/tracee-buildenv-${{ inputs.distro }}.tar.zst" >> "${GITHUB_OUTPUT}"

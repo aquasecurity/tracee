@@ -66,7 +66,7 @@ installation script changes:
 | Image | Stage | Targets |
 |---|---|---|
 | `tracee-buildenv:alpine` (default) / `:ubuntu` | `alpine-dev` / `ubuntu-dev` | builds, checks, unit tests, `bear`, all `test-*` (integration defaults to `:ubuntu`), `run*`, `shell`, the dev box, `lsp-*` |
-| `tracee-buildenv:ubuntu-fc` | `ubuntu-fc` | `test-e2e-vm`, `image-fc` (adds Firecracker + QEMU + ext4/rsync tooling on top of `:ubuntu`; boots the host's running kernel, no kernel bundled; opt-in, kept off the default dev images) |
+| `tracee-buildenv:ubuntu-vm` | `ubuntu-vm` | `test-e2e-vm`, `image-vm` (adds Firecracker + QEMU + ext4/rsync tooling on top of `:ubuntu`; boots the host's running kernel, no kernel bundled; opt-in, kept off the default dev images) |
 | `tracee-man:latest` | `man` | `man` |
 | `tracee-protoc:latest` | `protoc` | `protoc` |
 | `tracee-k8s:latest` | `k8s` | `k8s-manifests`, `k8s-generate` |
@@ -142,8 +142,8 @@ backends are selected at run time (override with `E2E_VMM=firecracker|qemu`):
 **Firecracker** when the host exposes `/dev/kvm` (fast), else a **QEMU + TCG**
 software-emulation fallback that needs no KVM (slower, but the tests still run
 instead of skipping - e.g. on non-bare-metal cloud instances, where AWS only
-exposes `/dev/kvm` on `*.metal`). `scripts/e2e-firecracker.sh` assembles an
-ephemeral ext4 rootfs from the `ubuntu-fc` image (`make image-fc` - Firecracker
+exposes `/dev/kvm` on `*.metal`). `scripts/e2e-vm.sh` assembles an
+ephemeral ext4 rootfs from the `ubuntu-vm` image (`make image-vm` - Firecracker
 + QEMU plus ext4/rsync tooling) overlaid with the host kernel's modules and
 build headers, the built `tracee-e2e`/`lsm-check`, and the repo's e2e subset,
 boots the VM, runs `tests/e2e/run.sh` inside it, and reads the exit code back
@@ -193,7 +193,7 @@ prints a skip notice and exits 0.
     ```bash
     make image                  # (re)build tracee-buildenv:alpine if stale
     make images                 # build all distros
-    make image-fc               # build the VM-capable image for test-e2e-vm
+    make image-vm               # build the VM-capable image for test-e2e-vm
     make clean-images           # remove the local images
     ```
 

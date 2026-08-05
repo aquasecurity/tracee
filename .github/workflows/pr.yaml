@@ -725,8 +725,8 @@ jobs:
     # Independent kernel coverage, exactly like the kernel-tests AMI matrix:
     # this answers "does tracee work against a real kernel", not "does the code
     # lint", so it is deliberately NOT gated on verify-analyze-code (a red lint
-    # must not skip the VM tier). It builds its own ubuntu-fc image via 'make
-    # image-fc' and needs nothing from any other job, so it carries no 'needs'.
+    # must not skip the VM tier). It builds its own ubuntu-vm image via 'make
+    # image-vm' and needs nothing from any other job, so it carries no 'needs'.
     strategy:
       fail-fast: false
       matrix:
@@ -743,7 +743,7 @@ jobs:
           # not CI wiring. To enable:
           #   1. Add arm64 equivalents of the two kernel modules and drop the
           #      aarch64 skips in tests/e2e/lib-core.sh.
-          #   2. Relax the x86_64 guards in scripts/e2e-firecracker.sh and the
+          #   2. Relax the x86_64 guards in scripts/e2e-vm.sh and the
           #      test-e2e-vm target in mk/tracee.mk to also accept aarch64.
           #   3. Uncomment the entry below with a real KVM-capable arm64 GRAAS
           #      AMI id.
@@ -752,13 +752,13 @@ jobs:
           #   execution_type: LONG
           #   instance_type: LARGE
     runs-on:
-      # The trailing _fcvm keeps this label distinct from integration-tests,
+      # The trailing _vm keeps this label distinct from integration-tests,
       # which provisions off the same AMI id with the same run suffix; GRAAS
       # spins up one ephemeral runner per unique label, so without a suffix the
       # two jobs collide on a single single-use runner and this one hangs on
       # "Waiting for a runner to pick up this job" (the kernel-tests matrix does
       # the same with its own per-entry token).
-      - graas_ami-${{ matrix.ami }}_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}_fcvm
+      - graas_ami-${{ matrix.ami }}_${{ github.event.number || 0 }}${{ github.run_attempt }}-${{ github.run_id }}_vm
       - EXECUTION_TYPE=${{ matrix.execution_type }}
       - INSTANCE_TYPE=${{ matrix.instance_type }}
     permissions:
@@ -803,7 +803,7 @@ jobs:
 
       # The VM tier runs UNCONDITIONALLY - it is the strategic path to running
       # many kernels on a single AMI host. The backend is chosen inside
-      # e2e-firecracker.sh by whether /dev/kvm is present: Firecracker (microVM)
+      # e2e-vm.sh by whether /dev/kvm is present: Firecracker (microVM)
       # on a bare-metal/KVM runner, else QEMU/TCG software emulation. Running it
       # continuously under TCG here keeps it exercised so we pivot to Firecracker
       # for free the moment a bare-metal runner is available - do NOT gate/skip
@@ -823,10 +823,10 @@ jobs:
       # from the actions cache keyed by the Containerfile + install scripts; only
       # a cache miss pays the firecracker+qemu+tooling build, which on a fresh
       # ephemeral runner is far slower than loading the cached image.
-      - name: Build FC Environment Image
+      - name: Build VM Environment Image
         uses: ./.github/actions/build-tracee-buildenv
         with:
-          fc: 'true'
+          vm: 'true'
 
       - name: Run Kernel Tampering Tests (VM)
         id: e2e-vm

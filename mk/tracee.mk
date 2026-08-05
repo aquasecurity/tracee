@@ -1003,7 +1003,7 @@ tests-unit::
 
 # the E2E family in ONE run (core + net + kernel + the VM tampering tests,
 # last). Like `tests`, a single privileged goal -> ONE container, ONE sudo. Same
-# run-all semantics. Routed through the ubuntu-fc image (see mk/dispatch.mk).
+# run-all semantics. Routed through the ubuntu-vm image (see mk/dispatch.mk).
 TESTS_E2E += test-e2e test-e2e-net test-e2e-kernel test-e2e-vm
 
 .PHONY: tests-e2e
@@ -1226,7 +1226,7 @@ test-e2e-kernel:: \
 # kernel-tampering core tests (build+insmod real .ko, read host dmesg) run in
 # a throwaway VM instead of against the live kernel. Builds
 # the same prerequisites as test-e2e; the runner assembles a rootfs from this
-# (ubuntu-fc) environment and boots the HOST's running kernel. x86_64 only -
+# (ubuntu-vm) environment and boots the HOST's running kernel. x86_64 only -
 # the modules are x86-only, so skip cleanly elsewhere. INSTTESTS overrides the
 # default two-test selection.
 INSTTESTS ?=
@@ -1240,7 +1240,7 @@ test-e2e-vm:: \
 		exit 0; \
 	fi
 	@echo "Running kernel-tampering E2E tests in an isolated VM (Firecracker/KVM, or QEMU/TCG without /dev/kvm)..."
-	$(if $(INSTTESTS),INSTTESTS='$(INSTTESTS)') ./scripts/e2e-firecracker.sh
+	$(if $(INSTTESTS),INSTTESTS='$(INSTTESTS)') ./scripts/e2e-vm.sh
 
 #
 # development
@@ -1562,7 +1562,7 @@ bench-network::
 # these targets drive the container engine, which exists only on the host;
 # inside the build container they would fail with a confusing "No rule to
 # make target" - stop them with a clear message instead
-HOST_ONLY_STUBS := shell image images image-fc clean-images image-distro-test \
+HOST_ONLY_STUBS := shell image images image-vm clean-images image-distro-test \
 	stop-buildenv mkdocs-build mkdocs-serve \
 	evt-trigger-runner clean-evt-trigger-runner \
 	dev dev-stop dev-ssh attach clean-dev \

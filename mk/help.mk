@@ -17,7 +17,7 @@ help::
 	$(H) '$$ make shell PRIV=0' '# unprivileged shell (builds/checks; no sudo, no eBPF)'
 	$(H) '$$ make image' '# (re)build tracee-buildenv:$$DISTRO if stale'
 	$(H) '$$ make images' '# build the build environment for all distros'
-	$(H) '$$ make image-fc' '# build the VM-capable image for test-e2e-vm (firecracker + qemu)'
+	$(H) '$$ make image-vm' '# build the VM-capable image for test-e2e-vm (firecracker + qemu)'
 	$(H) '$$ make clean-images' '# remove the local build environment images'
 	$(H) '$$ make stop-buildenv' '# kill leftover build environment containers'
 	@echo ""

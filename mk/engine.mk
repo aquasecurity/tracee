@@ -144,9 +144,6 @@ FWD_VARS := \
 	DEBUG \
 	E2E_ARGS \
 	E2E_VMM \
-	FC_MEM \
-	FC_TIMEOUT \
-	FC_VCPUS \
 	FIPS \
 	INSTTESTS \
 	METRICS \
@@ -157,7 +154,10 @@ FWD_VARS := \
 	STATIC \
 	STRIP_BPF_DEBUG \
 	TEST \
-	TESTS
+	TESTS \
+	VM_MEM \
+	VM_TIMEOUT \
+	VM_VCPUS
 
 # $(strip ...) collapses any internal whitespace, including newlines, to single
 # spaces. Some of these arrive as multi-line values (e.g. NETTESTS/TESTS are
