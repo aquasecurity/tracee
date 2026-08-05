@@ -78,25 +78,28 @@ case "${VMM}" in
         vm_timeout="${VM_TIMEOUT:-300}"
         guest_startup_timeout=30
         guest_shutdown_timeout=35
-        guest_inst_test_sleep=5
+        guest_ftrace_hook_sleep=5
+        guest_ftrace_hook_timeout=15
         ;;
     qemu)
         command -v qemu-system-x86_64 > /dev/null || die "qemu-system-x86_64 not installed (ubuntu-vm image)"
         [ -c /dev/kvm ] || info "no /dev/kvm - using QEMU with TCG software emulation (slow)"
         # TCG runs the guest CPU ~10-30x slower, so widen the wall-clock budget
-        # and the in-guest tracee start/stop timeouts. Also widen the module
-        # hook-hold window (E2E_INST_TEST_SLEEP): FTRACE_HOOK's detection needs
-        # tracee to scan enabled_functions WHILE the hook is loaded, but under
-        # TCG tracee's do_init_module -> ftrace re-scan pipeline lags far past
-        # the default 5s hold (tracee alone takes minutes to initialize), so the
-        # scan lands after the hook already unloaded -> 0 events. Holding the
-        # hook much longer lets the (buffered, see #5341+ftrace.go) wakeup scan
-        # catch it. HOOKED_SYSCALL is unaffected - it holds its module until
-        # teardown already.
+        # and the in-guest tracee start/stop timeouts. Also widen FTRACE_HOOK's
+        # hook-hold window: its detection needs tracee to scan enabled_functions
+        # WHILE the hook is loaded, but under TCG tracee's do_init_module ->
+        # ftrace re-scan pipeline lags far past the default 5s hold (tracee alone
+        # takes minutes to initialize), so the scan lands after the hook already
+        # unloaded -> 0 events. The hold is the FTRACE_HOOK test-config `sleep`
+        # (lib-core.sh), which run_test_background turns into the module script's
+        # E2E_INST_TEST_SLEEP; the config `timeout` must exceed it or the script
+        # is killed mid-sleep. Both are env-overridable, set here for TCG only.
+        # HOOKED_SYSCALL is unaffected - it holds its module until teardown.
         vm_timeout="${VM_TIMEOUT:-1500}"
         guest_startup_timeout=180
         guest_shutdown_timeout=120
-        guest_inst_test_sleep=60
+        guest_ftrace_hook_sleep=60
+        guest_ftrace_hook_timeout=90
         ;;
     *) die "unknown E2E_VMM=${VMM} (want 'firecracker' or 'qemu')" ;;
 esac
@@ -280,10 +283,12 @@ export TRACEE_BUILDENV=1 E2E_MICROVM=1 TRACEE_BUILDENV_DISTRO=ubuntu HOME=/root 
 export E2E_PREBUILT_MODULE=${PREBUILT_MODULE}
 # under QEMU/TCG the guest CPU is emulated, so tracee's startup/shutdown and the
 # ftrace-hook detection pipeline are far slower than the run.sh defaults; the
-# host sizes these per backend. E2E_INST_TEST_SLEEP widens the module hook-hold
-# window so FTRACE_HOOK's transient hook stays present long enough for tracee's
-# lagged re-scan to catch it under TCG.
-export TRACEE_STARTUP_TIMEOUT=${guest_startup_timeout} TRACEE_SHUTDOWN_TIMEOUT=${guest_shutdown_timeout} E2E_INST_TEST_SLEEP=${guest_inst_test_sleep}
+# host sizes these per backend. E2E_FTRACE_HOOK_SLEEP widens FTRACE_HOOK's
+# hook-hold window (via its lib-core.sh test-config sleep) so the transient hook
+# stays present long enough for tracee's lagged re-scan to catch it under TCG;
+# E2E_FTRACE_HOOK_TIMEOUT is the matching per-test timeout (must exceed the
+# sleep, else run_test_background kills the module script mid-hold).
+export TRACEE_STARTUP_TIMEOUT=${guest_startup_timeout} TRACEE_SHUTDOWN_TIMEOUT=${guest_shutdown_timeout} E2E_FTRACE_HOOK_SLEEP=${guest_ftrace_hook_sleep} E2E_FTRACE_HOOK_TIMEOUT=${guest_ftrace_hook_timeout}
 if ! cd /tracee; then
     echo "[guest] ERROR: /tracee is missing or not a directory in the rootfs"
     ls -la / > /e2e-out/root-ls.txt 2>&1

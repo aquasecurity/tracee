@@ -54,7 +54,7 @@ core_init_test_config() {
     add_test_config TEST_CONFIG_MAP "CONTAINERS_DATA_STORE"      "containers-ds-test"            10       5     0
     add_test_config TEST_CONFIG_MAP "DNS_DATA_STORE"             "dns-ds-test"                   10       0     0
     add_test_config TEST_CONFIG_MAP "FILE_MODIFICATION"          "file-modification-test"         5       0     0
-    add_test_config TEST_CONFIG_MAP "FTRACE_HOOK"                "ftrace-hook-test"              15       5     0
+    add_test_config TEST_CONFIG_MAP "FTRACE_HOOK"                "ftrace-hook-test"              "${E2E_FTRACE_HOOK_TIMEOUT:-15}" "${E2E_FTRACE_HOOK_SLEEP:-5}" 0
     add_test_config TEST_CONFIG_MAP "HOOKED_SYSCALL"             "hooked-syscall-test"           10       5    12
     add_test_config TEST_CONFIG_MAP "LSM_TEST"                   "lsm-test"                       5       0     0
     add_test_config TEST_CONFIG_MAP "PROCESS_EXECUTE_FAILED"     "execute-failed-test"            5       2     0
