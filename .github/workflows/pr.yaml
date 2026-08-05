@@ -860,7 +860,8 @@ jobs:
         with:
           name: e2e-vm-artifacts-${{ matrix.arch }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
-            /tmp/tracee/e2e-artifacts/**
+            /tmp/tracee/e2e-out/**
+            /tmp/tracee/e2e-serial.log
             /tmp/e2e-test-vm.log
           retention-days: 7
           if-no-files-found: warn
@@ -868,4 +869,4 @@ jobs:
       - name: Cleanup Artifacts
         if: always()
         run: |
-          rm -rf /tmp/tracee/e2e-artifacts /tmp/e2e-test-vm.log 2> /dev/null || true
+          rm -rf /tmp/tracee/e2e-out /tmp/tracee/e2e-serial.log /tmp/e2e-test-vm.log 2> /dev/null || true
