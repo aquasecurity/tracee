@@ -801,12 +801,31 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-${{ runner.arch }}-go-graas-${{ hashFiles('**/go.mod') }}-
 
+      # This tier needs a real VM. Firecracker requires /dev/kvm; the QEMU/TCG
+      # fallback runs without it but is slow, and these two tests ALREADY run
+      # natively on every x86_64 kernel in the kernel-tests AMI matrix (that job
+      # sets NATIVE=1, where the container-only skip gate does not fire). So when
+      # this runner has no /dev/kvm we skip the whole tier here - no image build,
+      # no slow emulation - losing no coverage. Devs on a KVM-less box can still
+      # force the fallback locally with 'E2E_VMM=qemu make test-e2e-vm'.
+      - name: Check for /dev/kvm
+        id: kvm
+        run: |
+          if [ -c /dev/kvm ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::warning title=VM tests skipped (no KVM)::This runner has no /dev/kvm, so the kernel-tampering VM tier is skipped here. FTRACE_HOOK and HOOKED_SYSCALL still run natively in the kernel-tests AMI matrix."
+          fi
+        shell: bash
+
       # the VM boots the runner host's OWN kernel and compiles the test
       # module against its build headers; this AMI's normal workload never
       # builds modules, so the headers may be absent. Install them (best-effort
       # - a pre-baked AMI already has them; if they are genuinely unavailable
       # the runner skips with a clear message instead of building nothing).
       - name: Install kernel headers
+        if: steps.kvm.outputs.present == 'true'
         run: sudo apt-get update && sudo apt-get install -y "linux-headers-$(uname -r)"
         continue-on-error: true
 
@@ -816,11 +835,13 @@ jobs:
       # a cache miss pays the firecracker+qemu+tooling build, which on a fresh
       # ephemeral runner is far slower than loading the cached image.
       - name: Build FC Environment Image
+        if: steps.kvm.outputs.present == 'true'
         uses: ./.github/actions/build-tracee-buildenv
         with:
           fc: 'true'
 
       - name: Run Kernel Tampering Tests (VM)
+        if: steps.kvm.outputs.present == 'true'
         id: e2e-vm
         run: |
           make test-e2e-vm 2>&1 | tee /tmp/e2e-test-vm.log
