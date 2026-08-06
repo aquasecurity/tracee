@@ -37,6 +37,7 @@ install_base_packages() {
         curl \
         gnupg \
         tar \
+        xz-utils \
         git \
         make \
         ca-certificates \
@@ -65,6 +66,10 @@ install_clang() {
 
 install_go_tools() {
     "${SCRIPT_DIR}/install-go-tools.sh"
+}
+
+install_zig() {
+    "${SCRIPT_DIR}/install-zig.sh"
 }
 
 install_docker() {
@@ -148,11 +153,12 @@ verify_installation() {
     info "Verifying installation"
 
     # Check critical tools (Docker might not be available in some environments)
-    require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck govulncheck
+    require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck govulncheck zig
 
     # Show versions
     info "Installation verification:"
     go version
+    zig version
     clang --version | head -n1
     clang-format --version | head -n1
     staticcheck -version
@@ -181,6 +187,7 @@ main() {
     install_golang
     install_clang
     install_go_tools
+    install_zig
     install_docker
     install_containerd_cli
     verify_installation

@@ -66,6 +66,7 @@ CMD_TR ?= tr
 CMD_PROTOC ?= protoc
 CMD_PANDOC ?= pandoc
 CMD_CONTROLLER_GEN ?= controller-gen
+CMD_ZIG ?= zig
 
 .check_%:
 #
@@ -164,6 +165,23 @@ GO_VERSION_MIN = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f2)
 	fi
 	touch $@
 
+# The syscaller test helper is pinned to Zig 0.16 (its source uses 0.16-specific std/build APIs;
+# adjacent minors have breaking changes). scripts/installation/install-zig.sh installs exactly this.
+ZIG_VERSION = $(shell $(CMD_ZIG) version 2>/dev/null | $(CMD_CUT) -d. -f1,2)
+ZIG_VERSION_MAJ = $(shell echo $(ZIG_VERSION) | $(CMD_CUT) -d'.' -f1)
+ZIG_VERSION_MIN = $(shell echo $(ZIG_VERSION) | $(CMD_CUT) -d'.' -f2)
+
+.checkver_$(CMD_ZIG):: \
+	| .check_$(CMD_ZIG)
+#
+	@if [ "${ZIG_VERSION_MAJ}" != "0" ] || [ "${ZIG_VERSION_MIN}" != "16" ]; then
+		echo -n "you MUST use zig 0.16 (the syscaller test helper is pinned to it; "
+		echo -n "run scripts/installation/install-zig.sh), "
+		echo "your current zig version is ${ZIG_VERSION}"
+		exit 1
+	fi
+	touch $@
+
 #
 # version
 #
@@ -253,6 +271,7 @@ env::
 	@echo "CMD_TOUCH                $(CMD_TOUCH)"
 	@echo "CMD_TR                   $(CMD_TR)"
 	@echo "CMD_PROTOC               $(CMD_PROTOC)"
+	@echo "CMD_ZIG                  $(CMD_ZIG)"
 	@echo ---------------------------------------
 	@echo "LIB_BPF                  $(LIB_BPF)"
 	@echo ---------------------------------------
@@ -995,16 +1014,30 @@ coverage-html:: test-unit
 # integration tests
 #
 
-$(OUTPUT_DIR)/syscaller:: \
-	| .eval_goenv \
-	.check_$(CMD_GO) \
+# syscaller is a small Zig helper the integration tests use to trigger syscall events on demand.
 #
-	$(MAKE) embedded-dirs
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
-	$(GO_ENV_EBPF) \
-	$(CMD_GO) build \
-		-tags $(GO_TAGS_EBPF) \
-		-o $(OUTPUT_DIR)/syscaller ./tests/integration/syscaller/cmd
+# It is a standalone, statically-linked binary that makes raw Linux syscalls directly - no libc, no
+# threads, no Go runtime - so it adds almost no syscall "noise" of its own for a comm-scoped policy to
+# pick up. Its strategies also let it drive derived events (a real openat -> security_file_open) and
+# fire destructive syscalls safely (deliberately bad arguments, so the event fires but nothing
+# happens). The full story is in tests/integration/syscaller/README.md.
+#
+# Because it is plain Zig, building it needs neither the eBPF object nor the CGO/libbpf environment,
+# and a single toolchain cross-compiles both amd64 and arm64.
+SYSCALLER_SRC = ./tests/integration/syscaller
+$(OUTPUT_DIR)/syscaller:: \
+	$(SYSCALLER_SRC)/src/main.zig \
+	$(SYSCALLER_SRC)/build.zig \
+	| $(OUTPUT_DIR) \
+	.checkver_$(CMD_ZIG)
+#
+	$(CMD_ZIG) build-exe \
+		-O ReleaseSafe \
+		-target $(UNAME_M)-linux-musl \
+		--cache-dir $(OUTPUT_DIR)/.zig-cache \
+		--global-cache-dir $(OUTPUT_DIR)/.zig-global-cache \
+		-femit-bin=$(OUTPUT_DIR)/syscaller \
+		$(SYSCALLER_SRC)/src/main.zig
 
 .PHONY: test-integration
 test-integration:: \
@@ -1012,7 +1045,9 @@ test-integration:: \
 	| .eval_goenv \
 	.checkver_$(CMD_GO)
 #
-	@$(GO_ENV_EBPF) \
+	@$(MAKE) embedded-dirs
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf.o
+	$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
 		-ldflags="$(GO_DEBUG_FLAG) \

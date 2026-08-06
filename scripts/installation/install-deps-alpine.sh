@@ -37,6 +37,7 @@ install_base_packages() {
         zstd-static \
         libc6-compat \
         tar \
+        xz \
         ca-certificates \
         binutils-gold \
         bpftrace
@@ -67,6 +68,10 @@ install_go_tools() {
     bash "${SCRIPT_DIR}/install-go-tools.sh"
 }
 
+install_zig() {
+    bash "${SCRIPT_DIR}/install-zig.sh"
+}
+
 check_docker() {
     info "Checking Docker availability"
 
@@ -94,11 +99,12 @@ verify_installation() {
     info "Verifying installation"
 
     # Check critical tools (Docker is optional)
-    require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck govulncheck
+    require_cmds go gofmt clang clang-format staticcheck revive goimports-reviser errcheck govulncheck zig
 
     # Show versions
     info "Installation verification:"
     go version
+    zig version
     clang --version | head -n1
     clang-format --version | head -n1
     staticcheck -version
@@ -120,6 +126,7 @@ main() {
     install_golang
     install_clang
     install_go_tools
+    install_zig
     check_docker
     verify_installation
 
