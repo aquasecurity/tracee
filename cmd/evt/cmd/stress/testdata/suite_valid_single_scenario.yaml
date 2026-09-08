@@ -1,0 +1,5 @@
+name: single
+scenarios:
+  - name: only
+    events:
+      - security_file_open
