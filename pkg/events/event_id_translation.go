@@ -551,6 +551,7 @@ var EventTranslationTable = [MaxBuiltinID]pb.EventId{
 	ChmodCommon:                  pb.EventId_chmod_common,
 	SecuritySbUmount:             pb.EventId_security_sb_umount,
 	SecurityTaskPrctl:            pb.EventId_security_task_prctl,
+	FileOpenMountWriteDenied:     pb.EventId_file_open_mount_write_denied,
 
 	// Events from user-space translation section
 	NetPacketIPv4:         pb.EventId_net_packet_ipv4,

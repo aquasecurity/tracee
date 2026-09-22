@@ -161,7 +161,7 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 				parseExecveatFlag(flagsField, uint64(flagsVal.Int32))
 			}
 		}
-	case Open, Openat, SecurityFileOpen:
+	case Open, Openat, SecurityFileOpen, FileOpenMountWriteDenied:
 		if flagsField := GetFieldValue(data, "flags"); flagsField != nil {
 			if flagsVal, ok := flagsField.Value.(*pb.EventValue_Int32); ok {
 				parseOpenFlagArgument(flagsField, uint64(flagsVal.Int32))

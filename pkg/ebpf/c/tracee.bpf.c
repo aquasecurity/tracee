@@ -2370,6 +2370,249 @@ out:
     return 0;
 }
 
+statfunc void file_open_state_push(file_open_state_t *state, file_open_frame_t *frame)
+{
+    switch (state->depth) {
+        case 0:
+            state->frames[0] = *frame;
+            break;
+        case 1:
+            state->frames[1] = *frame;
+            break;
+        case 2:
+            state->frames[2] = *frame;
+            break;
+        case 3:
+            state->frames[3] = *frame;
+            break;
+        default:
+            state->overflow++;
+            return;
+    }
+    state->depth++;
+}
+
+statfunc void file_open_state_set_pending_mount(file_open_state_t *state, u64 mount)
+{
+    if (state->overflow != 0)
+        return;
+
+    switch (state->depth) {
+        case 1:
+            state->frames[0].pending_mount = mount;
+            break;
+        case 2:
+            state->frames[1].pending_mount = mount;
+            break;
+        case 3:
+            state->frames[2].pending_mount = mount;
+            break;
+        case 4:
+            state->frames[3].pending_mount = mount;
+            break;
+    }
+}
+
+statfunc void file_open_state_mark_mount_denied(file_open_state_t *state)
+{
+    if (state->overflow != 0)
+        return;
+
+    file_open_frame_t *frame = NULL;
+    switch (state->depth) {
+        case 1:
+            frame = &state->frames[0];
+            break;
+        case 2:
+            frame = &state->frames[1];
+            break;
+        case 3:
+            frame = &state->frames[2];
+            break;
+        case 4:
+            frame = &state->frames[3];
+            break;
+    }
+    if (frame == NULL || frame->pending_mount == 0)
+        return;
+
+    struct vfsmount *mnt = (struct vfsmount *) frame->pending_mount;
+    struct super_block *sb = BPF_CORE_READ(mnt, mnt_sb);
+    struct vfsmount___tracee *mnt_flavor = (struct vfsmount___tracee *) mnt;
+    struct super_block___tracee *sb_flavor = (struct super_block___tracee *) sb;
+    unsigned int mnt_flags = BPF_CORE_READ(mnt_flavor, mnt_flags);
+    unsigned long sb_flags = BPF_CORE_READ(sb_flavor, s_flags);
+
+    frame->mount_write_denied = true;
+    frame->mount_read_only = (mnt_flags & MNT_READONLY) != 0;
+    frame->filesystem_read_only = (sb_flags & SB_RDONLY) != 0;
+}
+
+statfunc void file_open_state_mark_filesystem_denied(file_open_state_t *state)
+{
+    if (state->overflow != 0)
+        return;
+
+    file_open_frame_t *frame = NULL;
+    switch (state->depth) {
+        case 1:
+            frame = &state->frames[0];
+            break;
+        case 2:
+            frame = &state->frames[1];
+            break;
+        case 3:
+            frame = &state->frames[2];
+            break;
+        case 4:
+            frame = &state->frames[3];
+            break;
+    }
+    if (frame == NULL)
+        return;
+
+    frame->mount_write_denied = true;
+    frame->filesystem_read_only = true;
+}
+
+statfunc bool file_open_state_pop(file_open_state_t *state, file_open_frame_t *frame)
+{
+    if (state->overflow != 0) {
+        state->overflow--;
+        return false;
+    }
+
+    switch (state->depth) {
+        case 1:
+            *frame = state->frames[0];
+            break;
+        case 2:
+            *frame = state->frames[1];
+            break;
+        case 3:
+            *frame = state->frames[2];
+            break;
+        case 4:
+            *frame = state->frames[3];
+            break;
+        default:
+            return false;
+    }
+    state->depth--;
+    return true;
+}
+
+SEC("kprobe/do_file_open")
+int BPF_KPROBE(trace_do_file_open)
+{
+    struct filename___tracee *pathname = (struct filename___tracee *) PT_REGS_PARM2(ctx);
+    struct open_flags___tracee *op = (struct open_flags___tracee *) PT_REGS_PARM3(ctx);
+    int flags = BPF_CORE_READ(op, open_flag);
+    u64 task_id = bpf_get_current_pid_tgid();
+    file_open_state_t *state = bpf_map_lookup_elem(&file_open_state_map, &task_id);
+
+    // Keep the return stack aligned when a read-only open is nested inside a
+    // tracked write-like open, even though it cannot request mount write access.
+    if ((flags & O_ACCMODE) == 0 && (flags & (O_CREAT | O_TRUNC)) == 0) {
+        if (state != NULL) {
+            file_open_frame_t skipped_frame = {};
+            file_open_state_push(state, &skipped_frame);
+        }
+        return 0;
+    }
+
+    file_open_frame_t frame = {
+        .pathname = (u64) pathname,
+        .dirfd = (s32) PT_REGS_PARM1(ctx),
+        .flags = flags,
+        .write_like = true,
+    };
+
+    if (state != NULL) {
+        file_open_state_push(state, &frame);
+        return 0;
+    }
+
+    file_open_state_t new_state = {};
+    file_open_state_push(&new_state, &frame);
+    bpf_map_update_elem(&file_open_state_map, &task_id, &new_state, BPF_ANY);
+    return 0;
+}
+
+SEC("kprobe/mnt_get_write_access")
+int BPF_KPROBE(trace_mnt_get_write_access)
+{
+    u64 task_id = bpf_get_current_pid_tgid();
+    file_open_state_t *state = bpf_map_lookup_elem(&file_open_state_map, &task_id);
+    if (state != NULL)
+        file_open_state_set_pending_mount(state, PT_REGS_PARM1(ctx));
+    return 0;
+}
+
+SEC("kretprobe/mnt_get_write_access")
+int BPF_KPROBE(trace_ret_mnt_get_write_access)
+{
+    if ((int) PT_REGS_RC(ctx) != -EROFS)
+        return 0;
+
+    u64 task_id = bpf_get_current_pid_tgid();
+    file_open_state_t *state = bpf_map_lookup_elem(&file_open_state_map, &task_id);
+    if (state != NULL)
+        file_open_state_mark_mount_denied(state);
+    return 0;
+}
+
+SEC("kretprobe/inode_permission")
+int BPF_KPROBE(trace_ret_inode_permission)
+{
+    if ((int) PT_REGS_RC(ctx) != -EROFS)
+        return 0;
+
+    u64 task_id = bpf_get_current_pid_tgid();
+    file_open_state_t *state = bpf_map_lookup_elem(&file_open_state_map, &task_id);
+    if (state != NULL)
+        file_open_state_mark_filesystem_denied(state);
+    return 0;
+}
+
+SEC("kretprobe/do_file_open")
+int BPF_KPROBE(trace_ret_do_file_open)
+{
+    u64 task_id = bpf_get_current_pid_tgid();
+    file_open_state_t *state = bpf_map_lookup_elem(&file_open_state_map, &task_id);
+    if (state == NULL)
+        return 0;
+
+    file_open_frame_t frame = {};
+    bool have_frame = file_open_state_pop(state, &frame);
+    if (state->depth == 0 && state->overflow == 0)
+        bpf_map_delete_elem(&file_open_state_map, &task_id);
+
+    long retval = PT_REGS_RC(ctx);
+    if (!have_frame || !frame.write_like || retval != -EROFS || !frame.mount_write_denied)
+        return 0;
+
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx, FILE_OPEN_MOUNT_WRITE_DENIED))
+        return 0;
+    if (!evaluate_scope_filters(&p))
+        return 0;
+
+    struct filename___tracee *filename = (struct filename___tracee *) frame.pathname;
+    const char *pathname = BPF_CORE_READ(filename, name);
+
+    save_to_submit_buf(&p.event->args_buf, &frame.dirfd, sizeof(s32), 0);
+    save_str_to_buf(&p.event->args_buf, (void *) pathname, 1);
+    save_to_submit_buf(&p.event->args_buf, &frame.flags, sizeof(s32), 2);
+    save_to_submit_buf(&p.event->args_buf, &frame.mount_read_only, sizeof(bool), 3);
+    save_to_submit_buf(&p.event->args_buf, &frame.filesystem_read_only, sizeof(bool), 4);
+    save_to_submit_buf(&p.event->args_buf, &retval, sizeof(long), 5);
+
+    if (evaluate_data_filters(&p, 0))
+        events_perf_submit(&p);
+    return 0;
+}
+
 SEC("kprobe/security_sb_mount")
 int BPF_KPROBE(trace_security_sb_mount)
 {

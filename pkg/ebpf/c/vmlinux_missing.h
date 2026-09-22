@@ -55,6 +55,18 @@
 
 #define PROC_SUPER_MAGIC 0x9fa0
 
+// include/uapi/asm-generic/errno-base.h
+#define EROFS 30
+
+// include/uapi/asm-generic/fcntl.h
+#define O_ACCMODE 00000003
+#define O_CREAT   00000100
+#define O_TRUNC   00001000
+
+// include/linux/mount.h and include/uapi/linux/fs.h
+#define MNT_READONLY 0x40
+#define SB_RDONLY    1
+
 // include/uapi/linux/const.h
 #define __AC(X, Y) (X##Y)
 #define _AC(X, Y)  __AC(X, Y)
