@@ -1,14 +1,12 @@
 module github.com/aquasecurity/tracee
 
-go 1.26.3
-
-toolchain go1.26.5
+go 1.26.8
 
 require (
 	github.com/IBM/fluent-forward-go v0.3.0
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/Masterminds/sprig/v3 v3.3.0
-	github.com/containerd/containerd/v2 v2.3.5
+	github.com/containerd/containerd/v2 v2.3.6
 	github.com/google/cel-go v0.29.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gopacket v1.1.19
