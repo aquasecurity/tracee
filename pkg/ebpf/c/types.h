@@ -271,7 +271,7 @@ typedef struct syscall_data {
 
 #define MAX_CACHED_PATH_SIZE 64
 
-#define MAX_FD_PATH_SIZE 64
+#define MAX_FD_PATH_SIZE 4096
 
 enum fd_path_status_e {
     FD_PATH_NONE = 0,

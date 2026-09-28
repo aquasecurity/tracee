@@ -31,7 +31,7 @@ func (decoder *EbpfDecoder) DecodeFDPath() (events.FDPath, error) {
 	pathSize := int(binary.LittleEndian.Uint16(header[4:6]))
 	argsSize := int(binary.LittleEndian.Uint16(header[6:8]))
 	if result.ArgIndex >= 6 || result.Status <= events.FDPathNone || result.Status > events.FDPathTruncated ||
-		argsSize+pathSize+fdPathHeaderSize > len(remaining) || pathSize > 64 {
+		argsSize+pathSize+fdPathHeaderSize > len(remaining) || pathSize > 4096 {
 		return events.FDPath{}, errors.New("invalid FD path header bounds or status")
 	}
 	if result.Status == events.FDPathResolved {

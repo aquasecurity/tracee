@@ -61,7 +61,7 @@ func TestDecodeFDPathRejectsMalformedRecord(t *testing.T) {
 		{"argument", func(b []byte) []byte { b[1] = 6; return b }},
 		{"status", func(b []byte) []byte { b[2] = 255; return b }},
 		{"flags", func(b []byte) []byte { b[3] = 1; return b }},
-		{"path bounds", func(b []byte) []byte { b[4] = 65; return b }},
+		{"path bounds", func(b []byte) []byte { binary.LittleEndian.PutUint16(b[4:6], 4097); return b }},
 		{"argument bounds", func(b []byte) []byte { b[6]++; return b }},
 		{"unterminated", func(b []byte) []byte { b[len(b)-1] = 'x'; return b }},
 		{"embedded NUL", func(b []byte) []byte { b[len(b)-2] = 0; return b }},
@@ -71,6 +71,18 @@ func TestDecodeFDPathRejectsMalformedRecord(t *testing.T) {
 			decoder := New(tc.edit(append([]byte{}, valid...)), NewTypeDecoder())
 			_, err := decoder.DecodeFDPath()
 			require.Error(t, err)
+		})
+	}
+}
+
+func TestDecodeFDPathLengthBoundaries(t *testing.T) {
+	for _, size := range []int{63, 64, 255, 512, 4095} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			path := append(bytes.Repeat([]byte("x"), size), 0)
+			decoder := New(fdPathRecord(nil, path, 0, events.FDPathResolved), NewTypeDecoder())
+			snapshot, err := decoder.DecodeFDPath()
+			require.NoError(t, err)
+			require.Equal(t, string(path[:size]), snapshot.Path)
 		})
 	}
 }

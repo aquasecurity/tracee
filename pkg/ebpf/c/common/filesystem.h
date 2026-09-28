@@ -202,8 +202,18 @@ statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
 }
 
 // Read the file path to the given buffer, returning the start offset of the path.
-statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
+enum path_resolution_e {
+    PATH_COMPLETE,
+    PATH_TRUNCATED,
+    PATH_READ_ERROR,
+};
+
+statfunc size_t get_path_str_buf_internal(struct path *path,
+                                          buf_t *out_buf,
+                                          enum path_resolution_e *status)
 {
+    if (status)
+        *status = PATH_READ_ERROR;
     if (path == NULL || out_buf == NULL) {
         return 0;
     }
@@ -228,6 +238,9 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
     unsigned int off;
     int sz;
 
+    if (status)
+        *status = PATH_TRUNCATED;
+
 #pragma unroll
     for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
         mnt_root = get_mnt_root_ptr_from_vfsmnt(vfsmnt);
@@ -235,6 +248,8 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         if (dentry == mnt_root || dentry == d_parent) {
             if (dentry != mnt_root) {
                 // We reached root, but not mount root - escaped?
+                if (status)
+                    *status = PATH_READ_ERROR;
                 break;
             }
             if (mnt_p != mnt_parent_p) {
@@ -246,6 +261,8 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
                 continue;
             }
             // Global root - path fully parsed
+            if (status)
+                *status = PATH_COMPLETE;
             break;
         }
         // Add this dentry name to path
@@ -285,6 +302,8 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
+            if (status)
+                *status = PATH_READ_ERROR;
             break;
         }
         dentry = d_parent;
@@ -294,7 +313,10 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         // (into buf[1], never buf[0] - see the dst[-1] note above)
         buf_off = 1;
         d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_kernel_str(&(out_buf->buf[1]), MAX_STRING_SIZE, (void *) d_name.name);
+        int size =
+            bpf_probe_read_kernel_str(&(out_buf->buf[1]), MAX_STRING_SIZE, (void *) d_name.name);
+        if (status)
+            *status = size > 1 ? PATH_COMPLETE : PATH_READ_ERROR;
     } else {
         // Add leading slash
         buf_off -= 1;
@@ -303,6 +325,13 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
         out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1] = 0;
     }
     return buf_off;
+}
+
+// Existing callers keep their path-resolution behavior. FD enrichment also
+// checks completeness so a bounded traversal cannot look like a full path.
+statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
+{
+    return get_path_str_buf_internal(path, out_buf, NULL);
 }
 
 statfunc void *get_path_str(struct path *path)

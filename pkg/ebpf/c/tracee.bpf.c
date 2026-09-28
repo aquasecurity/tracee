@@ -56,9 +56,18 @@ statfunc void capture_fd_path(program_data_t *p)
         return;
 
     p->task_info->fd_path_status = FD_PATH_READ_ERROR;
-    void *path = get_path_str(__builtin_preserve_access_index(&file->f_path));
-    if (!path)
+    buf_t *path_buf = get_buf(STRING_BUF_IDX);
+    if (!path_buf)
         return;
+    enum path_resolution_e resolution;
+    size_t path_offset = get_path_str_buf_internal(
+        __builtin_preserve_access_index(&file->f_path), path_buf, &resolution);
+    if (resolution != PATH_COMPLETE) {
+        if (resolution == PATH_TRUNCATED)
+            p->task_info->fd_path_status = FD_PATH_TRUNCATED;
+        return;
+    }
+    void *path = &path_buf->buf[path_offset & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
     u32 zero = 0;
     fd_arg_path_t *snapshot = bpf_map_lookup_elem(&fd_path_scratch, &zero);
     if (!snapshot)
@@ -66,6 +75,17 @@ statfunc void capture_fd_path(program_data_t *p)
     int size = bpf_probe_read_kernel_str(snapshot->path, sizeof(snapshot->path), path);
     if (size <= 1)
         return;
+    if (size == MAX_FD_PATH_SIZE) {
+        // read_kernel_str also returns the buffer size when it truncates.
+        // Accept an exactly fitting path only if its source terminates here.
+        char last = 0;
+        if (bpf_probe_read_kernel(&last, sizeof(last), path + MAX_FD_PATH_SIZE - 1) != 0)
+            return;
+        if (last != 0) {
+            p->task_info->fd_path_status = FD_PATH_TRUNCATED;
+            return;
+        }
+    }
     snapshot->size = size;
     snapshot->ts = sys->ts;
     snapshot->syscall = sys->id;
