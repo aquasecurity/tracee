@@ -815,7 +815,6 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 			}
 
 			if t.config.Output.FdPaths {
-				// Use original timestamp from pipeline metadata for BPF map lookup
 				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, t.FDArgPathMap)
 				if err != nil {
 					t.handleError(err)
