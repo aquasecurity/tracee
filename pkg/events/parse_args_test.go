@@ -25,6 +25,7 @@ func TestParseDataFieldsFDs(t *testing.T) {
 	require.NotZero(t, timeutil.GetBootTimeNS())
 
 	const bootTimestamp uint64 = 123456789
+	const hostPID, hostTID = 1000, 1001
 	timestamp := timeutil.BootToEpochNS(bootTimestamp)
 
 	t.Run("lookup uses syscall entry time", func(t *testing.T) {
@@ -40,7 +41,7 @@ func TestParseDataFieldsFDs(t *testing.T) {
 			return path, nil
 		}}
 
-		require.NoError(t, ParseDataFieldsFDs(data, timestamp, pathMap))
+		require.NoError(t, ParseDataFieldsFDs(data, timestamp, hostPID, hostTID, pathMap))
 		assert.Equal(t, 1, lookups)
 		assert.Equal(t, "3=/tmp/worker-1", data[0].GetStr())
 	})
@@ -51,10 +52,53 @@ func TestParseDataFieldsFDs(t *testing.T) {
 			return nil, syscall.ENOENT
 		}}
 
-		err := ParseDataFieldsFDs(data, timestamp, pathMap)
+		err := ParseDataFieldsFDs(data, timestamp, hostPID, hostTID, pathMap)
 		require.ErrorIs(t, err, syscall.ENOENT)
 		assert.Equal(t, &pb.EventValue_Int32{Int32: 3}, data[0].Value)
 	})
+}
+
+func TestParseDataFieldsFDsKey(t *testing.T) {
+	require.NoError(t, timeutil.Init(timeutil.CLOCK_BOOTTIME))
+	require.Equal(t, uintptr(16), unsafe.Sizeof(fdArgPathKey{}))
+
+	// Model the C key as two native-endian u64 words: timestamp, then pid_tgid.
+	// Every entry has the same fd number, so the event's identity must select the path.
+	paths := map[[2]uint64]string{
+		{100, uint64(1000)<<32 | 1001}: "/tmp/thread-1",
+		{100, uint64(1000)<<32 | 1002}: "/tmp/thread-2",
+		{100, uint64(2000)<<32 | 1001}: "/tmp/other-process",
+		{101, uint64(1000)<<32 | 1001}: "/tmp/reused-fd",
+	}
+	pathMap := fdPathMapStub{lookup: func(key unsafe.Pointer) ([]byte, error) {
+		path, ok := paths[*(*[2]uint64)(key)]
+		if !ok {
+			return nil, syscall.ENOENT
+		}
+		value := make([]byte, 64)
+		copy(value, path)
+		return value, nil
+	}}
+
+	for _, tt := range []struct {
+		name      string
+		timestamp uint64
+		hostPID   int
+		hostTID   int
+		path      string
+	}{
+		{"first thread", 100, 1000, 1001, "/tmp/thread-1"},
+		{"same timestamp, different thread", 100, 1000, 1002, "/tmp/thread-2"},
+		{"same timestamp, different process", 100, 2000, 1001, "/tmp/other-process"},
+		{"same thread, later syscall", 101, 1000, 1001, "/tmp/reused-fd"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			data := []*pb.EventValue{{Name: "fd", Value: &pb.EventValue_Int32{Int32: 3}}}
+			err := ParseDataFieldsFDs(data, timeutil.BootToEpochNS(tt.timestamp), tt.hostPID, tt.hostTID, pathMap)
+			require.NoError(t, err)
+			assert.Equal(t, "3="+tt.path, data[0].GetStr())
+		})
+	}
 }
 
 func TestGetFieldValue(t *testing.T) {

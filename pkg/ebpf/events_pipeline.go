@@ -814,8 +814,9 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 				}
 			}
 
-			if t.config.Output.FdPaths {
-				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, t.FDArgPathMap)
+			// Proto-native detector events have no kernel event to identify a map entry.
+			if t.config.Output.FdPaths && event.Event != nil {
+				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, event.HostProcessID, event.HostThreadID, t.FDArgPathMap)
 				if err != nil {
 					t.handleError(err)
 				}

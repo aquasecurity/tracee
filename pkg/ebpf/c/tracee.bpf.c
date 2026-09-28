@@ -158,12 +158,15 @@ int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
         struct file *f = get_struct_file_from_fd(fd_num);
 
         if (f) {
-            u64 ts = sys->ts;
+            fd_arg_path_key_t key = {
+                .ts = sys->ts,
+                .pid_tgid = bpf_get_current_pid_tgid(),
+            };
             fd_arg_path_t fd_arg_path = {};
             void *file_path = get_path_str(__builtin_preserve_access_index(&f->f_path));
 
             bpf_probe_read_kernel_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
-            bpf_map_update_elem(&fd_arg_path_map, &ts, &fd_arg_path, BPF_ANY);
+            bpf_map_update_elem(&fd_arg_path_map, &key, &fd_arg_path, BPF_ANY);
         }
     }
 
