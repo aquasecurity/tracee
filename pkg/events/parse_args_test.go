@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 )
@@ -29,6 +30,18 @@ func TestPipelineEventResetFDPath(t *testing.T) {
 	event := &PipelineEvent{FDPath: FDPath{Status: FDPathResolved, Path: "/tmp/old"}}
 	event.Reset()
 	assert.Equal(t, FDPath{}, event.FDPath)
+}
+
+func TestFDPathProtobufEncoding(t *testing.T) {
+	for _, path := range []string{"/tmp/ação", "/tmp/a\xffb"} {
+		event := &pb.Event{Data: []*pb.EventValue{{Name: "oldfd", Value: &pb.EventValue_Int32{Int32: 3}}}}
+		require.NoError(t, ParseDataFieldsFDs(event.Data, FDPath{
+			ArgName: "oldfd", Status: FDPathResolved, Path: path,
+		}))
+		_, err := protojson.Marshal(event)
+		require.NoError(t, err, "a filename must not make the whole event unserializable")
+		require.Equal(t, "3="+sanitizeStringForProtobuf(path), event.Data[0].GetStr())
+	}
 }
 
 func TestGetFieldValue(t *testing.T) {

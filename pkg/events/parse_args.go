@@ -296,7 +296,9 @@ func ParseDataFieldsFDs(data []*pb.EventValue, snapshot FDPath) error {
 			default:
 				return fmt.Errorf("unsupported FD argument %s type %T", snapshot.ArgName, field.Value)
 			}
-			field.Value = &pb.EventValue_Str{Str: fd + "=" + snapshot.Path}
+			// This string is added after the usual protobuf conversion. Apply the
+			// same filename sanitization here so invalid UTF-8 cannot drop an event.
+			field.Value = &pb.EventValue_Str{Str: fd + "=" + sanitizeStringForProtobuf(snapshot.Path)}
 		}
 	}
 
