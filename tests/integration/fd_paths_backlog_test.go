@@ -24,6 +24,11 @@ import (
 // SIGSTOP must not affect the test runner or its other integration tests.
 func fdPathTracee(t *testing.T, events string) (process *exec.Cmd, outputFile, logFile string) {
 	t.Helper()
+	return fdPathTraceeOptions(t, events, fmt.Sprintf("pid=%d", os.Getpid()), true)
+}
+
+func fdPathTraceeOptions(t *testing.T, events, scope string, enabled bool, extra ...string) (process *exec.Cmd, outputFile, logFile string) {
+	t.Helper()
 	testutils.AssureIsRoot(t)
 	dir := t.TempDir()
 	outputPath := filepath.Join(dir, "events.json")
@@ -33,12 +38,17 @@ func fdPathTracee(t *testing.T, events string) (process *exec.Cmd, outputFile, l
 	log, err := os.Create(logPath)
 	require.NoError(t, err)
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, testutils.TraceeBinary,
-		"--events", events, "--scope", fmt.Sprintf("pid=%d", os.Getpid()),
-		"--enrichment", "fd-paths", "--capabilities", "bypass=false",
-		"--output", "json", "--artifacts", "dir.path="+filepath.Join(dir, "artifacts"),
+	args := []string{
+		"--events", events, "--scope", scope,
+		"--capabilities", "bypass=false",
+		"--output", "json", "--artifacts", "dir.path=" + filepath.Join(dir, "artifacts"),
 		"--server", "healthz", "--server", "metrics",
-		"--server", fmt.Sprintf("http-address=:%d", testutils.TraceePort))
+		"--server", fmt.Sprintf("http-address=:%d", testutils.TraceePort)}
+	if enabled {
+		args = append(args, "--enrichment", "fd-paths")
+	}
+	args = append(args, extra...)
+	cmd := exec.CommandContext(ctx, testutils.TraceeBinary, args...)
 	cmd.Stdout, cmd.Stderr = output, log
 	require.NoError(t, cmd.Start())
 	done := make(chan error, 1)

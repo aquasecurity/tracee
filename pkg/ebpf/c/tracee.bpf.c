@@ -1457,6 +1457,11 @@ int lkm_seeker_new_mod_only_tail(struct pt_regs *ctx)
 SEC("raw_tracepoint/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 {
+    // de_thread() can replace a non-leader's TID with the leader's TID.
+    // execveat's entry record already owns its path; reclaim the old key even
+    // if no exit handler can find the task state under the previous TID.
+    u32 old_tid = ctx->args[1];
+    bpf_map_delete_elem(&fd_arg_path_map, &old_tid);
     program_data_t p = {};
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXEC))
         return 0;
