@@ -271,6 +271,11 @@ typedef struct syscall_data {
 
 #define MAX_CACHED_PATH_SIZE 64
 
+typedef struct fd_arg_path_key {
+    u64 ts;
+    u64 pid_tgid;
+} fd_arg_path_key_t;
+
 typedef struct fd_arg_path {
     char path[MAX_CACHED_PATH_SIZE];
 } fd_arg_path_t;

@@ -285,11 +285,11 @@ struct stack_addresses {
 
 typedef struct stack_addresses stack_addresses_t;
 
-// store fds paths by timestamp
+// store fd paths by syscall entry timestamp and host thread identity
 struct fd_arg_path_map {
     __uint(type, BPF_MAP_TYPE_LRU_HASH);
     __uint(max_entries, 1024);
-    __type(key, u64);
+    __type(key, fd_arg_path_key_t);
     __type(value, fd_arg_path_t);
 } fd_arg_path_map SEC(".maps");
 
