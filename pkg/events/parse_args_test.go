@@ -1,13 +1,61 @@
 package events
 
 import (
+	"syscall"
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
+	"github.com/aquasecurity/tracee/common/timeutil"
 )
+
+type fdPathMapStub struct {
+	lookup func(unsafe.Pointer) ([]byte, error)
+}
+
+func (m fdPathMapStub) GetValue(key unsafe.Pointer) ([]byte, error) {
+	return m.lookup(key)
+}
+
+func TestParseDataFieldsFDs(t *testing.T) {
+	require.NoError(t, timeutil.Init(timeutil.CLOCK_BOOTTIME))
+	require.NotZero(t, timeutil.GetBootTimeNS())
+
+	const bootTimestamp uint64 = 123456789
+	timestamp := timeutil.BootToEpochNS(bootTimestamp)
+
+	t.Run("lookup uses syscall entry time", func(t *testing.T) {
+		data := []*pb.EventValue{{Name: "fd", Value: &pb.EventValue_Int32{Int32: 3}}}
+		lookups := 0
+		pathMap := fdPathMapStub{lookup: func(key unsafe.Pointer) ([]byte, error) {
+			lookups++
+			if *(*uint64)(key) != bootTimestamp {
+				return nil, syscall.ENOENT
+			}
+			path := make([]byte, 64)
+			copy(path, "/tmp/worker-1")
+			return path, nil
+		}}
+
+		require.NoError(t, ParseDataFieldsFDs(data, timestamp, pathMap))
+		assert.Equal(t, 1, lookups)
+		assert.Equal(t, "3=/tmp/worker-1", data[0].GetStr())
+	})
+
+	t.Run("lookup failure leaves fd unchanged", func(t *testing.T) {
+		data := []*pb.EventValue{{Name: "fd", Value: &pb.EventValue_Int32{Int32: 3}}}
+		pathMap := fdPathMapStub{lookup: func(unsafe.Pointer) ([]byte, error) {
+			return nil, syscall.ENOENT
+		}}
+
+		err := ParseDataFieldsFDs(data, timestamp, pathMap)
+		require.ErrorIs(t, err, syscall.ENOENT)
+		assert.Equal(t, &pb.EventValue_Int32{Int32: 3}, data[0].Value)
+	})
+}
 
 func TestGetFieldValue(t *testing.T) {
 	t.Parallel()

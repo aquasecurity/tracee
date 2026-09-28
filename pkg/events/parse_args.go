@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
-
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/errfmt"
 	"github.com/aquasecurity/tracee/common/parsers"
@@ -284,12 +282,18 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 	return nil
 }
 
+type fdPathMap interface {
+	GetValue(unsafe.Pointer) ([]byte, error)
+}
+
 // ParseDataFieldsFDs parses file descriptor arguments in the protobuf event data.
-func ParseDataFieldsFDs(data []*pb.EventValue, origTimestamp uint64, fdArgPathMap *bpf.BPFMap) error {
+// timestamp is the event timestamp in nanoseconds since epoch.
+func ParseDataFieldsFDs(data []*pb.EventValue, timestamp uint64, fdArgPathMap fdPathMap) error {
 	if fdField := GetFieldValue(data, "fd"); fdField != nil {
 		if fdVal, ok := fdField.Value.(*pb.EventValue_Int32); ok {
 			fd := fdVal.Int32
-			ts := origTimestamp
+			// The BPF map is keyed by the syscall entry time in the BPF clock base.
+			ts := timeutil.EpochToBootTimeNS(timestamp)
 			bs, err := fdArgPathMap.GetValue(unsafe.Pointer(&ts))
 			if err != nil {
 				return errfmt.WrapError(err)
