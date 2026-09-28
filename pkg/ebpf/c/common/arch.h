@@ -14,8 +14,7 @@ statfunc bool is_arm64_compat(struct task_struct *);
 statfunc bool is_compat(struct task_struct *);
 statfunc int get_syscall_id_from_regs(struct pt_regs *);
 statfunc struct pt_regs *get_current_task_pt_regs(void);
-statfunc bool has_syscall_fd_arg(uint);
-statfunc uint get_syscall_fd_arg_index(uint);
+statfunc int get_syscall_fd_arg_index(uint);
 
 // FUNCTIONS
 
@@ -324,16 +323,21 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_ARCH_PRCTL             UNDEFINED_SYSCALL
 #endif
 
-statfunc bool has_syscall_fd_arg(uint syscall_id)
+statfunc int get_syscall_fd_arg_index(uint syscall_id)
 {
-    // Only syscalls with one fd argument so far
+    // One selected descriptor per syscall. Return -1 for unsupported syscalls.
     switch (syscall_id) {
+        case SYSCALL_SYMLINKAT:
+            return 1;
+        case SYSCALL_PERF_EVENT_OPEN:
+            return 3;
+        case SYSCALL_MMAP:
+            return 4;
         case SYSCALL_READ:
         case SYSCALL_WRITE:
         case SYSCALL_CLOSE:
         case SYSCALL_FSTAT:
         case SYSCALL_LSEEK:
-        case SYSCALL_MMAP:
         case SYSCALL_IOCTL:
         case SYSCALL_PREAD64:
         case SYSCALL_PWRITE64:
@@ -376,7 +380,6 @@ statfunc bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_MKNODAT:
         case SYSCALL_FCHOWNAT:
         case SYSCALL_UNLINKAT:
-        case SYSCALL_SYMLINKAT:
         case SYSCALL_READLINKAT:
         case SYSCALL_FCHMODAT:
         case SYSCALL_FACCESSAT:
@@ -390,7 +393,6 @@ statfunc bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_SIGNALFD4:
         case SYSCALL_PREADV:
         case SYSCALL_PWRITEV:
-        case SYSCALL_PERF_EVENT_OPEN:
         case SYSCALL_RECVMMSG:
         case SYSCALL_NAME_TO_HANDLE_AT:
         case SYSCALL_OPEN_BY_HANDLE_AT:
@@ -426,24 +428,10 @@ statfunc bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_EPOLL_PWAIT:
         case SYSCALL_SIGNALFD:
 #endif
-            return true;
+            return 0;
     }
 
-    return false;
-}
-
-statfunc uint get_syscall_fd_arg_index(uint syscall_id)
-{
-    switch (syscall_id) {
-        case SYSCALL_SYMLINKAT:
-            return 1;
-        case SYSCALL_PERF_EVENT_OPEN:
-            return 3;
-        case SYSCALL_MMAP:
-            return 4;
-    }
-
-    return 0;
+    return -1;
 }
 
 #endif

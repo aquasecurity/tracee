@@ -10,9 +10,9 @@ import (
 )
 
 func TestParseDataFieldsFDs(t *testing.T) {
-	for _, status := range []FDPathStatus{FDPathNone, FDPathUnavailable, FDPathResolved, FDPathReadError, FDPathStorageError} {
+	for _, status := range []FDPathStatus{FDPathNone, FDPathUnavailable, FDPathResolved, FDPathReadError, FDPathStorageError, FDPathTruncated} {
 		data := []*pb.EventValue{{Name: "fd", Value: &pb.EventValue_Int32{Int32: 3}}}
-		snapshot := FDPath{Status: status}
+		snapshot := FDPath{Status: status, ArgName: "fd"}
 		if status == FDPathResolved {
 			snapshot.Path = "/tmp/worker"
 		}

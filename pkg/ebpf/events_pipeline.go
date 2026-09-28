@@ -169,6 +169,7 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 					decoderPool.Put(ebpfMsgDecoder)
 					continue
 				}
+				fdPath.ArgName = evtFields[fdPath.ArgIndex].Name
 			}
 			args := make([]trace.Argument, len(evtFields))
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)
@@ -822,18 +823,15 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 			}
 			pbEvent.Policies.Matched = t.policyManager.MatchedNames(event.MatchedPoliciesBitmap)
 
-			// Parse arguments for output formatting if enabled.
-			if t.config.Output.DecodedData {
-				err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id))
-				if err != nil {
+			// Apply the selected FD snapshot before general formatting turns pointer
+			// fields (including legacy fsconfig's fs_fd) into strings.
+			if t.config.Output.FdPaths && event.Event != nil {
+				if err := events.ParseDataFieldsFDs(pbEvent.Data, event.FDPath); err != nil {
 					t.handleError(err)
 				}
 			}
-
-			// Proto-native detector events have no kernel event to identify a map entry.
-			if t.config.Output.FdPaths && event.Event != nil {
-				err := events.ParseDataFieldsFDs(pbEvent.Data, event.FDPath)
-				if err != nil {
+			if t.config.Output.DecodedData {
+				if err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id)); err != nil {
 					t.handleError(err)
 				}
 			}

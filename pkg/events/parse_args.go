@@ -283,18 +283,30 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 // ParseDataFieldsFDs parses file descriptor arguments in the protobuf event data.
 // The entry-time snapshot has already been copied out of the event record.
 func ParseDataFieldsFDs(data []*pb.EventValue, snapshot FDPath) error {
-	if fdField := GetFieldValue(data, "fd"); fdField != nil {
-		if fdVal, ok := fdField.Value.(*pb.EventValue_Int32); ok {
-			fd := fdVal.Int32
-			if snapshot.Status == FDPathResolved && snapshot.Path != "" {
-				fdField.Value = &pb.EventValue_Str{Str: fmt.Sprintf("%d=%s", fd, snapshot.Path)}
+	if snapshot.Status == FDPathResolved && snapshot.Path != "" {
+		if field := GetFieldValue(data, snapshot.ArgName); field != nil {
+			var fd string
+			switch value := field.Value.(type) {
+			case *pb.EventValue_Int32:
+				fd = fmt.Sprint(value.Int32)
+			case *pb.EventValue_UInt32:
+				fd = fmt.Sprint(value.UInt32)
+			case *pb.EventValue_Pointer:
+				fd = fmt.Sprint(value.Pointer)
+			default:
+				return fmt.Errorf("unsupported FD argument %s type %T", snapshot.ArgName, field.Value)
 			}
+			field.Value = &pb.EventValue_Str{Str: fd + "=" + snapshot.Path}
 		}
 	}
 
-	if dirfdField := GetFieldValue(data, "dirfd"); dirfdField != nil {
-		if dirfdVal, ok := dirfdField.Value.(*pb.EventValue_Int32); ok {
-			parseDirfdAt(dirfdField, uint64(dirfdVal.Int32))
+	// Keep the conventional sentinel readable, including directory arguments
+	// whose kernel definition uses dfd or newdirfd instead of dirfd.
+	for _, name := range []string{"dirfd", "dfd", "newdirfd"} {
+		if field := GetFieldValue(data, name); field != nil {
+			if value, ok := field.Value.(*pb.EventValue_Int32); ok {
+				parseDirfdAt(field, uint64(value.Int32))
+			}
 		}
 	}
 

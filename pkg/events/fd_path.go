@@ -17,6 +17,8 @@ const (
 // detectors continue to see the syscall's original argument type.
 type FDPath struct {
 	ArgIndex uint8
-	Status   FDPathStatus
-	Path     string
+	// ArgName comes from the event definition at ArgIndex, before protobuf conversion.
+	ArgName string
+	Status  FDPathStatus
+	Path    string
 }

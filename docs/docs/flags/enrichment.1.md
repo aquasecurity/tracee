@@ -63,7 +63,11 @@ The `--enrichment` flag allows you to configure enrichment options for container
   - Docker     (`docker`)
   - Podman     (`podman`)
 
-- **fd-paths**: Enable fd-paths. When enabled, Tracee will resolve file descriptor arguments to show associated file paths instead of just the descriptor number. This enriches file descriptors with file path translation. May cause pipeline slowdowns.
+- **fd-paths**: Capture the selected file descriptor's path at syscall entry and display it as `fd=path`. The path travels with the event, so delays in the userspace pipeline don't evict it. Only one selected descriptor is enriched per supported syscall; this doesn't cover every FD argument of every syscall. Numeric values remain available to filters and detectors before output formatting.
+
+  Paths can contain up to 4,095 bytes. If a descriptor is invalid, capture fails, or the path exceeds the length or traversal limit, the argument keeps its numeric value. Directory arguments using `AT_FDCWD` keep that symbolic value. Capture adds memory and processing overhead, especially for long paths or many simultaneous syscalls.
+
+  With `--server metrics`, `tracee_fd_path_captures_total{status="..."}` counts `resolved`, `unavailable`, `read_error`, `storage_error`, and `truncated` outcomes. These counts cover decoded event records before filtering, not events lost in the perf buffer. Failed `execveat` calls can produce both entry and exit records. No `--capabilities bypass=true` is needed for FD path enrichment.
   Example:
   ```console
   --enrichment fd-paths
@@ -133,4 +137,3 @@ The `--enrichment` flag allows you to configure enrichment options for container
    Note: `executable-hash.mode` automatically enables executable-hash, so `--enrichment executable-hash` is not needed.
 
 Please refer to the [documentation](../install/container-engines.md) for more information on container events enrichment.
-

@@ -43,11 +43,8 @@ char LICENSE[] SEC("license") = "GPL";
 statfunc void capture_fd_path(program_data_t *p)
 {
     syscall_data_t *sys = &p->task_info->syscall_data;
-    if (!has_syscall_fd_arg(sys->id))
-        return;
-
-    u32 index = get_syscall_fd_arg_index(sys->id);
-    if (index >= 6)
+    int index = get_syscall_fd_arg_index(sys->id);
+    if (index < 0 || index >= 6)
         return;
     p->task_info->fd_path_arg_index = index;
     p->task_info->fd_path_status = FD_PATH_UNAVAILABLE;
