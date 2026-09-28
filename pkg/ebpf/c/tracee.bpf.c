@@ -40,6 +40,41 @@
 
 char LICENSE[] SEC("license") = "GPL";
 
+statfunc void capture_fd_path(program_data_t *p)
+{
+    syscall_data_t *sys = &p->task_info->syscall_data;
+    if (!has_syscall_fd_arg(sys->id))
+        return;
+
+    u32 index = get_syscall_fd_arg_index(sys->id);
+    if (index >= 6)
+        return;
+    p->task_info->fd_path_arg_index = index;
+    p->task_info->fd_path_status = FD_PATH_UNAVAILABLE;
+    struct file *file = get_struct_file_from_fd((u32) sys->args.args[index]);
+    if (!file)
+        return;
+
+    p->task_info->fd_path_status = FD_PATH_READ_ERROR;
+    void *path = get_path_str(__builtin_preserve_access_index(&file->f_path));
+    if (!path)
+        return;
+    u32 zero = 0;
+    fd_arg_path_t *snapshot = bpf_map_lookup_elem(&fd_path_scratch, &zero);
+    if (!snapshot)
+        return;
+    int size = bpf_probe_read_kernel_str(snapshot->path, sizeof(snapshot->path), path);
+    if (size <= 1)
+        return;
+    snapshot->size = size;
+    snapshot->ts = sys->ts;
+    snapshot->syscall = sys->id;
+    u32 tid = bpf_get_current_pid_tgid();
+    p->task_info->fd_path_status = FD_PATH_STORAGE_ERROR;
+    if (bpf_map_update_elem(&fd_arg_path_map, &tid, snapshot, BPF_ANY) == 0)
+        p->task_info->fd_path_status = FD_PATH_RESOLVED;
+}
+
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long id)
 // initial entry for sys_enter syscall logic
 SEC("raw_tracepoint/sys_enter")
@@ -85,6 +120,8 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
         init_task_context(&task_info->context, task, config->options);
     }
 
+    // Also reclaim a snapshot whose previous syscall could not reach its exit handler.
+    clear_fd_path(task_info, tid);
     syscall_data_t *sys = &(task_info->syscall_data);
     sys->id = ctx->args[1];
 
@@ -152,23 +189,8 @@ int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
     if (!evaluate_scope_filters(&p))
         goto out;
 
-    if (p.config->options & OPT_TRANSLATE_FD_FILEPATH && has_syscall_fd_arg(sys->id)) {
-        // Process filepath related to fd argument
-        uint fd_num = get_syscall_fd_num_from_arg(sys->id, &sys->args);
-        struct file *f = get_struct_file_from_fd(fd_num);
-
-        if (f) {
-            fd_arg_path_key_t key = {
-                .ts = sys->ts,
-                .pid_tgid = bpf_get_current_pid_tgid(),
-            };
-            fd_arg_path_t fd_arg_path = {};
-            void *file_path = get_path_str(__builtin_preserve_access_index(&f->f_path));
-
-            bpf_probe_read_kernel_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
-            bpf_map_update_elem(&fd_arg_path_map, &key, &fd_arg_path, BPF_ANY);
-        }
-    }
+    if (p.config->options & OPT_TRANSLATE_FD_FILEPATH)
+        capture_fd_path(&p);
 
     if (sys->id != SYSCALL_RT_SIGRETURN && !p.task_info->syscall_traced) {
         save_to_submit_buf(&p.event->args_buf, (void *) &(sys->args.args[0]), sizeof(int), 0);
@@ -249,8 +271,10 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
     }
 
     // Sanity check - we returned from the expected syscall this task was executing
-    if (sys->id != id)
+    if (sys->id != id) {
+        clear_fd_path(task_info, tid);
         return 0;
+    }
 
     sys->ret = ret;
 
@@ -259,6 +283,7 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
 
     // otherwise move to direct syscall handler
     bpf_tail_call(ctx, &sys_exit_tails, id);
+    clear_fd_path(task_info, tid);
     return 0;
 }
 
@@ -275,7 +300,7 @@ int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
     syscall_data_t *sys = &p.task_info->syscall_data;
 
     if (!reset_event(p.event, sys->id))
-        return 0;
+        goto out;
 
     long ret = ctx->args[1];
 
@@ -287,15 +312,20 @@ int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
     if (sys->id == SYSCALL_EXECVE || sys->id == SYSCALL_EXECVEAT)
         goto out;
 
+    reserve_fd_path(&p);
     save_args_to_submit_buf(p.event, &sys->args);
     p.event->context.ts = sys->ts;
 
     u8 ret_index = get_num_fields(p.event->config.field_types);
     save_to_submit_buf(&p.event->args_buf, (void *) &ret, sizeof(long), ret_index);
-    events_perf_submit(&p);
+    syscall_perf_submit(&p);
 
 out:
+    // execveat's specialized exit handler may still need the entry snapshot.
+    if (sys->id != SYSCALL_EXECVEAT)
+        clear_fd_path(p.task_info, p.event->context.task.host_tid);
     bpf_tail_call(ctx, &sys_exit_tails, sys->id);
+    clear_fd_path(p.task_info, p.event->context.task.host_tid);
     return 0;
 }
 
@@ -444,6 +474,7 @@ int syscall__execveat_enter(void *ctx)
     if (!evaluate_scope_filters(&p))
         return 0;
 
+    reserve_fd_path(&p);
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
     save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[1] /*pathname*/, 1);
     save_str_arr_to_buf(&p.event->args_buf, (const char *const *) sys->args.args[2] /*argv*/, 2);
@@ -453,29 +484,31 @@ int syscall__execveat_enter(void *ctx)
     }
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
 
-    return events_perf_submit(&p);
+    return syscall_perf_submit(&p);
 }
 
 SEC("raw_tracepoint/sys_execveat")
 int syscall__execveat_exit(void *ctx)
 {
+    int result = 0;
     program_data_t p = {};
     if (!init_tailcall_program_data(&p, ctx))
-        return 0;
+        goto out;
 
     syscall_data_t *sys = &p.task_info->syscall_data;
     // To avoid showing execve event both on entry and exit, we only output failed execs.
     if (!sys->ret)
-        return -1;
+        goto out;
 
     p.event->context.ts = sys->ts;
 
     if (!reset_event(p.event, SYSCALL_EXECVEAT))
-        return 0;
+        goto out;
 
     if (!evaluate_scope_filters(&p))
-        return 0;
+        goto out;
 
+    reserve_fd_path(&p);
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
     save_str_to_buf(&p.event->args_buf, (void *) sys->args.args[1] /*pathname*/, 1);
     save_str_arr_to_buf(&p.event->args_buf, (const char *const *) sys->args.args[2] /*argv*/, 2);
@@ -486,7 +519,11 @@ int syscall__execveat_exit(void *ctx)
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
 
     save_to_submit_buf(&p.event->args_buf, (void *) &sys->ret, sizeof(long), 5);
-    return events_perf_submit(&p);
+    result = syscall_perf_submit(&p);
+out:
+    if (p.task_info)
+        clear_fd_path(p.task_info, (u32) bpf_get_current_pid_tgid());
+    return result;
 }
 
 statfunc int send_socket_dup(program_data_t *p, u64 oldfd, u64 newfd)
@@ -1544,6 +1581,8 @@ int sched_process_exec_event_submit_tail(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_process_exit")
 int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
+    u32 tid = bpf_get_current_pid_tgid();
+    bpf_map_delete_elem(&fd_arg_path_map, &tid);
     program_data_t p = {};
     if (!init_program_data(&p, ctx, SCHED_PROCESS_EXIT))
         return 0;

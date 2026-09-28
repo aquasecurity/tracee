@@ -242,6 +242,7 @@ statfunc int init_tailcall_program_data(program_data_t *p, void *ctx)
 // use this function in programs that send the same event more than once
 statfunc void reset_event_args_buf(event_data_t *event)
 {
+    event->fd_path_reserved = false;
     event->args_buf.offset = 0;
     event->args_buf.argnum = 0;
 

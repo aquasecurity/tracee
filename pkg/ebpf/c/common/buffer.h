@@ -5,6 +5,7 @@
 
 #include <types.h>
 #include <common/context.h>
+#include <common/fd_path.h>
 #include <common/hash.h>
 #include <common/network.h>
 
@@ -25,6 +26,7 @@ statfunc int save_args_str_arr_to_buf(args_buffer_t *, const char *, const char 
 statfunc int save_sockaddr_to_buf(args_buffer_t *, struct socket *, bool, u8);
 statfunc int save_args_to_submit_buf(event_data_t *, args_t *);
 statfunc int events_perf_submit(program_data_t *);
+statfunc int syscall_perf_submit(program_data_t *);
 statfunc int signal_perf_submit(void *, controlplane_signal_t *);
 
 // FUNCTIONS
@@ -702,8 +704,11 @@ statfunc void update_event_stats(u32 event_id, long perf_ret)
 #endif
 }
 
-statfunc int events_perf_submit(program_data_t *p)
+statfunc int events_perf_submit_internal(program_data_t *p, bool include_fd_path)
 {
+    // Tail handlers can reuse the event storage after a syscall submission.
+    // This flag describes this record only and must never enter task_info.
+    p->event->context.task.flags &= ~FD_PATH_FLAG;
     // enrich event with task context
     init_task_context(&p->event->context.task, p->event->task, p->config->options);
     // keep task_info updated
@@ -716,6 +721,9 @@ statfunc int events_perf_submit(program_data_t *p)
             p->event->context.stack_id = stack_id;
         }
     }
+
+    if (include_fd_path && (p->config->options & OPT_TRANSLATE_FD_FILEPATH))
+        append_fd_path(p);
 
     // context + argnum + arg buffer size
     u32 size = sizeof(event_context_t) + sizeof(u8) + p->event->args_buf.offset;
@@ -731,6 +739,16 @@ statfunc int events_perf_submit(program_data_t *p)
     update_event_stats(p->event->context.eventid, perf_ret);
 
     return perf_ret;
+}
+
+statfunc int events_perf_submit(program_data_t *p)
+{
+    return events_perf_submit_internal(p, false);
+}
+
+statfunc int syscall_perf_submit(program_data_t *p)
+{
+    return events_perf_submit_internal(p, true);
 }
 
 statfunc int signal_perf_submit(void *ctx, controlplane_signal_t *sig)

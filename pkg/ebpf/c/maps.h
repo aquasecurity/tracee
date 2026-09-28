@@ -285,15 +285,26 @@ struct stack_addresses {
 
 typedef struct stack_addresses stack_addresses_t;
 
-// store fd paths by syscall entry timestamp and host thread identity
+// Own each snapshot only while its syscall is in flight. No LRU eviction and
+// no preallocation of path values when the enrichment is disabled.
 struct fd_arg_path_map {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
-    __uint(max_entries, 1024);
-    __type(key, fd_arg_path_key_t);
+    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(map_flags, BPF_F_NO_PREALLOC);
+    __uint(max_entries, 10240);
+    __type(key, u32);
     __type(value, fd_arg_path_t);
 } fd_arg_path_map SEC(".maps");
 
 typedef struct fd_arg_path_map fd_arg_path_map_t;
+
+// Scratch is used only during the entry probe. The snapshot above is per task,
+// because a blocked syscall can migrate before it exits.
+struct {
+    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, u32);
+    __type(value, fd_arg_path_t);
+} fd_path_scratch SEC(".maps");
 
 // holds bpf prog info
 struct bpf_attach_map {

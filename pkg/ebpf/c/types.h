@@ -271,19 +271,40 @@ typedef struct syscall_data {
 
 #define MAX_CACHED_PATH_SIZE 64
 
-typedef struct fd_arg_path_key {
-    u64 ts;
-    u64 pid_tgid;
-} fd_arg_path_key_t;
+#define MAX_FD_PATH_SIZE 64
+
+enum fd_path_status_e {
+    FD_PATH_NONE = 0,
+    FD_PATH_UNAVAILABLE,
+    FD_PATH_RESOLVED,
+    FD_PATH_READ_ERROR,
+    FD_PATH_STORAGE_ERROR,
+    FD_PATH_TRUNCATED,
+};
+
+// A header before the ordinary arguments and path bytes. This is not a syscall
+// argument: even six-argument syscalls retain their existing return-value index.
+typedef struct fd_path_header {
+    u8 version;
+    u8 arg_index;
+    u8 status;
+    u8 reserved;
+    u16 path_size;
+    u16 args_size;
+} fd_path_header_t;
 
 typedef struct fd_arg_path {
-    char path[MAX_CACHED_PATH_SIZE];
+    u64 ts;
+    u32 syscall;
+    u16 size;
+    char path[MAX_FD_PATH_SIZE];
 } fd_arg_path_t;
 
 // Flags in each task's context
 enum context_flags_e {
     CONTAINER_STARTED_FLAG = (1 << 0), // mark the task's container have started
-    IS_COMPAT_FLAG = (1 << 1)          // is the task running in compatible mode
+    IS_COMPAT_FLAG = (1 << 1),         // is the task running in compatible mode
+    FD_PATH_FLAG = (1 << 2),           // event arguments have an FD path header
 };
 
 enum container_state_e {
@@ -301,8 +322,10 @@ typedef struct {
 typedef struct task_info {
     task_context_t context;
     syscall_data_t syscall_data;
-    bool syscall_traced;   // indicates that syscall_data is valid
-    u8 container_state;    // the state of the container the task resides in
+    bool syscall_traced; // indicates that syscall_data is valid
+    u8 container_state;  // the state of the container the task resides in
+    u8 fd_path_status;   // snapshot outcome for this syscall, reset on entry
+    u8 fd_path_arg_index;
     address_range_t stack; // stack area, only relevant for tasks that aren't
                            // group leaders (threads)
 } task_info_t;
@@ -485,6 +508,7 @@ typedef struct args_buffer {
 typedef struct event_data {
     event_context_t context;
     args_buffer_t args_buf;
+    bool fd_path_reserved;
     struct task_struct *task;
     event_config_t config;
     policies_config_t policies_config;

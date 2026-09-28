@@ -1,10 +1,8 @@
 package events
 
 import (
-	"bytes"
 	"fmt"
 	"strconv"
-	"unsafe"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
 	"github.com/aquasecurity/tracee/common/errfmt"
@@ -282,35 +280,15 @@ func ParseDataFields(data []*pb.EventValue, eventID int) error {
 	return nil
 }
 
-type fdPathMap interface {
-	GetValue(unsafe.Pointer) ([]byte, error)
-}
-
-// fdArgPathKey must match fd_arg_path_key_t in pkg/ebpf/c/types.h.
-// Two uint64 fields keep the key free of padding on both sides.
-type fdArgPathKey struct {
-	timestamp uint64
-	pidTgid   uint64
-}
-
 // ParseDataFieldsFDs parses file descriptor arguments in the protobuf event data.
-// timestamp is the event timestamp in nanoseconds since epoch.
-// hostPID and hostTID must be host IDs, not IDs from a container's PID namespace.
-func ParseDataFieldsFDs(data []*pb.EventValue, timestamp uint64, hostPID, hostTID int, fdArgPathMap fdPathMap) error {
+// The entry-time snapshot has already been copied out of the event record.
+func ParseDataFieldsFDs(data []*pb.EventValue, snapshot FDPath) error {
 	if fdField := GetFieldValue(data, "fd"); fdField != nil {
 		if fdVal, ok := fdField.Value.(*pb.EventValue_Int32); ok {
 			fd := fdVal.Int32
-			key := fdArgPathKey{
-				timestamp: timeutil.EpochToBootTimeNS(timestamp),
-				pidTgid:   uint64(uint32(hostPID))<<32 | uint64(uint32(hostTID)),
+			if snapshot.Status == FDPathResolved && snapshot.Path != "" {
+				fdField.Value = &pb.EventValue_Str{Str: fmt.Sprintf("%d=%s", fd, snapshot.Path)}
 			}
-			bs, err := fdArgPathMap.GetValue(unsafe.Pointer(&key))
-			if err != nil {
-				return errfmt.WrapError(err)
-			}
-
-			fpath := string(bytes.Trim(bs, "\x00"))
-			fdField.Value = &pb.EventValue_Str{Str: fmt.Sprintf("%d=%s", fd, fpath)}
 		}
 	}
 

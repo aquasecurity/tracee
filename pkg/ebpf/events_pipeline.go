@@ -157,6 +157,19 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 
 			evtFields := eventDefinition.GetFields()
 			evtName := eventDefinition.GetName()
+			var fdPath events.FDPath
+			if eCtx.Flags&bufferdecoder.FDPathFlag != 0 {
+				var err error
+				fdPath, err = ebpfMsgDecoder.DecodeFDPath()
+				if err != nil || int(fdPath.ArgIndex) >= len(evtFields) {
+					if err == nil {
+						err = errfmt.Errorf("FD path argument index is outside event %s", evtName)
+					}
+					t.handleError(err)
+					decoderPool.Put(ebpfMsgDecoder)
+					continue
+				}
+			}
 			args := make([]trace.Argument, len(evtFields))
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)
 			if err != nil {
@@ -228,6 +241,7 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			// Set pipeline-level metadata (normalized timestamps)
 			evt.Timestamp = timeutil.BootToEpochNS(eCtx.Ts)
 			evt.EventID = eCtx.EventID
+			evt.FDPath = fdPath
 
 			// Set trace.Event fields
 			evt.Event.Timestamp = int(evt.Timestamp)                          // Keep trace.Event.Timestamp for backward compatibility
@@ -816,7 +830,7 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 
 			// Proto-native detector events have no kernel event to identify a map entry.
 			if t.config.Output.FdPaths && event.Event != nil {
-				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, event.HostProcessID, event.HostThreadID, t.FDArgPathMap)
+				err := events.ParseDataFieldsFDs(pbEvent.Data, event.FDPath)
 				if err != nil {
 					t.handleError(err)
 				}

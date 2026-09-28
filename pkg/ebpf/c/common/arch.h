@@ -15,7 +15,7 @@ statfunc bool is_compat(struct task_struct *);
 statfunc int get_syscall_id_from_regs(struct pt_regs *);
 statfunc struct pt_regs *get_current_task_pt_regs(void);
 statfunc bool has_syscall_fd_arg(uint);
-statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *);
+statfunc uint get_syscall_fd_arg_index(uint);
 
 // FUNCTIONS
 
@@ -432,18 +432,18 @@ statfunc bool has_syscall_fd_arg(uint syscall_id)
     return false;
 }
 
-statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *args)
+statfunc uint get_syscall_fd_arg_index(uint syscall_id)
 {
     switch (syscall_id) {
         case SYSCALL_SYMLINKAT:
-            return args->args[1];
+            return 1;
         case SYSCALL_PERF_EVENT_OPEN:
-            return args->args[3];
+            return 3;
         case SYSCALL_MMAP:
-            return args->args[4];
+            return 4;
     }
 
-    return args->args[0];
+    return 0;
 }
 
 #endif

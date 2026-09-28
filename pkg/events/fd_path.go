@@ -1,0 +1,22 @@
+package events
+
+// FDPathStatus matches fd_path_status_e in the BPF program.
+type FDPathStatus uint8
+
+const (
+	FDPathNone FDPathStatus = iota
+	FDPathUnavailable
+	FDPathResolved
+	FDPathReadError
+	FDPathStorageError
+	FDPathTruncated
+)
+
+// FDPath is an entry-time snapshot owned by the event, not by a kernel cache.
+// The numeric argument stays intact until output formatting, so filters and
+// detectors continue to see the syscall's original argument type.
+type FDPath struct {
+	ArgIndex uint8
+	Status   FDPathStatus
+	Path     string
+}
