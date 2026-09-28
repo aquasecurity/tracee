@@ -37,7 +37,8 @@ func fdPathTracee(t *testing.T, events string) (process *exec.Cmd, outputFile, l
 		"--events", events, "--scope", fmt.Sprintf("pid=%d", os.Getpid()),
 		"--enrichment", "fd-paths", "--capabilities", "bypass=false",
 		"--output", "json", "--artifacts", "dir.path="+filepath.Join(dir, "artifacts"),
-		"--server", "healthz", "--server", fmt.Sprintf("http-address=:%d", testutils.TraceePort))
+		"--server", "healthz", "--server", "metrics",
+		"--server", fmt.Sprintf("http-address=:%d", testutils.TraceePort))
 	cmd.Stdout, cmd.Stderr = output, log
 	require.NoError(t, cmd.Start())
 	done := make(chan error, 1)

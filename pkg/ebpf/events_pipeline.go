@@ -178,6 +178,8 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 				continue
 			}
 
+			t.stats.FDPaths.Observe(fdPath.Status)
+
 			// Add stack trace if needed
 			var stackAddresses []uint64
 			if t.config.Output.UserStack {

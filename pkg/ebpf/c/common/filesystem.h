@@ -134,13 +134,16 @@ statfunc struct file *get_struct_file_from_fd(u64 fd_num)
     if (task == NULL)
         return NULL;
 
-    struct file **files = BPF_CORE_READ(task, files, fdt, fd);
+    struct fdtable *fdt = BPF_CORE_READ(task, files, fdt);
+    if (fdt == NULL || fd_num >= BPF_CORE_READ(fdt, max_fds))
+        return NULL;
+
+    struct file **files = BPF_CORE_READ(fdt, fd);
     if (files == NULL)
         return NULL;
 
-    struct file *file;
-    bpf_core_read(&file, sizeof(void *), &files[fd_num]);
-    if (file == NULL)
+    struct file *file = NULL;
+    if (bpf_core_read(&file, sizeof(file), &files[fd_num]) != 0)
         return NULL;
 
     return file;

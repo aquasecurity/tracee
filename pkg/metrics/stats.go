@@ -101,6 +101,7 @@ type Stats struct {
 	LostWrCount      *counter.Counter `json:"LostWrCount"`
 	LostNtCapCount   *counter.Counter `json:"LostNtCapCount"` // lost network capture events
 	LostBPFLogsCount *counter.Counter `json:"LostBPFLogsCount"`
+	FDPaths          FDPathStats      `json:"FDPaths"`
 
 	// BPF map for on-demand perf event stats collection (METRICS build only)
 	perfEventStatsMap *bpf.BPFMap
@@ -119,6 +120,7 @@ func NewStats() *Stats {
 		LostWrCount:      counter.NewCounter(0),
 		LostNtCapCount:   counter.NewCounter(0),
 		LostBPFLogsCount: counter.NewCounter(0),
+		FDPaths:          newFDPathStats(),
 		Channels:         make(ChannelMetrics[*events.PipelineEvent]),
 	}
 
@@ -166,6 +168,9 @@ func (s *Stats) GetBPFPerfEventStats() BPFPerfEventStats {
 
 // Register Stats to prometheus metrics exporter
 func (s *Stats) RegisterPrometheus() error {
+	if err := s.FDPaths.registerPrometheus(); err != nil {
+		return errfmt.WrapError(err)
+	}
 	err := prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
 		Namespace: "tracee",
 		Name:      "events_total",
