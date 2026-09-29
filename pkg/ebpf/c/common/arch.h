@@ -215,6 +215,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_FREMOVEXATTR           16
     #define SYSCALL_EPOLL_CTL              21
     #define SYSCALL_EPOLL_PWAIT            22
+    #define SYSCALL_NEWFSTATAT             79
     #define SYSCALL_DUP                    23
     #define SYSCALL_DUP3                   24
     #define SYSCALL_FCNTL                  25
@@ -317,7 +318,6 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_DUP2                   UNDEFINED_SYSCALL
     #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
     #define SYSCALL_FUTIMESAT              UNDEFINED_SYSCALL
-    #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
     #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
     #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
     #define SYSCALL_ARCH_PRCTL             UNDEFINED_SYSCALL
@@ -424,10 +424,10 @@ statfunc int get_syscall_fd_arg_index(uint syscall_id)
         case SYSCALL_GETDENTS:
         case SYSCALL_EPOLL_WAIT:
         case SYSCALL_FUTIMESAT:
-        case SYSCALL_NEWFSTATAT:
-        case SYSCALL_EPOLL_PWAIT:
         case SYSCALL_SIGNALFD:
 #endif
+        case SYSCALL_NEWFSTATAT:
+        case SYSCALL_EPOLL_PWAIT:
             return 0;
     }
 

@@ -248,6 +248,19 @@ func fdPathWorkloadArguments(root string) error {
 	if _, err := unix.Getsockname(socket); err != nil {
 		return err
 	}
+	var stat unix.Stat_t
+	if err := unix.Fstatat(dir, "file", &stat, 0); err != nil {
+		return err
+	}
+	epoll, err := unix.EpollCreate1(0)
+	if err != nil {
+		return err
+	}
+	// The raw syscall: the wrapper picks epoll_wait where the architecture has it.
+	if _, _, errno := unix.Syscall6(unix.SYS_EPOLL_PWAIT, uintptr(epoll),
+		uintptr(unsafe.Pointer(&unix.EpollEvent{})), 1, 0, 0, 0); errno != 0 {
+		return errno
+	}
 	missing, err := unix.BytePtrFromString("missing-executable")
 	if err != nil {
 		return err
@@ -264,6 +277,9 @@ func fdPathWorkloadArguments(root string) error {
 		{Name: "mmap:fd", FD: file, Path: filePath},
 		{Name: "fsconfig:fs_fd", FD: file, Path: filePath},
 		{Name: "execveat:dirfd", FD: dir, Path: root},
+		{Name: "newfstatat:dirfd", FD: dir, Path: root},
+		// An anonymous inode has a name, not a path in a filesystem.
+		{Name: "epoll_pwait:epfd", FD: epoll, Path: "[eventpoll]"},
 		{Name: "getsockname:sockfd", FD: socket},
 	})
 }

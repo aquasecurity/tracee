@@ -351,7 +351,7 @@ func Test_FdPaths(t *testing.T) {
 
 	instance := fdPathStart(t, config.OutputConfig{FdPaths: true, DecodedData: true},
 		fdPathRules("close", "dup", "read", "getdents64", "openat", "symlinkat", "mmap", "fsconfig",
-			"getsockname", "execveat")...)
+			"getsockname", "execveat", "newfstatat", "epoll_pwait")...)
 
 	t.Run("memory budget", func(t *testing.T) {
 		assert.Equal(t, bpf.MapTypeHash, instance.snapshots.Type())
