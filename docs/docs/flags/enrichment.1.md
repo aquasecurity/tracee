@@ -2,7 +2,7 @@
 title: TRACEE-ENRICHMENT
 section: 1
 header: Tracee Enrichment Flag Manual
-date: 2025/12
+date: 2026/09
 ...
 
 ## NAME
@@ -65,12 +65,21 @@ The `--enrichment` flag allows you to configure enrichment options for container
 
 - **fd-paths**: Capture the selected file descriptor's path at syscall entry and display it as `fd=path`. The path travels with the event, so delays in the userspace pipeline don't evict it. Only one selected descriptor is enriched per supported syscall; this doesn't cover every FD argument of every syscall. Numeric values remain available to filters and detectors before output formatting.
 
-  Paths can contain up to 4,095 bytes. If a descriptor is invalid, capture fails, or the path exceeds the length or traversal limit, the argument keeps its numeric value. Directory arguments using `AT_FDCWD` keep that symbolic value. Capture adds memory and processing overhead, especially for long paths or many simultaneous syscalls.
+  Paths can contain up to 255 bytes. If a descriptor is invalid, capture fails, or the path exceeds the length or traversal limit, the argument keeps its numeric value. Directory arguments using `AT_FDCWD` keep that symbolic value.
+
+  A path is held in kernel memory from syscall entry until the syscall returns, so a thread blocked in a syscall keeps one entry. The entries are preallocated when Tracee starts: about 280 bytes each, 1024 by default, and a single entry when fd-paths is disabled. When all entries are in use, further arguments keep their numeric value and count as `storage_error`.
 
   With `--server metrics`, `tracee_fd_path_captures_total{status="..."}` counts `resolved`, `unavailable`, `read_error`, `storage_error`, and `truncated` outcomes. These counts cover decoded event records before filtering, not events lost in the perf buffer. Failed `execveat` calls can produce both entry and exit records. No `--capabilities bypass=true` is needed for FD path enrichment.
+
   Example:
   ```console
   --enrichment fd-paths
+  ```
+
+- **fd-paths.max-entries**=*number*: Set how many syscalls can hold a path at the same time, between 1 and 1048576 (default: 1024). Raise it when `storage_error` grows, for example on hosts where many traced threads block in syscalls. Setting this option enables fd-paths.
+  Example:
+  ```console
+  --enrichment fd-paths.max-entries=4096
   ```
 
 - **decoded-data**: Enable decoded-data. When enabled, Tracee will decode event arguments into human-readable strings instead of raw machine-readable values. This converts numeric flags, permissions, syscall types, and other raw values into readable format (e.g., `O_RDONLY` instead of `0`, `PROT_READ` instead of `1`). Recommended for interactive use and readability, but may add processing overhead that impacts performance on high-volume event streams.
