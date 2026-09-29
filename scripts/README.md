@@ -67,4 +67,4 @@ When adding new scripts:
 5. Update this README with a brief description
 6. Consider adding the script to the appropriate subdirectory
 
-For script style guidelines, see [.cursor/rules/shell-style-guide.mdc](../.cursor/rules/shell-style-guide.mdc).
+For script style guidelines, see [.cursor/skills/shell-style-guide/SKILL.md](../.cursor/skills/shell-style-guide/SKILL.md).
