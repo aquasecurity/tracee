@@ -271,7 +271,10 @@ typedef struct syscall_data {
 
 #define MAX_CACHED_PATH_SIZE 64
 
-#define MAX_FD_PATH_SIZE 4096
+// Bound of an FD path snapshot, including the NUL. Longer paths keep the
+// numeric FD and are reported as truncated. This is the value size of a
+// preallocated map, so it sets the memory cost of the feature.
+#define MAX_FD_PATH_SIZE 256
 
 enum fd_path_status_e {
     FD_PATH_NONE = 0,

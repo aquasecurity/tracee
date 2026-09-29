@@ -189,10 +189,9 @@ get_syscall_args(struct task_struct *task, struct pt_regs *sys_regs, syscall_dat
                                                                                                    \
         get_syscall_args(task, ctx, sys);                                                          \
                                                                                                    \
-        if (get_syscall_fd_arg_index(_id) >= 0) {                                                  \
+        if (get_syscall_fd_arg_index(_id) >= 0 && fd_paths_enabled()) {                            \
             program_data_t p = {};                                                                 \
-            if (init_program_data(&p, ctx, _id) &&                                                 \
-                (p.config->options & OPT_TRANSLATE_FD_FILEPATH) && evaluate_scope_filters(&p))     \
+            if (init_program_data(&p, ctx, _id) && evaluate_scope_filters(&p))                     \
                 capture_fd_path(&p);                                                               \
         }                                                                                          \
                                                                                                    \

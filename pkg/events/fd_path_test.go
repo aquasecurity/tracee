@@ -67,6 +67,17 @@ func TestFDPathKernelArgumentContract(t *testing.T) {
 	require.GreaterOrEqual(t, checked, 96, "the existing producer coverage must not shrink")
 }
 
+// The decoder rejects paths above the producer's bound, so both must agree.
+func TestFDPathKernelSizeContract(t *testing.T) {
+	source, err := os.ReadFile("../ebpf/c/types.h")
+	require.NoError(t, err)
+	match := regexp.MustCompile(`(?m)^#define MAX_FD_PATH_SIZE (\d+)$`).FindSubmatch(source)
+	require.NotNil(t, match, "MAX_FD_PATH_SIZE not found")
+	size, err := strconv.Atoi(string(match[1]))
+	require.NoError(t, err)
+	require.Equal(t, MaxFDPathSize, size)
+}
+
 func TestFDPathDirectorySentinels(t *testing.T) {
 	for _, name := range []string{"dirfd", "dfd", "newdirfd"} {
 		field := &pb.EventValue{Name: name, Value: &pb.EventValue_Int32{Int32: -100}}

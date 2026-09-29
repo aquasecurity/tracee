@@ -3,11 +3,19 @@
 
 #include <types.h>
 
+// Lets an entry probe skip program data setup when the enrichment is disabled.
+statfunc bool fd_paths_enabled(void)
+{
+    u32 zero = 0;
+    config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
+    return config != NULL && (config->options & OPT_TRANSLATE_FD_FILEPATH);
+}
+
 statfunc void clear_fd_path(task_info_t *task_info, u32 tid)
 {
-    if (task_info->fd_path_status == FD_PATH_NONE)
-        return;
-    bpf_map_delete_elem(&fd_arg_path_map, &tid);
+    // Only a resolved capture has stored a snapshot.
+    if (task_info->fd_path_status == FD_PATH_RESOLVED)
+        bpf_map_delete_elem(&fd_arg_path_map, &tid);
     task_info->fd_path_status = FD_PATH_NONE;
 }
 
@@ -46,13 +54,14 @@ statfunc void append_fd_path(program_data_t *p)
         header.status = FD_PATH_STORAGE_ERROR;
         if (snapshot && snapshot->ts == sys->ts && snapshot->syscall == sys->id) {
             u32 size = snapshot->size;
-            if (size > 0 && size <= MAX_FD_PATH_SIZE &&
+            if (size > 1 && size <= MAX_FD_PATH_SIZE &&
                 offset <= ARGS_BUF_SIZE - MAX_FD_PATH_SIZE) {
-                // Keep the bound on the helper's actual size register on older verifiers.
+                // Keep the bound on the helper's actual size register on older
+                // verifiers. The register is both read and written here.
                 asm volatile("if %[size] < %[max_size] goto +1;\n"
                              "%[size] = %[max_size];\n"
-                             :
-                             : [size] "r"(size), [max_size] "i"(MAX_FD_PATH_SIZE));
+                             : [size] "+r"(size)
+                             : [max_size] "i"(MAX_FD_PATH_SIZE));
                 if (bpf_probe_read_kernel(&buf->args[offset], size, snapshot->path) == 0) {
                     header.status = FD_PATH_RESOLVED;
                     header.path_size = size;

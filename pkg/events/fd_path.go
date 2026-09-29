@@ -1,5 +1,9 @@
 package events
 
+// MaxFDPathSize matches MAX_FD_PATH_SIZE in the BPF program and includes the
+// terminating NUL. Longer paths are reported as truncated.
+const MaxFDPathSize = 256
+
 // FDPathStatus matches fd_path_status_e in the BPF program.
 type FDPathStatus uint8
 

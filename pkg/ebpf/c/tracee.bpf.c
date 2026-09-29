@@ -64,24 +64,21 @@ statfunc void capture_fd_path(program_data_t *p)
             p->task_info->fd_path_status = FD_PATH_TRUNCATED;
         return;
     }
-    void *path = &path_buf->buf[path_offset & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
-    u32 zero = 0;
-    fd_arg_path_t *snapshot = bpf_map_lookup_elem(&fd_path_scratch, &zero);
-    if (!snapshot)
-        return;
-    int size = bpf_probe_read_kernel_str(snapshot->path, sizeof(snapshot->path), path);
+    // The path was built in the first half of this per-CPU buffer. Stage the
+    // map value in the second half instead of paying for a dedicated per-CPU
+    // scratch map: nothing else runs on this buffer until the update below.
+    u32 path_start = path_offset & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
+    fd_arg_path_t *snapshot = (fd_arg_path_t *) &path_buf->buf[MAX_PERCPU_BUFSIZE >> 1];
+    int size = bpf_probe_read_kernel_str(
+        snapshot->path, sizeof(snapshot->path), &path_buf->buf[path_start]);
     if (size <= 1)
         return;
-    if (size == MAX_FD_PATH_SIZE) {
-        // read_kernel_str also returns the buffer size when it truncates.
-        // Accept an exactly fitting path only if its source terminates here.
-        char last = 0;
-        if (bpf_probe_read_kernel(&last, sizeof(last), path + MAX_FD_PATH_SIZE - 1) != 0)
-            return;
-        if (last != 0) {
-            p->task_info->fd_path_status = FD_PATH_TRUNCATED;
-            return;
-        }
+    // read_kernel_str also returns the buffer size when it truncates. Accept
+    // an exactly fitting path only if its source terminates at that byte.
+    if (size == MAX_FD_PATH_SIZE &&
+        path_buf->buf[(path_start + MAX_FD_PATH_SIZE - 1) & (MAX_PERCPU_BUFSIZE - 1)] != 0) {
+        p->task_info->fd_path_status = FD_PATH_TRUNCATED;
+        return;
     }
     snapshot->size = size;
     snapshot->ts = sys->ts;

@@ -285,26 +285,22 @@ struct stack_addresses {
 
 typedef struct stack_addresses stack_addresses_t;
 
-// Own each snapshot only while its syscall is in flight. No LRU eviction and
-// no preallocation of path values when the enrichment is disabled.
+// Own each snapshot only while its syscall is in flight, keyed by host TID
+// because a blocked syscall can migrate before it exits. No LRU: an eviction
+// would silently drop the path of a syscall that has not returned yet.
+//
+// Preallocated on purpose. Before 6.1 the verifier warns (WARN_ONCE) when a
+// tracing program uses a run-time allocated hash map, and PREEMPT_RT kernels
+// reject it. Userspace sets max_entries before load: fd-paths.max-entries
+// when the enrichment is enabled, 1 when it is disabled.
 struct fd_arg_path_map {
     __uint(type, BPF_MAP_TYPE_HASH);
-    __uint(map_flags, BPF_F_NO_PREALLOC);
-    __uint(max_entries, 10240);
+    __uint(max_entries, 1024);
     __type(key, u32);
     __type(value, fd_arg_path_t);
 } fd_arg_path_map SEC(".maps");
 
 typedef struct fd_arg_path_map fd_arg_path_map_t;
-
-// Scratch is used only during the entry probe. The snapshot above is per task,
-// because a blocked syscall can migrate before it exits.
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_ARRAY);
-    __uint(max_entries, 1);
-    __type(key, u32);
-    __type(value, fd_arg_path_t);
-} fd_path_scratch SEC(".maps");
 
 // holds bpf prog info
 struct bpf_attach_map {
