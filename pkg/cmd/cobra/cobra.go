@@ -307,6 +307,7 @@ func GetTraceeRunner(c *cobra.Command, version string) (cmd.Runner, error) {
 	cfg.Output.Environment = enrichmentConfig.Environment
 	cfg.Output.UserStack = enrichmentConfig.UserStack
 	cfg.Output.FdPaths = enrichmentConfig.FdPaths
+	cfg.Output.FdPathsMaxEntries = enrichmentConfig.FdPathsMaxEntries
 	cfg.Output.DecodedData = enrichmentConfig.DecodedData
 	if enrichmentConfig.ExecutableHash.Enabled || enrichmentConfig.ExecutableHash.Mode != "" {
 		cfg.Output.CalcHashes = enrichmentConfig.GetCalcHashesOption()

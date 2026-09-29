@@ -181,12 +181,19 @@ get_syscall_args(struct task_struct *task, struct pt_regs *sys_regs, syscall_dat
             init_task_context(&task_info->context, task, config->options);                         \
         }                                                                                          \
                                                                                                    \
+        clear_fd_path(task_info, tid);                                                             \
         syscall_data_t *sys = &task_info->syscall_data;                                            \
         sys->id = _id;                                                                             \
         sys->ts = get_current_time_in_ns();                                                        \
         task_info->syscall_traced = true;                                                          \
                                                                                                    \
         get_syscall_args(task, ctx, sys);                                                          \
+                                                                                                   \
+        if (get_syscall_fd_arg_index(_id) >= 0 && fd_paths_enabled()) {                            \
+            program_data_t p = {};                                                                 \
+            if (init_program_data(&p, ctx, _id) && evaluate_scope_filters(&p))                     \
+                capture_fd_path(&p);                                                               \
+        }                                                                                          \
                                                                                                    \
         bpf_tail_call(ctx, &generic_sys_enter_tails, _id);                                         \
                                                                                                    \
@@ -208,13 +215,18 @@ get_syscall_args(struct task_struct *task, struct pt_regs *sys_regs, syscall_dat
         syscall_data_t *sys = &p.task_info->syscall_data;                                          \
         sys->ret = PT_REGS_RC(ctx);                                                                \
                                                                                                    \
+        reserve_fd_path(&p);                                                                       \
         save_args_to_submit_buf(p.event, &sys->args);                                              \
         p.event->context.ts = sys->ts;                                                             \
         u8 ret_index = get_num_fields(p.event->config.field_types);                                \
         save_to_submit_buf(&p.event->args_buf, (void *) &sys->ret, sizeof(long), ret_index);       \
-        events_perf_submit(&p);                                                                    \
+        if (get_syscall_fd_arg_index(_id) >= 0)                                                    \
+            syscall_perf_submit(&p);                                                               \
+        else                                                                                       \
+            events_perf_submit(&p);                                                                \
                                                                                                    \
     out:                                                                                           \
+        clear_fd_path(p.task_info, (u32) bpf_get_current_pid_tgid());                              \
         bpf_tail_call(ctx, &generic_sys_exit_tails, _id);                                          \
         return 0;                                                                                  \
     }

@@ -20,6 +20,9 @@ type PipelineEvent struct {
 	// Timestamp is the original event timestamp in nanoseconds since epoch.
 	Timestamp uint64
 
+	// FDPath travels with this event through queues, filtering and output.
+	FDPath FDPath
+
 	// MatchedPoliciesBitmap is a combined bitmap for efficient policy matching.
 	// This replaces the need to expose separate Kernel/User bitmaps to external APIs.
 	MatchedPoliciesBitmap uint64
@@ -71,6 +74,7 @@ func (pe *PipelineEvent) Reset() {
 	}
 	pe.EventID = 0
 	pe.Timestamp = 0
+	pe.FDPath = FDPath{}
 	pe.MatchedPoliciesBitmap = 0
 	if pe.protoSlab != nil {
 		protoSlabPool.Put(pe.protoSlab)

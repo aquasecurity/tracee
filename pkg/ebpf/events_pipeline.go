@@ -157,6 +157,21 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 
 			evtFields := eventDefinition.GetFields()
 			evtName := eventDefinition.GetName()
+			var fdPath events.FDPath
+			if eCtx.Flags&bufferdecoder.FDPathFlag != 0 {
+				var err error
+				fdPath, err = ebpfMsgDecoder.DecodeFDPath()
+				if err == nil && int(fdPath.ArgIndex) >= len(evtFields) {
+					err = errfmt.Errorf("FD path argument index is outside event %s", evtName)
+				}
+				if err != nil {
+					// Keep the event: its arguments still decode, with a numeric FD.
+					t.handleError(err)
+					fdPath = events.FDPath{}
+				} else {
+					fdPath.ArgName = evtFields[fdPath.ArgIndex].Name
+				}
+			}
 			args := make([]trace.Argument, len(evtFields))
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)
 			if err != nil {
@@ -164,6 +179,8 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 				decoderPool.Put(ebpfMsgDecoder)
 				continue
 			}
+
+			t.stats.FDPaths.Observe(fdPath.Status)
 
 			// Add stack trace if needed
 			var stackAddresses []uint64
@@ -228,6 +245,7 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			// Set pipeline-level metadata (normalized timestamps)
 			evt.Timestamp = timeutil.BootToEpochNS(eCtx.Ts)
 			evt.EventID = eCtx.EventID
+			evt.FDPath = fdPath
 
 			// Set trace.Event fields
 			evt.Event.Timestamp = int(evt.Timestamp)                          // Keep trace.Event.Timestamp for backward compatibility
@@ -806,18 +824,15 @@ func (t *Tracee) sinkEvents(in <-chan *events.PipelineEvent) <-chan error {
 			}
 			pbEvent.Policies.Matched = t.policyManager.MatchedNames(event.MatchedPoliciesBitmap)
 
-			// Parse arguments for output formatting if enabled.
-			if t.config.Output.DecodedData {
-				err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id))
-				if err != nil {
+			// Apply the selected FD snapshot before general formatting turns pointer
+			// fields (including legacy fsconfig's fs_fd) into strings.
+			if t.config.Output.FdPaths && event.Event != nil {
+				if err := events.ParseDataFieldsFDs(pbEvent.Data, event.FDPath); err != nil {
 					t.handleError(err)
 				}
 			}
-
-			// Proto-native detector events have no kernel event to identify a map entry.
-			if t.config.Output.FdPaths && event.Event != nil {
-				err := events.ParseDataFieldsFDs(pbEvent.Data, event.Timestamp, event.HostProcessID, event.HostThreadID, t.FDArgPathMap)
-				if err != nil {
+			if t.config.Output.DecodedData {
+				if err := events.ParseDataFields(pbEvent.Data, int(pbEvent.Id)); err != nil {
 					t.handleError(err)
 				}
 			}

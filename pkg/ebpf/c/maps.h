@@ -285,11 +285,18 @@ struct stack_addresses {
 
 typedef struct stack_addresses stack_addresses_t;
 
-// store fd paths by syscall entry timestamp and host thread identity
+// Own each snapshot only while its syscall is in flight, keyed by host TID
+// because a blocked syscall can migrate before it exits. No LRU: an eviction
+// would silently drop the path of a syscall that has not returned yet.
+//
+// Preallocated on purpose. Before 6.1 the verifier warns (WARN_ONCE) when a
+// tracing program uses a run-time allocated hash map, and PREEMPT_RT kernels
+// reject it. Userspace sets max_entries before load: fd-paths.max-entries
+// when the enrichment is enabled, 1 when it is disabled.
 struct fd_arg_path_map {
-    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 1024);
-    __type(key, fd_arg_path_key_t);
+    __type(key, u32);
     __type(value, fd_arg_path_t);
 } fd_arg_path_map SEC(".maps");
 

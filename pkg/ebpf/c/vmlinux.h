@@ -543,6 +543,7 @@ struct cgroup_root {
 };
 
 struct fdtable {
+    unsigned int max_fds;
     struct file **fd;
 };
 

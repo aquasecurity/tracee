@@ -99,7 +99,6 @@ type Tracee struct {
 	kallsymsMutex   sync.Mutex // prevents concurrent UpdateKallsyms calls
 	// BPF Maps
 	StackAddressesMap *bpf.BPFMap
-	FDArgPathMap      *bpf.BPFMap
 	// Perf Buffers
 	eventsPerfMap  *bpf.PerfBuffer // perf buffer for events
 	fileWrPerfMap  *bpf.PerfBuffer // perf buffer for file writes
@@ -706,15 +705,6 @@ func (t *Tracee) Init(ctx gocontext.Context) error {
 		return errfmt.Errorf("error getting access to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = stackAddressesMap
-
-	// Get reference to fd arg path map
-
-	fdArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
-	if err != nil {
-		t.Close()
-		return errfmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
-	}
-	t.FDArgPathMap = fdArgPathMap
 
 	// Initialize events sorting (pipeline step)
 
@@ -1718,6 +1708,13 @@ func (t *Tracee) initBPF() error {
 
 	t.setProgramsAutoload()
 	t.setMapsAutocreate()
+	pathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pathMap.SetMaxEntries(fdPathMapEntries(t.config.Output)); err != nil {
+		return errfmt.WrapError(err)
+	}
 
 	err = t.bpfModule.BPFLoadObject()
 	if err != nil {

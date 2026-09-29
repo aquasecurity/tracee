@@ -1,103 +1,46 @@
 package events
 
 import (
-	"syscall"
 	"testing"
-	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
-	"github.com/aquasecurity/tracee/common/timeutil"
 )
 
-type fdPathMapStub struct {
-	lookup func(unsafe.Pointer) ([]byte, error)
-}
-
-func (m fdPathMapStub) GetValue(key unsafe.Pointer) ([]byte, error) {
-	return m.lookup(key)
-}
-
 func TestParseDataFieldsFDs(t *testing.T) {
-	require.NoError(t, timeutil.Init(timeutil.CLOCK_BOOTTIME))
-	require.NotZero(t, timeutil.GetBootTimeNS())
-
-	const bootTimestamp uint64 = 123456789
-	const hostPID, hostTID = 1000, 1001
-	timestamp := timeutil.BootToEpochNS(bootTimestamp)
-
-	t.Run("lookup uses syscall entry time", func(t *testing.T) {
+	for _, status := range []FDPathStatus{FDPathNone, FDPathUnavailable, FDPathResolved, FDPathReadError, FDPathStorageError, FDPathTruncated} {
 		data := []*pb.EventValue{{Name: "fd", Value: &pb.EventValue_Int32{Int32: 3}}}
-		lookups := 0
-		pathMap := fdPathMapStub{lookup: func(key unsafe.Pointer) ([]byte, error) {
-			lookups++
-			if *(*uint64)(key) != bootTimestamp {
-				return nil, syscall.ENOENT
-			}
-			path := make([]byte, 64)
-			copy(path, "/tmp/worker-1")
-			return path, nil
-		}}
-
-		require.NoError(t, ParseDataFieldsFDs(data, timestamp, hostPID, hostTID, pathMap))
-		assert.Equal(t, 1, lookups)
-		assert.Equal(t, "3=/tmp/worker-1", data[0].GetStr())
-	})
-
-	t.Run("lookup failure leaves fd unchanged", func(t *testing.T) {
-		data := []*pb.EventValue{{Name: "fd", Value: &pb.EventValue_Int32{Int32: 3}}}
-		pathMap := fdPathMapStub{lookup: func(unsafe.Pointer) ([]byte, error) {
-			return nil, syscall.ENOENT
-		}}
-
-		err := ParseDataFieldsFDs(data, timestamp, hostPID, hostTID, pathMap)
-		require.ErrorIs(t, err, syscall.ENOENT)
-		assert.Equal(t, &pb.EventValue_Int32{Int32: 3}, data[0].Value)
-	})
+		snapshot := FDPath{Status: status, ArgName: "fd"}
+		if status == FDPathResolved {
+			snapshot.Path = "/tmp/worker"
+		}
+		require.NoError(t, ParseDataFieldsFDs(data, snapshot))
+		if status == FDPathResolved {
+			assert.Equal(t, "3=/tmp/worker", data[0].GetStr())
+		} else {
+			assert.Equal(t, &pb.EventValue_Int32{Int32: 3}, data[0].Value)
+		}
+	}
 }
 
-func TestParseDataFieldsFDsKey(t *testing.T) {
-	require.NoError(t, timeutil.Init(timeutil.CLOCK_BOOTTIME))
-	require.Equal(t, uintptr(16), unsafe.Sizeof(fdArgPathKey{}))
+func TestPipelineEventResetFDPath(t *testing.T) {
+	event := &PipelineEvent{FDPath: FDPath{Status: FDPathResolved, Path: "/tmp/old"}}
+	event.Reset()
+	assert.Equal(t, FDPath{}, event.FDPath)
+}
 
-	// Model the C key as two native-endian u64 words: timestamp, then pid_tgid.
-	// Every entry has the same fd number, so the event's identity must select the path.
-	paths := map[[2]uint64]string{
-		{100, uint64(1000)<<32 | 1001}: "/tmp/thread-1",
-		{100, uint64(1000)<<32 | 1002}: "/tmp/thread-2",
-		{100, uint64(2000)<<32 | 1001}: "/tmp/other-process",
-		{101, uint64(1000)<<32 | 1001}: "/tmp/reused-fd",
-	}
-	pathMap := fdPathMapStub{lookup: func(key unsafe.Pointer) ([]byte, error) {
-		path, ok := paths[*(*[2]uint64)(key)]
-		if !ok {
-			return nil, syscall.ENOENT
-		}
-		value := make([]byte, 64)
-		copy(value, path)
-		return value, nil
-	}}
-
-	for _, tt := range []struct {
-		name      string
-		timestamp uint64
-		hostPID   int
-		hostTID   int
-		path      string
-	}{
-		{"first thread", 100, 1000, 1001, "/tmp/thread-1"},
-		{"same timestamp, different thread", 100, 1000, 1002, "/tmp/thread-2"},
-		{"same timestamp, different process", 100, 2000, 1001, "/tmp/other-process"},
-		{"same thread, later syscall", 101, 1000, 1001, "/tmp/reused-fd"},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			data := []*pb.EventValue{{Name: "fd", Value: &pb.EventValue_Int32{Int32: 3}}}
-			err := ParseDataFieldsFDs(data, timeutil.BootToEpochNS(tt.timestamp), tt.hostPID, tt.hostTID, pathMap)
-			require.NoError(t, err)
-			assert.Equal(t, "3="+tt.path, data[0].GetStr())
-		})
+func TestFDPathProtobufEncoding(t *testing.T) {
+	for _, path := range []string{"/tmp/ação", "/tmp/a\xffb"} {
+		event := &pb.Event{Data: []*pb.EventValue{{Name: "oldfd", Value: &pb.EventValue_Int32{Int32: 3}}}}
+		require.NoError(t, ParseDataFieldsFDs(event.Data, FDPath{
+			ArgName: "oldfd", Status: FDPathResolved, Path: path,
+		}))
+		_, err := protojson.Marshal(event)
+		require.NoError(t, err, "a filename must not make the whole event unserializable")
+		require.Equal(t, "3="+sanitizeStringForProtobuf(path), event.Data[0].GetStr())
 	}
 }
 

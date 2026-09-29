@@ -14,8 +14,7 @@ statfunc bool is_arm64_compat(struct task_struct *);
 statfunc bool is_compat(struct task_struct *);
 statfunc int get_syscall_id_from_regs(struct pt_regs *);
 statfunc struct pt_regs *get_current_task_pt_regs(void);
-statfunc bool has_syscall_fd_arg(uint);
-statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *);
+statfunc int get_syscall_fd_arg_index(uint);
 
 // FUNCTIONS
 
@@ -216,6 +215,7 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_FREMOVEXATTR           16
     #define SYSCALL_EPOLL_CTL              21
     #define SYSCALL_EPOLL_PWAIT            22
+    #define SYSCALL_NEWFSTATAT             79
     #define SYSCALL_DUP                    23
     #define SYSCALL_DUP3                   24
     #define SYSCALL_FCNTL                  25
@@ -318,22 +318,26 @@ statfunc struct pt_regs *get_current_task_pt_regs(void)
     #define SYSCALL_DUP2                   UNDEFINED_SYSCALL
     #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
     #define SYSCALL_FUTIMESAT              UNDEFINED_SYSCALL
-    #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
     #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
     #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
     #define SYSCALL_ARCH_PRCTL             UNDEFINED_SYSCALL
 #endif
 
-statfunc bool has_syscall_fd_arg(uint syscall_id)
+statfunc int get_syscall_fd_arg_index(uint syscall_id)
 {
-    // Only syscalls with one fd argument so far
+    // One selected descriptor per syscall. Return -1 for unsupported syscalls.
     switch (syscall_id) {
+        case SYSCALL_SYMLINKAT:
+            return 1;
+        case SYSCALL_PERF_EVENT_OPEN:
+            return 3;
+        case SYSCALL_MMAP:
+            return 4;
         case SYSCALL_READ:
         case SYSCALL_WRITE:
         case SYSCALL_CLOSE:
         case SYSCALL_FSTAT:
         case SYSCALL_LSEEK:
-        case SYSCALL_MMAP:
         case SYSCALL_IOCTL:
         case SYSCALL_PREAD64:
         case SYSCALL_PWRITE64:
@@ -376,7 +380,6 @@ statfunc bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_MKNODAT:
         case SYSCALL_FCHOWNAT:
         case SYSCALL_UNLINKAT:
-        case SYSCALL_SYMLINKAT:
         case SYSCALL_READLINKAT:
         case SYSCALL_FCHMODAT:
         case SYSCALL_FACCESSAT:
@@ -390,7 +393,6 @@ statfunc bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_SIGNALFD4:
         case SYSCALL_PREADV:
         case SYSCALL_PWRITEV:
-        case SYSCALL_PERF_EVENT_OPEN:
         case SYSCALL_RECVMMSG:
         case SYSCALL_NAME_TO_HANDLE_AT:
         case SYSCALL_OPEN_BY_HANDLE_AT:
@@ -422,28 +424,14 @@ statfunc bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_GETDENTS:
         case SYSCALL_EPOLL_WAIT:
         case SYSCALL_FUTIMESAT:
-        case SYSCALL_NEWFSTATAT:
-        case SYSCALL_EPOLL_PWAIT:
         case SYSCALL_SIGNALFD:
 #endif
-            return true;
+        case SYSCALL_NEWFSTATAT:
+        case SYSCALL_EPOLL_PWAIT:
+            return 0;
     }
 
-    return false;
-}
-
-statfunc uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *args)
-{
-    switch (syscall_id) {
-        case SYSCALL_SYMLINKAT:
-            return args->args[1];
-        case SYSCALL_PERF_EVENT_OPEN:
-            return args->args[3];
-        case SYSCALL_MMAP:
-            return args->args[4];
-    }
-
-    return args->args[0];
+    return -1;
 }
 
 #endif

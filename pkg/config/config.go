@@ -202,9 +202,12 @@ type OutputConfig struct {
 	Environment bool
 	CalcHashes  digest.CalcHashesOption
 
-	DecodedData   bool
-	FdPaths       bool
-	EventsSorting bool
+	DecodedData bool
+	FdPaths     bool
+	// FdPathsMaxEntries is the number of syscalls that can hold an FD path
+	// snapshot at the same time. Zero selects the default.
+	FdPathsMaxEntries uint32
+	EventsSorting     bool
 
 	Streams []Stream
 }
