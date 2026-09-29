@@ -161,15 +161,16 @@ func (t *Tracee) decodeEvents(sourceChan chan []byte) (<-chan *events.PipelineEv
 			if eCtx.Flags&bufferdecoder.FDPathFlag != 0 {
 				var err error
 				fdPath, err = ebpfMsgDecoder.DecodeFDPath()
-				if err != nil || int(fdPath.ArgIndex) >= len(evtFields) {
-					if err == nil {
-						err = errfmt.Errorf("FD path argument index is outside event %s", evtName)
-					}
-					t.handleError(err)
-					decoderPool.Put(ebpfMsgDecoder)
-					continue
+				if err == nil && int(fdPath.ArgIndex) >= len(evtFields) {
+					err = errfmt.Errorf("FD path argument index is outside event %s", evtName)
 				}
-				fdPath.ArgName = evtFields[fdPath.ArgIndex].Name
+				if err != nil {
+					// Keep the event: its arguments still decode, with a numeric FD.
+					t.handleError(err)
+					fdPath = events.FDPath{}
+				} else {
+					fdPath.ArgName = evtFields[fdPath.ArgIndex].Name
+				}
 			}
 			args := make([]trace.Argument, len(evtFields))
 			err := ebpfMsgDecoder.DecodeArguments(args, int(argnum), evtFields, evtName, eventId)

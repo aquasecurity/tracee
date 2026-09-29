@@ -61,7 +61,10 @@ func TestDecodeFDPathRejectsMalformedRecord(t *testing.T) {
 		{"argument", func(b []byte) []byte { b[1] = 6; return b }},
 		{"status", func(b []byte) []byte { b[2] = 255; return b }},
 		{"flags", func(b []byte) []byte { b[3] = 1; return b }},
-		{"path bounds", func(b []byte) []byte { binary.LittleEndian.PutUint16(b[4:6], 4097); return b }},
+		{"path bounds", func(b []byte) []byte {
+			binary.LittleEndian.PutUint16(b[4:6], events.MaxFDPathSize+1)
+			return append(b, make([]byte, events.MaxFDPathSize)...)
+		}},
 		{"argument bounds", func(b []byte) []byte { b[6]++; return b }},
 		{"unterminated", func(b []byte) []byte { b[len(b)-1] = 'x'; return b }},
 		{"embedded NUL", func(b []byte) []byte { b[len(b)-2] = 0; return b }},
@@ -69,14 +72,29 @@ func TestDecodeFDPathRejectsMalformedRecord(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			decoder := New(tc.edit(append([]byte{}, valid...)), NewTypeDecoder())
-			_, err := decoder.DecodeFDPath()
+			snapshot, err := decoder.DecodeFDPath()
 			require.Error(t, err)
+			require.Equal(t, events.FDPath{}, snapshot)
 		})
 	}
 }
 
+// A rejected header must not cost the event: the arguments after it still
+// decode, so the FD is reported as a number.
+func TestDecodeFDPathRejectedHeaderKeepsArguments(t *testing.T) {
+	fields := []events.DataField{{ArgMeta: trace.ArgMeta{Name: "fd", Type: "int32"}, DecodeAs: data.INT_T}}
+	record := fdPathRecord([]byte{0, 3, 0, 0, 0}, []byte("/a\x00"), 0, events.FDPathResolved)
+	record[0] = 2 // unknown version
+	decoder := New(record, NewTypeDecoder())
+	_, err := decoder.DecodeFDPath()
+	require.Error(t, err)
+	args := make([]trace.Argument, 1)
+	require.NoError(t, decoder.DecodeArguments(args, 1, fields, "close", events.Close))
+	require.Equal(t, int32(3), args[0].Value)
+}
+
 func TestDecodeFDPathLengthBoundaries(t *testing.T) {
-	for _, size := range []int{63, 64, 255, 512, 4095} {
+	for _, size := range []int{1, 63, 64, events.MaxFDPathSize - 1} {
 		t.Run(fmt.Sprint(size), func(t *testing.T) {
 			path := append(bytes.Repeat([]byte("x"), size), 0)
 			decoder := New(fdPathRecord(nil, path, 0, events.FDPathResolved), NewTypeDecoder())
