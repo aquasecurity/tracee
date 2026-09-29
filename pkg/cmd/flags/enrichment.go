@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/tracee/common/digest"
@@ -21,6 +22,7 @@ const (
 	containerCrioSocketFlag       = "container.crio.socket"
 	containerPodmanSocketFlag     = "container.podman.socket"
 	fdPathsFlag                   = "fd-paths"
+	fdPathsMaxEntriesFlag         = "fd-paths.max-entries"
 	executableHashFlag            = "executable-hash"
 	executableHashModeFlag        = "executable-hash.mode"
 	userStackFlag                 = "user-stack"
@@ -29,16 +31,21 @@ const (
 
 	// environmentFlag and decodedDataFlag are shared between output and enrichment
 	enrichInvalidFlagFormat = "invalid enrichment flag: %s, use 'tracee man enrichment' for more info"
+
+	// fdPathsMaxEntriesLimit bounds the preallocated kernel memory a flag can request.
+	fdPathsMaxEntriesLimit = 1 << 20
 )
 
 // EnrichmentConfig is the configuration for enrichment
 type EnrichmentConfig struct {
-	Container      ContainerEnrichmentConfig `mapstructure:"container"`
-	FdPaths        bool                      `mapstructure:"fd-paths"`
-	Environment    bool                      `mapstructure:"environment"`
-	ExecutableHash ExecutableHashConfig      `mapstructure:"executable-hash"`
-	UserStack      bool                      `mapstructure:"user-stack"`
-	DecodedData    bool                      `mapstructure:"decoded-data"`
+	Container ContainerEnrichmentConfig `mapstructure:"container"`
+	FdPaths   bool                      `mapstructure:"fd-paths"`
+	// FdPathsMaxEntries is a sibling key, so existing "fd-paths: true" configs stay valid.
+	FdPathsMaxEntries uint32               `mapstructure:"fd-paths-max-entries"`
+	Environment       bool                 `mapstructure:"environment"`
+	ExecutableHash    ExecutableHashConfig `mapstructure:"executable-hash"`
+	UserStack         bool                 `mapstructure:"user-stack"`
+	DecodedData       bool                 `mapstructure:"decoded-data"`
 }
 
 // ContainerEnrichmentConfig is the container enrichment configuration
@@ -174,6 +181,9 @@ func (e *EnrichmentConfig) flags() []string {
 	if e.FdPaths {
 		flags = append(flags, fdPathsFlag)
 	}
+	if e.FdPathsMaxEntries != 0 {
+		flags = append(flags, fmt.Sprintf("%s=%d", fdPathsMaxEntriesFlag, e.FdPathsMaxEntries))
+	}
 	if e.Environment {
 		flags = append(flags, environmentFlag)
 	}
@@ -233,6 +243,13 @@ func PrepareEnrichment(enrichment []string) (EnrichmentConfig, error) {
 			enrichmentConfig.Container.Enabled = true // Setting podman.socket enables container
 		case fdPathsFlag:
 			enrichmentConfig.FdPaths = true
+		case fdPathsMaxEntriesFlag:
+			entries, err := strconv.ParseUint(parts[1], 10, 32)
+			if err != nil || entries == 0 || entries > fdPathsMaxEntriesLimit {
+				return EnrichmentConfig{}, errfmt.Errorf("%s must be between 1 and %d, got %q", fdPathsMaxEntriesFlag, fdPathsMaxEntriesLimit, parts[1])
+			}
+			enrichmentConfig.FdPathsMaxEntries = uint32(entries)
+			enrichmentConfig.FdPaths = true // Setting fd-paths.max-entries enables fd-paths
 		case environmentFlag:
 			enrichmentConfig.Environment = true
 		case executableHashFlag:

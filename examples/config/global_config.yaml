@@ -49,6 +49,7 @@ enrichment:
     # - container.crio.socket=/var/run/crio/crio.sock
     # - container.podman.socket=/var/run/podman/podman.sock
     # - fd-paths
+    # - fd-paths.max-entries=1024
     # - decoded-data
     # - environment
     # - executable-hash
@@ -66,6 +67,7 @@ enrichment:
     #     crio-socket: /var/run/crio/crio.sock
     #     podman-socket: /var/run/podman/podman.sock
     # fd-paths: true
+    # fd-paths-max-entries: 1024
     # decoded-data: true
     # environment: false
     # executable-hash:

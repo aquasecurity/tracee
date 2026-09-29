@@ -1708,14 +1708,12 @@ func (t *Tracee) initBPF() error {
 
 	t.setProgramsAutoload()
 	t.setMapsAutocreate()
-	if !t.config.Output.FdPaths {
-		pathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
-		if err != nil {
-			return errfmt.WrapError(err)
-		}
-		if err := pathMap.SetMaxEntries(1); err != nil {
-			return errfmt.WrapError(err)
-		}
+	pathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
+	if err != nil {
+		return errfmt.WrapError(err)
+	}
+	if err := pathMap.SetMaxEntries(fdPathMapEntries(t.config.Output)); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	err = t.bpfModule.BPFLoadObject()

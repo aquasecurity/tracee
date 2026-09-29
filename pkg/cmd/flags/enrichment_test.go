@@ -89,6 +89,17 @@ func TestEnrichmentConfig_flags(t *testing.T) {
 			},
 		},
 		{
+			name: "fd-paths capacity",
+			config: EnrichmentConfig{
+				FdPaths:           true,
+				FdPathsMaxEntries: 4096,
+			},
+			expected: []string{
+				"fd-paths",
+				"fd-paths.max-entries=4096",
+			},
+		},
+		{
 			name: "executable-hash enabled",
 			config: EnrichmentConfig{
 				ExecutableHash: ExecutableHashConfig{
@@ -309,6 +320,29 @@ func TestPrepareEnrichment(t *testing.T) {
 			expectedReturn: EnrichmentConfig{
 				FdPaths: true,
 			},
+		},
+		{
+			testName: "valid fd-paths.max-entries enables fd-paths",
+			flags:    []string{"fd-paths.max-entries=4096"},
+			expectedReturn: EnrichmentConfig{
+				FdPaths:           true,
+				FdPathsMaxEntries: 4096,
+			},
+		},
+		{
+			testName:      "invalid fd-paths.max-entries zero",
+			flags:         []string{"fd-paths.max-entries=0"},
+			expectedError: `fd-paths.max-entries must be between 1 and 1048576, got "0"`,
+		},
+		{
+			testName:      "invalid fd-paths.max-entries above the limit",
+			flags:         []string{"fd-paths.max-entries=1048577"},
+			expectedError: `fd-paths.max-entries must be between 1 and 1048576, got "1048577"`,
+		},
+		{
+			testName:      "invalid fd-paths.max-entries not a number",
+			flags:         []string{"fd-paths.max-entries=-1"},
+			expectedError: `fd-paths.max-entries must be between 1 and 1048576, got "-1"`,
 		},
 		// valid single executable-hash flags
 		{
@@ -588,6 +622,7 @@ func TestPrepareEnrichment(t *testing.T) {
 				assert.Equal(t, tc.expectedReturn.Container.CrioSocket, enrichment.Container.CrioSocket)
 				assert.Equal(t, tc.expectedReturn.Container.PodmanSocket, enrichment.Container.PodmanSocket)
 				assert.Equal(t, tc.expectedReturn.FdPaths, enrichment.FdPaths)
+				assert.Equal(t, tc.expectedReturn.FdPathsMaxEntries, enrichment.FdPathsMaxEntries)
 				assert.Equal(t, tc.expectedReturn.Environment, enrichment.Environment)
 				assert.Equal(t, tc.expectedReturn.DecodedData, enrichment.DecodedData)
 				assert.Equal(t, tc.expectedReturn.ExecutableHash.Enabled, enrichment.ExecutableHash.Enabled)
