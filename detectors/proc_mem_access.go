@@ -21,7 +21,10 @@ type ProcMemAccess struct {
 	compiledRegex *regexp.Regexp
 }
 
-const procMemPathPattern = `/proc/(?:\d+|self)/mem$`
+// Matches both the per-process file and the per-thread alias. Threads share an
+// mm_struct, so /proc/<pid>/task/<tid>/mem grants the same access as
+// /proc/<pid>/mem, and /proc/thread-self/mem resolves to it.
+const procMemPathPattern = `/proc/(?:\d+|self|thread-self)(?:/task/(?:\d+|self))?/mem$`
 
 func (d *ProcMemAccess) GetDefinition() detection.DetectorDefinition {
 	return detection.DetectorDefinition{

@@ -34,6 +34,24 @@ func TestProcMemCodeInjection(t *testing.T) {
 			expectedOutput: true,
 		},
 		{
+			name:           "write /proc/1234/task/1235/mem",
+			pathname:       "/proc/1234/task/1235/mem",
+			flags:          1, // O_WRONLY
+			expectedOutput: true,
+		},
+		{
+			name:           "write /proc/thread-self/mem",
+			pathname:       "/proc/thread-self/mem",
+			flags:          1, // O_WRONLY
+			expectedOutput: true,
+		},
+		{
+			name:           "write /proc/1234/task/1235/maps - should not trigger",
+			pathname:       "/proc/1234/task/1235/maps",
+			flags:          1, // O_WRONLY
+			expectedOutput: false,
+		},
+		{
 			name:           "read /proc/1234/mem - should not trigger",
 			pathname:       "/proc/1234/mem",
 			flags:          0, // O_RDONLY
