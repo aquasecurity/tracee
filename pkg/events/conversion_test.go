@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
@@ -1316,4 +1317,215 @@ func TestConvertTraceeEventToProto_DetectedFrom_IntArray(t *testing.T) {
 	fields := argsList[0].GetStructValue().GetFields()
 	assert.Equal(t, "pipefd", fields["name"].GetStringValue())
 	assert.Equal(t, fmt.Sprintf("%v", [2]int32{3, 4}), fields["value"].GetStringValue())
+}
+
+// TestConvertTraceeEventToProto_SockAddr_InvalidUTF8 reproduces issue #5292 on
+// the path the gRPC stream actually uses: sinkEvents -> PipelineEvent.ToProto
+// -> fillProtoSlab -> getEventDataSlab -> parseArgument -> getSockaddr.
+//
+// struct sockaddr_un is sun_family plus char sun_path[108] (UNIX_PATH_MAX,
+// include/uapi/linux/un.h). Abstract names start with a NUL byte and are
+// "sequences of bytes (not zero terminated)" (net/unix/af_unix.c), so the
+// kernel never puts a terminator after them. Tracee's syscall argument capture
+// copies the whole sockaddr_un from the caller's buffer (SOCKADDR_T in
+// pkg/ebpf/c/common/buffer.h) and bufferdecoder.readSunPathFromBuffer turns the
+// leading NUL into '@' and keeps reading until the next NUL, so whatever bytes
+// the process left in the buffer after the abstract name are reported as part
+// of sun_path. Those bytes are arbitrary and frequently not valid UTF-8, which
+// proto.Marshal rejects ("string field contains invalid UTF-8") and that ended
+// the StreamEvents stream for the client.
+func TestConvertTraceeEventToProto_SockAddr_InvalidUTF8(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		argValue map[string]string
+		assertFn func(t *testing.T, sa *pb.SockAddr)
+	}{
+		{
+			name: "AF_UNIX abstract name followed by buffer garbage",
+			argValue: map[string]string{
+				"sa_family": "AF_UNIX",
+				"sun_path":  "@/tmp/dbus-Ab3d" + "\x80\xff\xfe",
+			},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.Equal(t, pb.SaFamilyT_AF_UNIX, sa.GetSaFamily())
+				assert.Equal(t, "@/tmp/dbus-Ab3d�", sa.GetSunPath(),
+					"the name is kept and the garbage run is marked, not silently dropped")
+			},
+		},
+		{
+			name:     "AF_UNIX filesystem path with an invalid byte",
+			argValue: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/run/\xff.sock"},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.Equal(t, "/run/�.sock", sa.GetSunPath(),
+					"the marker keeps the path from reading as a different, valid path")
+			},
+		},
+		{
+			name:     "AF_UNIX valid path unchanged",
+			argValue: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/run/docker.sock"},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.Equal(t, "/run/docker.sock", sa.GetSunPath())
+			},
+		},
+		// sin_addr and sin6_addr come from net.IP.String() in the decoder and
+		// are ASCII by construction; these cases pin down the convention that
+		// every string field of the message is sanitized, not a known bug.
+		{
+			name:     "AF_INET address is sanitized too",
+			argValue: map[string]string{"sa_family": "AF_INET", "sin_addr": "1.2.3.4\xff", "sin_port": "80"},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.Equal(t, pb.SaFamilyT_AF_INET, sa.GetSaFamily())
+				assert.Equal(t, "1.2.3.4�", sa.GetSinAddr())
+				assert.Equal(t, uint32(80), sa.GetSinPort())
+			},
+		},
+		{
+			name: "AF_INET6 address is sanitized too",
+			argValue: map[string]string{
+				"sa_family": "AF_INET6", "sin6_addr": "fe80::\xc0", "sin6_port": "443",
+				"sin6_flowinfo": "0", "sin6_scopeid": "0",
+			},
+			assertFn: func(t *testing.T, sa *pb.SockAddr) {
+				assert.Equal(t, pb.SaFamilyT_AF_INET6, sa.GetSaFamily())
+				assert.Equal(t, "fe80::�", sa.GetSin6Addr())
+				assert.Equal(t, uint32(443), sa.GetSin6Port())
+			},
+		},
+	}
+
+	newEvent := func(argValue map[string]string) *trace.Event {
+		return &trace.Event{
+			EventID:   int(Getsockname),
+			EventName: "getsockname",
+			Args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{Name: "addr", Type: "struct sockaddr*"},
+					Value:   argValue,
+				},
+			},
+		}
+	}
+
+	findSockaddr := func(t *testing.T, data []*pb.EventValue) *pb.SockAddr {
+		for _, d := range data {
+			if sa := d.GetSockaddr(); sa != nil {
+				return sa
+			}
+		}
+		require.FailNow(t, "no sockaddr in converted event data")
+		return nil
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Public converter, also used by pkg/analyze.
+			protoEvent, err := ConvertTraceeEventToProto(*newEvent(tt.argValue))
+			require.NoError(t, err)
+			tt.assertFn(t, findSockaddr(t, protoEvent.Data))
+			_, err = proto.Marshal(protoEvent)
+			require.NoError(t, err, "proto.Marshal must accept the converted event")
+
+			// Pipeline path used by the sink stage right before grpcStream.Send.
+			pipelineProto := NewPipelineEvent(newEvent(tt.argValue)).ToProto()
+			require.NotNil(t, pipelineProto)
+			tt.assertFn(t, findSockaddr(t, pipelineProto.Data))
+			_, err = proto.Marshal(pipelineProto)
+			require.NoError(t, err, "proto.Marshal must accept the converted event")
+		})
+	}
+}
+
+// TestConvertToProto_EventData_HTTPRequest_InvalidUTF8Host covers the Host
+// field of net_packet_http_request. It is parsed off the wire by
+// http.ReadRequest, which accepts obs-text bytes (0x80-0xFF) in header values,
+// so it is not guaranteed to be UTF-8. It was the one HTTPRequest string field
+// still copied unsanitized; convertProtoHttp already sanitized its Host.
+func TestConvertToProto_EventData_HTTPRequest_InvalidUTF8Host(t *testing.T) {
+	t.Parallel()
+
+	e := trace.Event{
+		EventID:   2009,
+		EventName: "net_packet_http_request",
+		Args: []trace.Argument{
+			{
+				ArgMeta: trace.ArgMeta{Name: "http_request"},
+				Value: trace.ProtoHTTPRequest{
+					Method:   "GET",
+					Protocol: "HTTP/1.1",
+					Host:     "ex\xffample.com",
+					URIPath:  "/",
+				},
+			},
+		},
+	}
+
+	protoEvent := ConvertToProto(&e)
+	require.Len(t, protoEvent.Data, 1)
+	httpReq := protoEvent.Data[0].GetHttpRequest()
+	require.NotNil(t, httpReq)
+	assert.Equal(t, "ex�ample.com", httpReq.Host)
+
+	_, err := proto.Marshal(protoEvent)
+	require.NoError(t, err, "proto.Marshal must accept the converted event")
+}
+
+// TestConvertTraceeEventToProto_SockAddr_OtherFamilies covers sockaddr
+// families the pb.SaFamilyT enum does not have. The decoder reports them with
+// sa_family set and nothing else (readSockaddrFromBuff only decodes the
+// address body for AF_UNIX, AF_INET and AF_INET6), and the converter used to
+// turn them into an empty SockAddr, which reads as "no address" and loses the
+// family. A NULL sockaddr pointer is captured as family 0 and stays a SockAddr
+// with an explicit UNSPEC family.
+func TestConvertTraceeEventToProto_SockAddr_OtherFamilies(t *testing.T) {
+	t.Parallel()
+
+	newEvent := func(argValue map[string]string) trace.Event {
+		return trace.Event{
+			EventID:   int(Getsockname),
+			EventName: "getsockname",
+			Args: []trace.Argument{
+				{
+					ArgMeta: trace.ArgMeta{Name: "addr", Type: "struct sockaddr*"},
+					Value:   argValue,
+				},
+			},
+		}
+	}
+
+	for _, family := range []string{"AF_NETLINK", "AF_PACKET", "AF_VSOCK"} {
+		t.Run(family, func(t *testing.T) {
+			t.Parallel()
+
+			protoEvent, err := ConvertTraceeEventToProto(newEvent(map[string]string{"sa_family": family}))
+			require.NoError(t, err)
+			require.Len(t, protoEvent.Data, 1)
+
+			assert.Nil(t, protoEvent.Data[0].GetSockaddr(), "no SockAddr for a family the enum cannot express")
+			s := protoEvent.Data[0].GetStruct()
+			require.NotNil(t, s, "the decoded fields must survive as a struct")
+			assert.Equal(t, family, s.GetFields()["sa_family"].GetStringValue())
+
+			_, err = proto.Marshal(protoEvent)
+			require.NoError(t, err)
+		})
+	}
+
+	t.Run("AF_UNSPEC", func(t *testing.T) {
+		t.Parallel()
+
+		protoEvent, err := ConvertTraceeEventToProto(newEvent(map[string]string{"sa_family": "AF_UNSPEC"}))
+		require.NoError(t, err)
+		require.Len(t, protoEvent.Data, 1)
+
+		sa := protoEvent.Data[0].GetSockaddr()
+		require.NotNil(t, sa)
+		assert.Equal(t, pb.SaFamilyT_SA_FAMILY_T_UNSPEC, sa.GetSaFamily())
+
+		_, err = proto.Marshal(protoEvent)
+		require.NoError(t, err)
+	})
 }

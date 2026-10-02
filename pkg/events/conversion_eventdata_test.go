@@ -1,27 +1,28 @@
-package grpc
+package events
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	pb "github.com/aquasecurity/tracee/api/v1beta1"
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func Test_getEventData(t *testing.T) {
+// TestConvertToProto_EventData_AllTypes drives every argument type the
+// converter handles through the public ConvertToProto path and checks the
+// resulting EventValue oneof type and value. Ported from the retired
+// pkg/server/grpc copy of the converter, which had no production callers.
+func TestConvertToProto_EventData_AllTypes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name        string
-		args        []trace.Argument
-		expected    []*pb.EventValue
-		syscall     bool
-		returnValue int
+		name     string
+		args     []trace.Argument
+		expected []*pb.EventValue
+		syscall  bool
 	}{
 		{
 			name: "strT",
@@ -347,8 +348,8 @@ func Test_getEventData(t *testing.T) {
 			expected: []*pb.EventValue{
 				{
 					Name: "sa_handler",
-					Value: &pb.EventValue_UInt64{
-						UInt64: 18446744073709551615,
+					Value: &pb.EventValue_Pointer{
+						Pointer: 18446744073709551615,
 					},
 				},
 			},
@@ -567,16 +568,17 @@ func Test_getEventData(t *testing.T) {
 				},
 				{
 					Name: "sa_handler",
-					Value: &pb.EventValue_UInt64{
-						UInt64: 18446744073709551615,
+					Value: &pb.EventValue_Pointer{
+						Pointer: 18446744073709551615,
 					},
 				},
 			},
 		},
+		// Since e232fca4a the syscall return value is an ordinary "returnValue"
+		// argument (int64) rather than something the converter appends.
 		{
-			name:        "syscall",
-			syscall:     true,
-			returnValue: -1,
+			name:    "syscall with returnValue argument",
+			syscall: true,
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
@@ -584,6 +586,13 @@ func Test_getEventData(t *testing.T) {
 						Type: "u16",
 					},
 					Value: uint16(1818),
+				},
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "returnValue",
+						Type: "int64",
+					},
+					Value: int64(-1),
 				},
 			},
 			expected: []*pb.EventValue{
@@ -602,9 +611,8 @@ func Test_getEventData(t *testing.T) {
 			},
 		},
 		{
-			name:        "syscall - multiple arguments",
-			syscall:     true,
-			returnValue: 1,
+			name:    "syscall - multiple arguments and returnValue",
+			syscall: true,
 			args: []trace.Argument{
 				{
 					ArgMeta: trace.ArgMeta{
@@ -619,6 +627,13 @@ func Test_getEventData(t *testing.T) {
 						Type: "u32",
 					},
 					Value: uint32(4026531839),
+				},
+				{
+					ArgMeta: trace.ArgMeta{
+						Name: "returnValue",
+						Type: "int64",
+					},
+					Value: int64(1),
 				},
 			},
 			expected: []*pb.EventValue{
@@ -645,18 +660,15 @@ func Test_getEventData(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			id := int(events.CommitCreds)
+			id := int(CommitCreds)
 			if tt.syscall {
-				id = int(events.Ptrace)
+				id = int(Ptrace)
 			}
 
-			eventData, err := getEventData(trace.Event{EventID: id, Args: tt.args, ReturnValue: tt.returnValue})
-			assert.NoError(t, err)
+			eventData := ConvertToProto(&trace.Event{EventID: id, Args: tt.args}).Data
 
 			assert.Equal(t, len(tt.expected), len(eventData))
 
@@ -677,6 +689,8 @@ func Test_getEventData(t *testing.T) {
 					assert.Equal(t, expected.GetInt64(), actual.GetInt64())
 				case *pb.EventValue_UInt64:
 					assert.Equal(t, expected.GetUInt64(), actual.GetUInt64())
+				case *pb.EventValue_Pointer:
+					assert.Equal(t, expected.GetPointer(), actual.GetPointer())
 				case *pb.EventValue_StrArray:
 					assert.Equal(t, expected.GetStrArray(), actual.GetStrArray())
 				case *pb.EventValue_Bytes:
@@ -713,402 +727,6 @@ func Test_getEventData(t *testing.T) {
 					t.Errorf("unexpected type %T", actual.Value)
 				}
 			}
-		})
-	}
-}
-
-func TestEventTrigger(t *testing.T) {
-	event := trace.Event{
-		Args: []trace.Argument{
-			{
-				ArgMeta: trace.ArgMeta{
-					Name: "arg1",
-					Type: "const char *",
-				},
-				Value: "value1",
-			},
-			{
-				ArgMeta: trace.ArgMeta{
-					Name: "detectedFrom",
-					Type: "unknown",
-				},
-				Value: map[string]interface{}{
-					"id":   int(events.Ptrace),
-					"name": "ptrace",
-					"args": []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "arg1",
-								Type: "const char *",
-							},
-							Value: "arg value",
-						},
-					},
-					"returnValue": 10,
-				},
-			},
-		},
-	}
-
-	// Use the new conversion function to get the expected DetectedFrom
-	protoEvent, err := events.ConvertTraceeEventToProto(event)
-	assert.NoError(t, err)
-	expectedTriggerEvent := protoEvent.DetectedFrom
-	assert.NotNil(t, expectedTriggerEvent)
-
-	actualTriggerId, ok := event.Args[1].Value.(map[string]interface{})["id"].(int)
-	assert.True(t, ok)
-	actualTriggerName, ok := event.Args[1].Value.(map[string]interface{})["name"].(string)
-	assert.True(t, ok)
-	actualTriggerArgs, ok := event.Args[1].Value.(map[string]interface{})["args"].([]trace.Argument)
-	assert.True(t, ok)
-	actualTriggerArg0Str, ok := actualTriggerArgs[0].Value.(string)
-	assert.True(t, ok)
-	actualArg1Name := "returnValue"
-	actualArg1Value, ok := event.Args[1].Value.(map[string]interface{})["returnValue"].(int)
-	assert.True(t, ok)
-
-	assert.Equal(t, expectedTriggerEvent.Id, uint32(actualTriggerId))
-	assert.Equal(t, expectedTriggerEvent.Name, actualTriggerName)
-
-	expectedArg0Name := expectedTriggerEvent.Data[0].GetName()
-	expectedArg0StrValue := expectedTriggerEvent.Data[0].GetValue().(*pb.EventValue_Str).Str
-	assert.Equal(t, expectedArg0Name, actualTriggerArgs[0].ArgMeta.Name)
-	assert.Equal(t, expectedArg0StrValue, actualTriggerArg0Str)
-
-	expectedArg1Name := expectedTriggerEvent.Data[1].GetName()
-	expectedArg1Value := expectedTriggerEvent.Data[1].GetValue().(*pb.EventValue_Int64).Int64
-	assert.Equal(t, expectedArg1Name, actualArg1Name)
-	assert.Equal(t, expectedArg1Value, int64(actualArg1Value))
-}
-
-func Test_parseArgument_MapStringInterface(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		arg      trace.Argument
-		wantErr  bool
-		wantNil  bool
-		validate func(t *testing.T, ev *pb.EventValue)
-	}{
-		{
-			name: "simple map[string]interface{}",
-			arg: trace.Argument{
-				ArgMeta: trace.ArgMeta{
-					Name: "detectedFrom",
-					Type: "unknown",
-				},
-				Value: map[string]interface{}{
-					"id":          715,
-					"name":        "sched_process_exec",
-					"returnValue": 0,
-				},
-			},
-			wantErr: false,
-			wantNil: false,
-			validate: func(t *testing.T, ev *pb.EventValue) {
-				assert.NotNil(t, ev.GetStruct())
-				fields := ev.GetStruct().GetFields()
-				assert.Equal(t, float64(715), fields["id"].GetNumberValue())
-				assert.Equal(t, "sched_process_exec", fields["name"].GetStringValue())
-				assert.Equal(t, float64(0), fields["returnValue"].GetNumberValue())
-			},
-		},
-		{
-			name: "map with nested []trace.Argument",
-			arg: trace.Argument{
-				ArgMeta: trace.ArgMeta{
-					Name: "detectedFrom",
-					Type: "unknown",
-				},
-				Value: map[string]interface{}{
-					"id":   715,
-					"name": "sched_process_exec",
-					"args": []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "cmdpath",
-								Type: "string",
-							},
-							Value: "/usr/bin/bash",
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "argv",
-								Type: "[]string",
-							},
-							Value: []string{"bash", "-c", "echo hello"},
-						},
-					},
-					"returnValue": 0,
-				},
-			},
-			wantErr: false,
-			wantNil: false,
-			validate: func(t *testing.T, ev *pb.EventValue) {
-				assert.NotNil(t, ev.GetStruct())
-				fields := ev.GetStruct().GetFields()
-				assert.Equal(t, float64(715), fields["id"].GetNumberValue())
-				assert.Equal(t, "sched_process_exec", fields["name"].GetStringValue())
-
-				// Verify args were converted
-				argsValue := fields["args"].GetListValue()
-				assert.NotNil(t, argsValue)
-				assert.Len(t, argsValue.GetValues(), 2)
-
-				// Check first arg
-				arg0 := argsValue.GetValues()[0].GetStructValue()
-				assert.Equal(t, "cmdpath", arg0.GetFields()["name"].GetStringValue())
-				assert.Equal(t, "string", arg0.GetFields()["type"].GetStringValue())
-				assert.Equal(t, "/usr/bin/bash", arg0.GetFields()["value"].GetStringValue())
-
-				// Check second arg with []string value
-				arg1 := argsValue.GetValues()[1].GetStructValue()
-				assert.Equal(t, "argv", arg1.GetFields()["name"].GetStringValue())
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result, err := parseArgument(tt.arg)
-
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-
-			assert.NoError(t, err)
-
-			if tt.wantNil {
-				assert.Nil(t, result)
-				return
-			}
-
-			assert.NotNil(t, result)
-			if tt.validate != nil {
-				tt.validate(t, result)
-			}
-		})
-	}
-}
-
-func Test_sanitizeMapForProtobuf_WithTraceArguments(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		input    map[string]interface{}
-		validate func(t *testing.T, result map[string]interface{})
-	}{
-		{
-			name: "map with []trace.Argument",
-			input: map[string]interface{}{
-				"id":   715,
-				"name": "test_event",
-				"args": []trace.Argument{
-					{
-						ArgMeta: trace.ArgMeta{
-							Name: "path",
-							Type: "string",
-						},
-						Value: "/tmp/test",
-					},
-				},
-			},
-			validate: func(t *testing.T, result map[string]interface{}) {
-				assert.Equal(t, 715, result["id"])
-				assert.Equal(t, "test_event", result["name"])
-
-				args, ok := result["args"].([]interface{})
-				assert.True(t, ok, "args should be []interface{}")
-				assert.Len(t, args, 1)
-
-				arg0, ok := args[0].(map[string]interface{})
-				assert.True(t, ok, "arg should be map[string]interface{}")
-				assert.Equal(t, "path", arg0["name"])
-				assert.Equal(t, "string", arg0["type"])
-				assert.Equal(t, "/tmp/test", arg0["value"])
-			},
-		},
-		{
-			name: "string sanitization",
-			input: map[string]interface{}{
-				"valid":   "hello",
-				"invalid": "test\x80\x81invalid",
-			},
-			validate: func(t *testing.T, result map[string]interface{}) {
-				assert.Equal(t, "hello", result["valid"])
-				// Invalid UTF-8 bytes should be replaced
-				sanitized, ok := result["invalid"].(string)
-				assert.True(t, ok, "invalid should be a string")
-				assert.NotContains(t, sanitized, "\x80")
-			},
-		},
-		{
-			name: "nested maps",
-			input: map[string]interface{}{
-				"outer": map[string]interface{}{
-					"inner": "value",
-				},
-			},
-			validate: func(t *testing.T, result map[string]interface{}) {
-				outer, ok := result["outer"].(map[string]interface{})
-				assert.True(t, ok)
-				assert.Equal(t, "value", outer["inner"])
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := sanitizeMapForProtobuf(tt.input)
-			tt.validate(t, result)
-		})
-	}
-}
-
-func Test_sanitizeValueForProtobuf(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name     string
-		input    interface{}
-		validate func(t *testing.T, result interface{})
-	}{
-		{
-			name:  "string value",
-			input: "hello",
-			validate: func(t *testing.T, result interface{}) {
-				assert.Equal(t, "hello", result)
-			},
-		},
-		{
-			name: "[]trace.Argument value",
-			input: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: "test",
-						Type: "int",
-					},
-					Value: 42,
-				},
-			},
-			validate: func(t *testing.T, result interface{}) {
-				arr, ok := result.([]interface{})
-				assert.True(t, ok)
-				assert.Len(t, arr, 1)
-
-				arg, ok := arr[0].(map[string]interface{})
-				assert.True(t, ok)
-				assert.Equal(t, "test", arg["name"])
-				assert.Equal(t, "int", arg["type"])
-				assert.Equal(t, 42, arg["value"])
-			},
-		},
-		{
-			name: "map[string]interface{} value",
-			input: map[string]interface{}{
-				"key": "value",
-			},
-			validate: func(t *testing.T, result interface{}) {
-				m, ok := result.(map[string]interface{})
-				assert.True(t, ok)
-				assert.Equal(t, "value", m["key"])
-			},
-		},
-		{
-			name:  "int value passthrough",
-			input: 123,
-			validate: func(t *testing.T, result interface{}) {
-				assert.Equal(t, 123, result)
-			},
-		},
-		{
-			name:  "trace.Pointer unwraps to uint64",
-			input: trace.Pointer(0xC2AD00BF0040),
-			validate: func(t *testing.T, result interface{}) {
-				v, ok := result.(uint64)
-				assert.True(t, ok, "trace.Pointer should be unwrapped to uint64")
-				assert.Equal(t, uint64(0xC2AD00BF0040), v)
-				_, err := structpb.NewValue(result)
-				assert.NoError(t, err, "sanitized trace.Pointer should be accepted by structpb")
-			},
-		},
-		{
-			name:  "[]string converts to []interface{}",
-			input: []string{"a", "b", "c"},
-			validate: func(t *testing.T, result interface{}) {
-				arr, ok := result.([]interface{})
-				assert.True(t, ok)
-				assert.Len(t, arr, 3)
-				assert.Equal(t, "a", arr[0])
-				assert.Equal(t, "b", arr[1])
-				assert.Equal(t, "c", arr[2])
-				_, err := structpb.NewValue(result)
-				assert.NoError(t, err, "sanitized []string should be accepted by structpb")
-			},
-		},
-		{
-			name:  "[]uint64 converts to []interface{}",
-			input: []uint64{0, 0, 0, 0},
-			validate: func(t *testing.T, result interface{}) {
-				arr, ok := result.([]interface{})
-				assert.True(t, ok, "[]uint64 should become []interface{}")
-				assert.Len(t, arr, 4)
-				for _, v := range arr {
-					assert.Equal(t, uint64(0), v)
-				}
-				_, err := structpb.NewValue(result)
-				assert.NoError(t, err, "sanitized []uint64 should be accepted by structpb")
-			},
-		},
-		{
-			name:  "[2]int32 converts to []interface{}",
-			input: [2]int32{10, 20},
-			validate: func(t *testing.T, result interface{}) {
-				arr, ok := result.([]interface{})
-				assert.True(t, ok, "[2]int32 should become []interface{}")
-				assert.Len(t, arr, 2)
-				assert.Equal(t, int32(10), arr[0])
-				assert.Equal(t, int32(20), arr[1])
-				_, err := structpb.NewValue(result)
-				assert.NoError(t, err, "sanitized [2]int32 should be accepted by structpb")
-			},
-		},
-		{
-			name: "map[string]string converts to map[string]interface{}",
-			input: map[string]string{
-				"sa_family": "AF_INET",
-				"sin_addr":  "127.0.0.1",
-				"sin_port":  "8080",
-			},
-			validate: func(t *testing.T, result interface{}) {
-				m, ok := result.(map[string]interface{})
-				assert.True(t, ok, "map[string]string should become map[string]interface{}")
-				assert.Equal(t, "AF_INET", m["sa_family"])
-				assert.Equal(t, "127.0.0.1", m["sin_addr"])
-				assert.Equal(t, "8080", m["sin_port"])
-				_, err := structpb.NewStruct(m)
-				assert.NoError(t, err, "sanitized map[string]string should be accepted by structpb")
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			result := sanitizeValueForProtobuf(tt.input)
-			tt.validate(t, result)
 		})
 	}
 }

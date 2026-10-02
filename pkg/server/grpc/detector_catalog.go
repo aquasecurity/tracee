@@ -142,15 +142,15 @@ func convertDefinitionToCatalogEntry(d events.Definition, detectorID, detectorNa
 	v := d.GetVersion()
 
 	return &pb.DetectorCatalogEntry{
-		DetectorId:   sanitizeStringForProtobuf(detectorID),
-		DetectorName: sanitizeStringForProtobuf(detectorName),
-		EventName:    sanitizeStringForProtobuf(d.GetName()),
+		DetectorId:   events.SanitizeStringForProtobuf(detectorID),
+		DetectorName: events.SanitizeStringForProtobuf(detectorName),
+		EventName:    events.SanitizeStringForProtobuf(d.GetName()),
 		Version: &pb.Version{
 			Major: v.Major(),
 			Minor: v.Minor(),
 			Patch: v.Patch(),
 		},
-		Description: sanitizeStringForProtobuf(d.GetDescription()),
+		Description: events.SanitizeStringForProtobuf(d.GetDescription()),
 		Tags:        sanitizeStringSliceForProtobuf(d.GetSets()),
 		Properties:  propertiesToProtoMap(props),
 	}
@@ -164,7 +164,7 @@ func propertiesToProtoMap(props map[string]interface{}) map[string]string {
 	sanitized := sanitizeMapForProtobuf(props)
 	out := make(map[string]string, len(sanitized))
 	for k, v := range sanitized {
-		out[sanitizeStringForProtobuf(k)] = sanitizeStringForProtobuf(fmt.Sprint(v))
+		out[events.SanitizeStringForProtobuf(k)] = events.SanitizeStringForProtobuf(fmt.Sprint(v))
 	}
 
 	return out
@@ -177,7 +177,7 @@ func sanitizeStringSliceForProtobuf(values []string) []string {
 
 	out := make([]string, len(values))
 	for i, v := range values {
-		out[i] = sanitizeStringForProtobuf(v)
+		out[i] = events.SanitizeStringForProtobuf(v)
 	}
 	return out
 }

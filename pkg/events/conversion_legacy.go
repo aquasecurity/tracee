@@ -66,22 +66,22 @@ func getThreat(description string, metadata map[string]interface{}) *pb.Threat {
 			continue
 		}
 
-		properties[k] = sanitizeStringForProtobuf(fmt.Sprint(v))
+		properties[k] = SanitizeStringForProtobuf(fmt.Sprint(v))
 	}
 
 	return &pb.Threat{
-		Description: sanitizeStringForProtobuf(description),
+		Description: SanitizeStringForProtobuf(description),
 		Mitre: &pb.Mitre{
 			Tactic: &pb.MitreTactic{
 				Name: mitreTactic,
 			},
 			Technique: &pb.MitreTechnique{
 				Id:   mitreTechniqueId,
-				Name: sanitizeStringForProtobuf(mitreTechniqueName),
+				Name: SanitizeStringForProtobuf(mitreTechniqueName),
 			},
 		},
 		Severity:   getSeverity(metadata),
-		Name:       sanitizeStringForProtobuf(name),
+		Name:       SanitizeStringForProtobuf(name),
 		Properties: properties,
 	}
 }
