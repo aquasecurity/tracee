@@ -1,0 +1,4 @@
+name: scenario-no-events
+scenarios:
+  - name: empty
+    description: No events and no groups with events
