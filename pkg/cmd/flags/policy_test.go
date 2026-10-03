@@ -2333,6 +2333,34 @@ func TestParseScopeFilters(t *testing.T) {
 			},
 		},
 		{
+			name:   "container=<id> should set ContIDFilter",
+			policy: policy.NewPolicy(),
+			scopeFlags: []scopeFlag{{
+				full:              "container=abc123",
+				scopeName:         "container",
+				operator:          "=",
+				operatorAndValues: "=abc123",
+			}},
+			validate: func(t *testing.T, p *policy.Policy) {
+				assert.NotNil(t, p.ContIDFilter)
+				assert.True(t, p.ContIDFilter.Enabled())
+			},
+		},
+		{
+			name:   "container!=<id> should set ContIDFilter",
+			policy: policy.NewPolicy(),
+			scopeFlags: []scopeFlag{{
+				full:              "container!=abc123",
+				scopeName:         "container",
+				operator:          "!=",
+				operatorAndValues: "!=abc123",
+			}},
+			validate: func(t *testing.T, p *policy.Policy) {
+				assert.NotNil(t, p.ContIDFilter)
+				assert.True(t, p.ContIDFilter.Enabled())
+			},
+		},
+		{
 			name:   "invalid scope filter",
 			policy: policy.NewPolicy(),
 			scopeFlags: []scopeFlag{{
