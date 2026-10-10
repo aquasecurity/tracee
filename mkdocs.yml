@@ -163,6 +163,7 @@ nav:
                             - do_sigaction: docs/events/builtin/man/misc/do_sigaction.md
                             - do_truncate: docs/events/builtin/man/misc/do_truncate.md
                             - file_modification: docs/events/builtin/man/misc/file_modification.md
+                            - file_open_mount_write_denied: docs/events/builtin/man/misc/file_open_mount_write_denied.md
                             - ftrace_hook: docs/events/builtin/man/security/ftrace_hook.md
                             - hidden_kernel_module: docs/events/builtin/man/security/hidden_kernel_module.md
                             - hooked_seq_ops: docs/events/builtin/man/misc/hooked_seq_ops.md

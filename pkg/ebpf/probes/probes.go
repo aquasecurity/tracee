@@ -59,6 +59,15 @@ const (
 	CgroupRmdir
 	SecurityBPRMCheck
 	SecurityFileOpen
+	DoFileOpen
+	DoFileOpenRet
+	DoFilpOpen
+	DoFilpOpenRet
+	MntGetWriteAccess
+	MntGetWriteAccessRet
+	MntWantWrite
+	MntWantWriteRet
+	InodePermissionRet
 	SecurityInodeUnlink
 	SecurityInodeMknod
 	SecurityInodeSymlink

@@ -104,6 +104,26 @@ struct inode___older_v611 {
     struct timespec64 __i_ctime;
 };
 
+// fs/namei.c private types used by do_filp_open()/do_file_open(). These types
+// are present in kernel BTF but are intentionally absent from Tracee's compact
+// vmlinux.h.
+struct filename___tracee {
+    const char *name;
+};
+
+struct open_flags___tracee {
+    int open_flag;
+};
+
+struct vfsmount___tracee {
+    struct super_block *mnt_sb;
+    int mnt_flags;
+};
+
+struct super_block___tracee {
+    unsigned long s_flags;
+};
+
 // struct fred_info //
 
 // CONFIG_X86_FRED
