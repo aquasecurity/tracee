@@ -168,7 +168,7 @@ var (
 	// gap
 	O_NOATIME = SystemFunctionArgument{rawValue: 01000000, stringValue: "O_NOATIME"}
 	O_CLOEXEC = SystemFunctionArgument{rawValue: 02000000, stringValue: "O_CLOEXEC"}
-	O_PATH    = SystemFunctionArgument{rawValue: 040000000, stringValue: "O_PATH"}
+	O_PATH    = SystemFunctionArgument{rawValue: 010000000, stringValue: "O_PATH"}
 	O_TMPFILE = SystemFunctionArgument{rawValue: 020000000, stringValue: "O_TMPFILE"}
 )
 

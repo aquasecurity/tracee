@@ -221,6 +221,11 @@ func TestParseOpenFlagArgument(t *testing.T) {
 			rawArgument:    O_RDWR.Value() | O_CREAT.Value() | O_DSYNC.Value() | O_LARGEFILE.Value(),
 			expectedString: O_RDWR.String() + "|" + O_CREAT.String() + "|" + O_DSYNC.String() + "|" + O_LARGEFILE.String(),
 		},
+		{
+			name:           "Test O_RDONLY | O_CLOEXEC | O_PATH",
+			rawArgument:    02000000 | 010000000, // raw values from asm-generic/fcntl.h
+			expectedString: O_RDONLY.String() + "|" + O_CLOEXEC.String() + "|" + O_PATH.String(),
+		},
 	}
 
 	for _, tt := range tests {
