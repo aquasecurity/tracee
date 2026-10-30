@@ -2853,10 +2853,6 @@ int BPF_KPROBE(trace_security_socket_accept)
     if (!evaluate_scope_filters(&p))
         return 0;
 
-    // Load the arguments given to the accept syscall (which eventually invokes this function)
-    if (!p.task_info->syscall_traced)
-        return 0;
-
     int sockfd;
     switch (p.event->context.syscall) {
         case SYSCALL_ACCEPT:
