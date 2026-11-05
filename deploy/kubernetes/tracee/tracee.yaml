@@ -5,7 +5,7 @@ kind: ServiceAccount
 metadata:
   name: tracee
   labels:
-    helm.sh/chart: tracee-0.24.1
+    helm.sh/chart: tracee-0.24.2
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
     app.kubernetes.io/version: "0.24.1"
@@ -17,7 +17,7 @@ kind: ServiceAccount
 metadata:
   name: tracee-operator
   labels:
-    helm.sh/chart: tracee-0.24.1
+    helm.sh/chart: tracee-0.24.2
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
     app.kubernetes.io/version: "0.24.1"
@@ -29,38 +29,30 @@ kind: ConfigMap
 metadata:
   name: tracee-config
   labels:
-    helm.sh/chart: tracee-0.24.1
+    helm.sh/chart: tracee-0.24.2
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
     app.kubernetes.io/version: "0.24.1"
     app.kubernetes.io/managed-by: Helm
 data:
   config.yaml: |-
-    cache:
-        type: mem
-        size: 512
-    buffers:
-        kernel:
-            events: 1024
-            control-plane: 1024
-    healthz: true
-    metrics: true
-    pprof: false
-    pyroscope: false
-    listen-addr: :3366
-    log:
+    server:
+        http-address: "0.0.0.0:3366"
+        metrics: true
+        healthz: true
+    logging:
         level: info
     enrichment:
         decoded-data: true
-        user-stack: false
-        environment: false
         executable-hash:
             enabled: true
             mode: dev-inode
     output:
-        json:
-          files:
-            - stdout
+        destinations:
+            - name: stdout_json
+              type: file
+              format: json
+              path: stdout
         sort-events: false
 ---
 # Source: tracee/templates/role.yaml
@@ -83,6 +75,14 @@ rules:
   - tracee.aquasec.com
   resources:
   - policies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
   verbs:
   - get
   - list
@@ -122,7 +122,7 @@ kind: DaemonSet
 metadata:
   name: tracee
   labels:
-    helm.sh/chart: tracee-0.24.1
+    helm.sh/chart: tracee-0.24.2
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
     app.kubernetes.io/version: "0.24.1"
@@ -158,6 +158,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+          ports:
+            - name: metrics
+              containerPort: 3366
+              protocol: TCP
           securityContext:
             privileged: true
           readinessProbe:
@@ -222,7 +226,7 @@ kind: Deployment
 metadata:
   name: tracee-operator
   labels:
-    helm.sh/chart: tracee-0.24.1
+    helm.sh/chart: tracee-0.24.2
     app.kubernetes.io/name: tracee
     app.kubernetes.io/instance: tracee
     app.kubernetes.io/version: "0.24.1"
