@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Regression for aquasecurity/tracee#5387:
-# Rendered Tracee config must use current keys (server.http-address, logging)
-# and must not emit legacy listen-addr / top-level healthz / metrics / log keys
-# that Tracee 0.24.x ignores, leaving the readiness probe on :3366 failing.
+# Rendered Tracee config must use keys the chart's pinned image (appVersion /
+# Tracee 0.24.1) understands: server.http-address, log, output.<format>.files.
+# Legacy listen-addr / top-level healthz / metrics leave readiness on :3366 failing.
+# Unreleased main keys (logging, output.destinations) must not appear while the
+# chart still defaults to the 0.24.1 image.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -69,10 +71,13 @@ forbid() {
 }
 
 require '^[[:space:]]*http-address:' 'server.http-address is present'
-require '^logging:' 'top-level logging key is present'
+require '^log:' 'top-level log key is present (Tracee 0.24.1 GetFlagsFromViper("log"))'
 require '^[[:space:]]*healthz:[[:space:]]*true' 'healthz lives under server'
+require '^[[:space:]]*json:' 'output.json is present'
+require '^[[:space:]]*files:' 'output.<format>.files is present'
 forbid '^listen-addr:' 'legacy listen-addr must not appear'
-forbid '^log:' 'legacy top-level log key must not appear (use logging)'
+forbid '^logging:' 'unreleased logging key must not appear while image is 0.24.1'
+forbid '^[[:space:]]*destinations:' 'unreleased output.destinations must not appear while image is 0.24.1'
 forbid '^healthz:' 'legacy top-level healthz must not appear'
 forbid '^metrics:' 'legacy top-level metrics must not appear'
 forbid '^perf-buffer-size:' 'legacy perf-buffer-size must not appear'
@@ -81,9 +86,11 @@ static="$repo/deploy/kubernetes/tracee/tracee.yaml"
 if [[ -f "$static" ]]; then
   echo "---- static manifest $static ----"
   if ! grep -q 'http-address:' "$static"; then echo "FAIL static: missing http-address" >&2; fail=1; else echo "OK static: has http-address"; fi
-  if ! grep -Eq '^[[:space:]]*logging:' "$static"; then echo "FAIL static: missing logging" >&2; fail=1; else echo "OK static: has logging"; fi
+  if ! grep -Eq '^[[:space:]]*log:' "$static"; then echo "FAIL static: missing log key" >&2; fail=1; else echo "OK static: has log key"; fi
+  if grep -Eq '^[[:space:]]*logging:' "$static"; then echo "FAIL static: has unreleased logging key" >&2; fail=1; else echo "OK static: no logging key"; fi
+  if grep -q 'destinations:' "$static"; then echo "FAIL static: has destinations" >&2; fail=1; else echo "OK static: no destinations"; fi
+  if ! grep -q 'files:' "$static"; then echo "FAIL static: missing output files" >&2; fail=1; else echo "OK static: has output files"; fi
   if grep -q 'listen-addr:' "$static"; then echo "FAIL static: has listen-addr" >&2; fail=1; else echo "OK static: no listen-addr"; fi
-  if grep -Eq '^[[:space:]]*log:' "$static"; then echo "FAIL static: has legacy log key" >&2; fail=1; else echo "OK static: no legacy log key"; fi
 else
   echo "WARN: static manifest not found at $static" >&2
 fi

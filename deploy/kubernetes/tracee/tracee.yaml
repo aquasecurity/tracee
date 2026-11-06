@@ -40,7 +40,7 @@ data:
         http-address: "0.0.0.0:3366"
         metrics: true
         healthz: true
-    logging:
+    log:
         level: info
     enrichment:
         decoded-data: true
@@ -48,12 +48,11 @@ data:
             enabled: true
             mode: dev-inode
     output:
-        destinations:
-            - name: stdout_json
-              type: file
-              format: json
-              path: stdout
-        sort-events: false
+        json:
+          files:
+            - stdout
+        options:
+            sort-events: false
 ---
 # Source: tracee/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
