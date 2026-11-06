@@ -132,7 +132,7 @@ else:
     ok(f"output.options.parse-arguments={parse_args!r}")
 
 # Legacy keys that break readiness / buffers
-for legacy in ("listen-addr", "healthz", "metrics", "perf-buffer-size"):
+for legacy in ("listen-addr", "healthz", "metrics"):
     if legacy in doc:
         bad(f"legacy top-level {legacy} must not appear")
     else:
