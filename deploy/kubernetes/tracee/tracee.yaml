@@ -52,6 +52,7 @@ data:
           files:
             - stdout
         options:
+            parse-arguments: true
             sort-events: false
 ---
 # Source: tracee/templates/role.yaml

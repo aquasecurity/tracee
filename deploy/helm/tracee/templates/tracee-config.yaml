@@ -168,6 +168,8 @@ data:
           files:
             - stdout
         options:
+            {{- /* Tracee 0.24.1 ignores enrichment.*; map decoded-data to parse-arguments. */}}
+            parse-arguments: {{ index .Values.config.enrichment "decoded-data" | default false }}
             sort-events: {{ .Values.config.output.sortEvents }}
         {{- with .Values.config.output.webhook }}
         webhook:
