@@ -94,8 +94,9 @@ statfunc bool filter_file_type(void *ctx,
         has_file_type = true;
         int imode_mode = get_inode_mode_from_file(file);
         if (*ftype & FILTER_PIPE_FILES) {
-            struct pipe_inode_info *pipe = get_file_pipe_info(file);
-            if (pipe != NULL) {
+            // Anonymous pipes and named FIFOs both have S_IFIFO in their inode mode.
+            // Type filtering does not need private_data or kernel write-function symbols.
+            if ((imode_mode & S_IFMT) == S_IFIFO) {
                 type_filter_match = true;
                 goto exit;
             }

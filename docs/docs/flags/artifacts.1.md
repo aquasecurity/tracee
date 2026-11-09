@@ -44,6 +44,10 @@ Filter types:
 - **type**: A file type from the following options: 'regular', 'pipe', 'socket' and 'elf'. Format: type=regular
 - **fd**: The file descriptor of the file. Can be one of the three standards: 'stdin', 'stdout' and 'stderr'. Format: fd=stdout
 
+The `pipe` type matches anonymous pipes and named FIFOs for both reads and writes.
+It uses the inode file type, so capture does not depend on the kernel's pipe write
+function names. Other file types, including regular files and sockets, are excluded.
+
 ### Network Capture Notes
 
 - Pcap Files:

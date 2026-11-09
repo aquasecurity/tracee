@@ -13940,9 +13940,6 @@ var CoreEvents = map[ID]Definition{
 					{"prog_array", "trace_ret_kernel_write_tail", []uint32{TailKernelWrite}},
 					{"prog_array", "send_bin", []uint32{TailSendBin}},
 				},
-				kSymbols: []KSymbol{
-					{symbol: "pipe_write", required: true},
-				},
 			},
 		},
 	},
@@ -13965,9 +13962,6 @@ var CoreEvents = map[ID]Definition{
 					{"prog_array", "trace_ret_vfs_read_tail", []uint32{TailVfsRead}},
 					{"prog_array", "trace_ret_vfs_readv_tail", []uint32{TailVfsReadv}},
 					{"prog_array", "send_bin", []uint32{TailSendBin}},
-				},
-				kSymbols: []KSymbol{
-					{symbol: "pipe_write", required: true},
 				},
 			},
 		},
