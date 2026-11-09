@@ -3116,8 +3116,9 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 
     chunk_size = bin_args->full_size - i * F_CHUNK_SIZE;
 
-    if (chunk_size > F_CHUNK_SIZE) {
-        // Handle the rest of write recursively
+    if (chunk_size >= F_CHUNK_SIZE) {
+        // Send a complete remaining chunk through the full-chunk loop too;
+        // the partial-chunk mask below would turn F_CHUNK_SIZE into zero.
         bin_args->full_size = chunk_size;
         bpf_tail_call(ctx, prog_array, tail_call);
         return 0;

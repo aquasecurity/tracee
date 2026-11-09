@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -20,8 +21,19 @@ import (
 // Keep these pipe regressions separate from Test_TraceeCapture, whose regular-file
 // cases are currently skipped on some kernels (issue #5171).
 func Test_TraceeCaptureIOResults(t *testing.T) {
-	if os.Geteuid() != 0 || !testutils.IsSudoCmdAvailableForThisUser() {
-		t.Skip("requires root and non-interactive sudo to run Tracee and inspect its artifacts")
+	// The integration job runs make test-integration as the runner user. Re-exec
+	// only this test with sudo so its root-owned artifacts remain readable, and
+	// fail instead of silently skipping if the required privileges are missing.
+	require.True(t, testutils.IsSudoCmdAvailableForThisUser(), "capture regressions require non-interactive sudo")
+	if os.Geteuid() != 0 {
+		executable, err := os.Executable()
+		require.NoError(t, err)
+		command := exec.Command("sudo", "-n", executable,
+			"-test.run=^Test_TraceeCaptureIOResults$", "-test.v", "-test.timeout=2m")
+		output, err := command.CombinedOutput()
+		t.Logf("privileged capture regressions:\n%s", output)
+		require.NoError(t, err)
+		return
 	}
 	// Capture path prefixes are limited to 50 bytes; t.TempDir's test name can exceed that.
 	workingDir, err := os.MkdirTemp("", "tracee-io-")
@@ -45,7 +57,13 @@ func Test_TraceeCaptureIOResults(t *testing.T) {
 		write, read []byte
 	}
 	var expectations []expectation
-	cases := []string{"partial-write", "partial-writev", "empty-iovecs", "partial-readv", "writev-EPIPE", "write-EPIPE", "read-EAGAIN", "read-EOF", "checkpoint"}
+	cases := []string{
+		"partial-write", "partial-writev", "empty-iovecs", "partial-readv",
+		"large-write-before", "large-write-at", "large-write-after",
+		"large-writev-before", "large-writev-at", "large-writev-after",
+		"large-partial-write", "large-partial-writev",
+		"writev-EPIPE", "write-EPIPE", "read-EAGAIN", "read-EOF", "checkpoint",
+	}
 	for _, name := range cases {
 		pipePath := filepath.Join(workingDir, "pipe-"+name)
 		require.NoError(t, unix.Mkfifo(pipePath, 0600))
@@ -90,6 +108,57 @@ func Test_TraceeCaptureIOResults(t *testing.T) {
 			require.Positive(t, n)
 			require.Less(t, n, len(requested))
 			want.write = requested[:n]
+		case "large-write-before", "large-write-at", "large-write-after",
+			"large-writev-before", "large-writev-at", "large-writev-after",
+			"large-partial-write", "large-partial-writev":
+			// send_bin_helper sends 110 full 16 KiB chunks per loop. Exercise
+			// the remaining-full-chunk boundary and the following tail call.
+			const chunkSize = 16 * 1024
+			capacity, err := unix.FcntlInt(uintptr(writer), unix.F_SETPIPE_SZ, 2*1024*1024)
+			require.NoError(t, err)
+			chunks := 111
+			if strings.HasSuffix(name, "-before") {
+				chunks = 110
+			} else if strings.HasSuffix(name, "-after") {
+				chunks = 112
+			}
+			partial := strings.HasPrefix(name, "large-partial-")
+			if partial {
+				chunks = 112
+				// Leave exactly 111 chunks free: the next syscall must stop
+				// inside its first vector, before the unwritten JS marker.
+				padding := bytes.Repeat([]byte("p"), capacity-111*chunkSize)
+				n, err := unix.Write(writer, padding)
+				require.NoError(t, err)
+				require.Equal(t, len(padding), n)
+				want.write = append(want.write, padding...)
+				// Establish the captured prefix before the next syscall, independent
+				// of cross-CPU perf-buffer delivery order.
+				require.Eventually(t, func() bool {
+					data, err := capturedIOBytes(filepath.Join(artifactDir, "out"), "write", want.inode)
+					return err == nil && bytes.Equal(data, padding)
+				}, 5*time.Second, 50*time.Millisecond)
+			}
+			parts := [][]byte{bytes.Repeat([]byte("a"), chunks*chunkSize)}
+			vector := strings.Contains(name, "writev")
+			if vector {
+				marker := bytes.Repeat([]byte("UNWRITTEN.js\n"), chunkSize)
+				parts = append(parts, marker[:chunkSize])
+			}
+			requested := bytes.Join(parts, nil)
+			var n int
+			if vector {
+				n, err = unix.Writev(writer, parts)
+			} else {
+				n, err = unix.Write(writer, requested)
+			}
+			require.NoError(t, err)
+			if partial {
+				require.Equal(t, 111*chunkSize, n)
+			} else {
+				require.Equal(t, len(requested), n)
+			}
+			want.write = append(want.write, requested[:n]...)
 		case "empty-iovecs":
 			n, err := unix.Writev(writer, [][]byte{nil, []byte("abc"), nil, []byte("def")})
 			require.NoError(t, err)
@@ -141,10 +210,10 @@ func Test_TraceeCaptureIOResults(t *testing.T) {
 			require.NoError(t, err)
 			read, err := capturedIOBytes(captureDir, "read", want.inode)
 			require.NoError(t, err)
-			require.Len(t, written, len(want.write), "capture only bytes successfully written")
-			require.Equal(t, want.write, written)
-			require.Len(t, read, len(want.read), "capture only bytes successfully read")
-			require.Equal(t, want.read, read)
+			require.Equal(t, len(want.write), len(written), "capture only bytes successfully written")
+			require.True(t, bytes.Equal(want.write, written), "captured write content differs")
+			require.Equal(t, len(want.read), len(read), "capture only bytes successfully read")
+			require.True(t, bytes.Equal(want.read, read), "captured read content differs")
 		})
 	}
 }
