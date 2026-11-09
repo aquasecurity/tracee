@@ -115,11 +115,22 @@ func (t *Tracee) processNetCapEvent(event *trace.Event) {
 			return
 		}
 
-		// event retval encodes layer 3 protocol type
+		flagsArg := events.GetArg(event.Args, "flags")
+		if flagsArg == nil {
+			logger.Debugw("Network capture: missing flags argument")
+			return
+		}
+		flags, ok := flagsArg.Value.(int64)
+		if !ok {
+			logger.Debugw("Network capture: invalid flags argument type")
+			return
+		}
 
-		if event.ReturnValue&familyIpv4 == familyIpv4 {
+		// event flags encode layer 3 protocol type
+
+		if flags&int64(familyIpv4) == int64(familyIpv4) {
 			layerType = layers.LayerTypeIPv4
-		} else if event.ReturnValue&familyIpv6 == familyIpv6 {
+		} else if flags&int64(familyIpv6) == int64(familyIpv6) {
 			layerType = layers.LayerTypeIPv6
 		} else {
 			logger.Debugw("Unsupported layer3 protocol")
