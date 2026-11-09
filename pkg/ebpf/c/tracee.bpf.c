@@ -3044,6 +3044,13 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 
     bin_args_t *bin_args = (bin_args_t *) &(event->args_buf.args[event->args_buf.offset]);
 
+    if (bin_args->io_limited) {
+        if (bin_args->io_remaining == 0)
+            return 0;
+        if (bin_args->full_size > bin_args->io_remaining)
+            bin_args->full_size = bin_args->io_remaining;
+    }
+
     if (bin_args->full_size <= 0) {
         // If there are more vector elements, continue to the next one
         bin_args->iov_idx++;
@@ -3104,6 +3111,9 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
             ctx, &file_writes, BPF_F_CURRENT_CPU, data, F_CHUNK_OFF + F_CHUNK_SIZE);
     }
 
+    if (bin_args->io_limited)
+        bin_args->io_remaining -= (u64) i * F_CHUNK_SIZE;
+
     chunk_size = bin_args->full_size - i * F_CHUNK_SIZE;
 
     if (chunk_size > F_CHUNK_SIZE) {
@@ -3125,6 +3135,12 @@ statfunc u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
         // Satisfy validator by setting buffer bounds
         int size = (F_CHUNK_OFF + chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
         bpf_perf_event_output(ctx, &file_writes, BPF_F_CURRENT_CPU, data, size);
+    }
+
+    if (bin_args->io_limited) {
+        bin_args->io_remaining -= chunk_size;
+        if (bin_args->io_remaining == 0)
+            return 0;
     }
 
     // We finished writing an element of the vector - continue to next element
@@ -3260,6 +3276,10 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
         return 0;
     del_args(event_id);
 
+    // Do not interpret errors as lengths or capture zero-byte operations.
+    if ((long) PT_REGS_RC(ctx) <= 0)
+        return 0;
+
     program_data_t p = {};
     if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))
         return 0;
@@ -3323,6 +3343,10 @@ statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
     if (load_args(&saved_args, event_id) != 0)
         return 0;
     del_args(event_id);
+
+    // Do not interpret errors as lengths or capture zero-byte operations.
+    if ((long) PT_REGS_RC(ctx) <= 0)
+        return 0;
 
     program_data_t p = {};
     if (!init_program_data(&p, ctx, NO_EVENT_SUBMIT))

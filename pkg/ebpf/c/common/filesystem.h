@@ -518,9 +518,10 @@ statfunc void fill_vfs_file_bin_args(u32 type,
                                      int pid,
                                      bin_args_t *bin_args)
 {
-    off_t start_pos;
+    off_t start_pos = 0;
 
-    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
+    if (pos != NULL)
+        bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
 
     // Calculate write start offset
     if (start_pos != 0)
@@ -530,6 +531,9 @@ statfunc void fill_vfs_file_bin_args(u32 type,
     fill_vfs_file_metadata(file, pid, &bin_args->metadata[0]);
     bin_args->start_off = start_pos;
     fill_vfs_file_bin_args_io_data(io_data, bin_args);
+    // Limit all iovecs to the successful byte count, not the requested lengths.
+    bin_args->io_limited = true;
+    bin_args->io_remaining = write_bytes;
 }
 
 statfunc void fill_file_header(u8 header[FILE_MAGIC_HDR_SIZE], io_data_t io_data)
