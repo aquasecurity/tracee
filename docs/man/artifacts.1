@@ -86,6 +86,12 @@ Format: type=regular
 \f[B]fd\f[R]: The file descriptor of the file.
 Can be one of the three standards: `stdin', `stdout' and `stderr'.
 Format: fd=stdout
+.PP
+The \f[CR]pipe\f[R] type matches anonymous pipes and named FIFOs for
+both reads and writes.
+It uses the inode file type, so capture does not depend on the
+kernel\[cq]s pipe write function names.
+Other file types, including regular files and sockets, are excluded.
 .SS Network Capture Notes
 .IP \[bu] 2
 Pcap Files:
