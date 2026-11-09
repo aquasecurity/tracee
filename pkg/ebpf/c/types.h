@@ -346,6 +346,8 @@ typedef struct bin_args {
     char *ptr;
     loff_t start_off;
     unsigned int full_size;
+    u64 io_remaining; // Remaining bytes successfully transferred by this file I/O operation.
+    bool io_limited;
     u8 iov_idx;
     u8 iov_len;
     struct iovec *vec;
