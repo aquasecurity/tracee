@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"testing"
 	"time"
@@ -16,7 +17,56 @@ import (
 	"github.com/aquasecurity/tracee/tests/testutils"
 )
 
-const permissionDeniedPathEnv = "TRACEE_RO_MOUNT_PERMISSION_DENIED_PATH"
+const (
+	permissionDeniedPathEnv = "TRACEE_RO_MOUNT_PERMISSION_DENIED_PATH"
+	fileOpenPathEnv         = "TRACEE_RO_MOUNT_OPEN_PATH"
+	fileOpenFlagsEnv        = "TRACEE_RO_MOUNT_OPEN_FLAGS"
+	fileOpenExpectedEnv     = "TRACEE_RO_MOUNT_OPEN_EXPECTED"
+)
+
+func Test_FileOpenMountWriteDeniedHelper(t *testing.T) {
+	pathname := os.Getenv(fileOpenPathEnv)
+	if pathname == "" {
+		t.Skip("helper process only")
+	}
+
+	flags, err := strconv.Atoi(os.Getenv(fileOpenFlagsEnv))
+	require.NoError(t, err)
+
+	file, openErr := os.OpenFile(pathname, flags, 0o600)
+	if file != nil {
+		require.NoError(t, file.Close())
+	}
+
+	switch os.Getenv(fileOpenExpectedEnv) {
+	case "success":
+		require.NoError(t, openErr)
+	case "erofs":
+		require.ErrorIs(t, openErr, syscall.EROFS)
+	default:
+		t.Fatal("unknown expected open result")
+	}
+}
+
+func runFileOpenMountWriteDeniedHelper(
+	ctx context.Context,
+	t *testing.T,
+	helperBinary string,
+	pathname string,
+	flags int,
+	expected string,
+) {
+	t.Helper()
+	cmd := exec.CommandContext(ctx, helperBinary, "-test.run=^Test_FileOpenMountWriteDeniedHelper$", "-test.v")
+	cmd.Env = append(
+		os.Environ(),
+		fileOpenPathEnv+"="+pathname,
+		fileOpenFlagsEnv+"="+strconv.Itoa(flags),
+		fileOpenExpectedEnv+"="+expected,
+	)
+	output, err := cmd.CombinedOutput()
+	require.NoErrorf(t, err, "helper output: %s", output)
+}
 
 func waitFileOpenMountDeniedEvent(buf *testutils.EventBuffer, pathname string, timeout time.Duration) *pb.Event {
 	return waitEventByField(buf, "file_open_mount_write_denied", "pathname", pathname, timeout)
@@ -92,6 +142,10 @@ func Test_FileOpenMountWriteDenied(t *testing.T) {
 	t.Cleanup(func() { _ = syscall.Unmount(bind, syscall.MNT_DETACH) })
 	require.NoError(t, syscall.Mount("", bind, "", syscall.MS_BIND|syscall.MS_REMOUNT|syscall.MS_RDONLY, ""))
 
+	helperBinary := filepath.Join(root, "file-open-helper")
+	require.NoError(t, exec.Command("/bin/cp", os.Args[0], helperBinary).Run())
+	require.NoError(t, os.Chmod(helperBinary, 0o755))
+
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	policies := testutils.BuildPoliciesFromEvents([]events.ID{
 		events.FileOpenMountWriteDenied,
@@ -102,11 +156,7 @@ func Test_FileOpenMountWriteDenied(t *testing.T) {
 
 	t.Run("bind mount write denial is reported", func(t *testing.T) {
 		pathname := filepath.Join(bind, plainName)
-		file, err := os.OpenFile(pathname, os.O_WRONLY, 0)
-		if file != nil {
-			_ = file.Close()
-		}
-		require.ErrorIs(t, err, syscall.EROFS)
+		runFileOpenMountWriteDeniedHelper(ctx, t, helperBinary, pathname, os.O_WRONLY, "erofs")
 
 		event := waitFileOpenMountDeniedEvent(buf, pathname, 5*time.Second)
 		require.NotNil(t, event)
@@ -118,39 +168,28 @@ func Test_FileOpenMountWriteDenied(t *testing.T) {
 	t.Run("truncation denial is reported", func(t *testing.T) {
 		pathname := filepath.Join(bind, plainName)
 		buf.Clear()
-		file, err := os.OpenFile(pathname, os.O_WRONLY|os.O_TRUNC, 0)
-		if file != nil {
-			_ = file.Close()
-		}
-		require.ErrorIs(t, err, syscall.EROFS)
+		runFileOpenMountWriteDeniedHelper(ctx, t, helperBinary, pathname, os.O_WRONLY|os.O_TRUNC, "erofs")
 		require.NotNil(t, waitFileOpenMountDeniedEvent(buf, pathname, 5*time.Second))
 	})
 
 	t.Run("creation denial is reported", func(t *testing.T) {
 		pathname := filepath.Join(bind, "new-file")
 		buf.Clear()
-		file, err := os.OpenFile(pathname, os.O_WRONLY|os.O_CREATE, 0o600)
-		if file != nil {
-			_ = file.Close()
-		}
-		require.ErrorIs(t, err, syscall.EROFS)
+		runFileOpenMountWriteDeniedHelper(ctx, t, helperBinary, pathname, os.O_WRONLY|os.O_CREATE, "erofs")
 		require.NotNil(t, waitFileOpenMountDeniedEvent(buf, pathname, 5*time.Second))
 	})
 
 	t.Run("writable mount is a negative control", func(t *testing.T) {
 		pathname := filepath.Join(source, "writable")
 		buf.Clear()
-		require.NoError(t, os.WriteFile(pathname, []byte("ok"), 0o600))
+		runFileOpenMountWriteDeniedHelper(ctx, t, helperBinary, pathname, os.O_WRONLY|os.O_CREATE, "success")
 		requireNoFileOpenMountDeniedEvent(t, buf, pathname)
 	})
 
 	t.Run("non-read-only permission denial is distinct", func(t *testing.T) {
 		pathname := filepath.Join(source, "permission-denied")
-		helperBinary := filepath.Join(root, "permission-denied-helper")
 		buf.Clear()
 		require.NoError(t, os.WriteFile(pathname, []byte("denied"), 0o444))
-		require.NoError(t, exec.Command("/bin/cp", os.Args[0], helperBinary).Run())
-		require.NoError(t, os.Chmod(helperBinary, 0o755))
 
 		cmd := exec.CommandContext(ctx, helperBinary, "-test.run=^Test_FileOpenPermissionDeniedHelper$", "-test.v")
 		cmd.Env = append(os.Environ(), permissionDeniedPathEnv+"="+pathname)
@@ -169,11 +208,7 @@ func Test_FileOpenMountWriteDenied(t *testing.T) {
 			_ = syscall.Mount("", source, "", syscall.MS_REMOUNT, "")
 		})
 
-		file, err := os.OpenFile(pathname, os.O_WRONLY, 0)
-		if file != nil {
-			_ = file.Close()
-		}
-		require.ErrorIs(t, err, syscall.EROFS)
+		runFileOpenMountWriteDeniedHelper(ctx, t, helperBinary, pathname, os.O_WRONLY, "erofs")
 		event := waitFileOpenMountDeniedEvent(buf, pathname, 5*time.Second)
 		require.NotNil(t, event)
 		require.True(t, eventBool(t, event, "filesystem_read_only"))

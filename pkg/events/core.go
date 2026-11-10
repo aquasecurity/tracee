@@ -13043,34 +13043,42 @@ var CoreEvents = map[ID]Definition{
 					{handle: probes.DoFileOpenRet, required: true},
 					{handle: probes.MntGetWriteAccess, required: true},
 					{handle: probes.MntGetWriteAccessRet, required: true},
+					{handle: probes.MntWantWrite, required: false},
+					{handle: probes.MntWantWriteRet, required: false},
 					{handle: probes.InodePermissionRet, required: true},
 				},
 			},
 			fallbacks: []Dependencies{
 				{
 					probes: []Probe{
-						{handle: probes.DoFilpOpen, required: true},
-						{handle: probes.DoFilpOpenRet, required: true},
-						{handle: probes.MntGetWriteAccess, required: true},
-						{handle: probes.MntGetWriteAccessRet, required: true},
-						{handle: probes.InodePermissionRet, required: true},
-					},
-				},
-				{
-					probes: []Probe{
-						{handle: probes.DoFilpOpen, required: true},
-						{handle: probes.DoFilpOpenRet, required: true},
-						{handle: probes.MntWantWrite, required: true},
-						{handle: probes.MntWantWriteRet, required: true},
-						{handle: probes.InodePermissionRet, required: true},
-					},
-				},
-				{
-					probes: []Probe{
 						{handle: probes.DoFileOpen, required: true},
 						{handle: probes.DoFileOpenRet, required: true},
 						{handle: probes.MntWantWrite, required: true},
 						{handle: probes.MntWantWriteRet, required: true},
+						{handle: probes.MntGetWriteAccess, required: false},
+						{handle: probes.MntGetWriteAccessRet, required: false},
+						{handle: probes.InodePermissionRet, required: true},
+					},
+				},
+				{
+					probes: []Probe{
+						{handle: probes.DoFilpOpen, required: true},
+						{handle: probes.DoFilpOpenRet, required: true},
+						{handle: probes.MntGetWriteAccess, required: true},
+						{handle: probes.MntGetWriteAccessRet, required: true},
+						{handle: probes.MntWantWrite, required: false},
+						{handle: probes.MntWantWriteRet, required: false},
+						{handle: probes.InodePermissionRet, required: true},
+					},
+				},
+				{
+					probes: []Probe{
+						{handle: probes.DoFilpOpen, required: true},
+						{handle: probes.DoFilpOpenRet, required: true},
+						{handle: probes.MntWantWrite, required: true},
+						{handle: probes.MntWantWriteRet, required: true},
+						{handle: probes.MntGetWriteAccess, required: false},
+						{handle: probes.MntGetWriteAccessRet, required: false},
 						{handle: probes.InodePermissionRet, required: true},
 					},
 				},
