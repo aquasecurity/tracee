@@ -177,6 +177,7 @@ const (
 	ChmodCommon
 	SecuritySbUmount
 	SecurityTaskPrctl
+	FileOpenMountWriteDenied
 	// MaxCommonID (1499)
 )
 
@@ -13028,6 +13029,61 @@ var CoreEvents = map[ID]Definition{
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "inode"}},
 			{DecodeAs: data.ULONG_T, ArgMeta: trace.ArgMeta{Type: "uint64", Name: "ctime"}},
 			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "syscall_pathname"}},
+		},
+	},
+	FileOpenMountWriteDenied: {
+		id:      FileOpenMountWriteDenied,
+		id32Bit: Sys32Undefined,
+		name:    "file_open_mount_write_denied",
+		version: NewVersion(1, 0, 0),
+		dependencies: DependencyStrategy{
+			primary: Dependencies{
+				probes: []Probe{
+					{handle: probes.DoFileOpen, required: true},
+					{handle: probes.DoFileOpenRet, required: true},
+					{handle: probes.MntGetWriteAccess, required: true},
+					{handle: probes.MntGetWriteAccessRet, required: true},
+					{handle: probes.InodePermissionRet, required: true},
+				},
+			},
+			fallbacks: []Dependencies{
+				{
+					probes: []Probe{
+						{handle: probes.DoFilpOpen, required: true},
+						{handle: probes.DoFilpOpenRet, required: true},
+						{handle: probes.MntGetWriteAccess, required: true},
+						{handle: probes.MntGetWriteAccessRet, required: true},
+						{handle: probes.InodePermissionRet, required: true},
+					},
+				},
+				{
+					probes: []Probe{
+						{handle: probes.DoFilpOpen, required: true},
+						{handle: probes.DoFilpOpenRet, required: true},
+						{handle: probes.MntWantWrite, required: true},
+						{handle: probes.MntWantWriteRet, required: true},
+						{handle: probes.InodePermissionRet, required: true},
+					},
+				},
+				{
+					probes: []Probe{
+						{handle: probes.DoFileOpen, required: true},
+						{handle: probes.DoFileOpenRet, required: true},
+						{handle: probes.MntWantWrite, required: true},
+						{handle: probes.MntWantWriteRet, required: true},
+						{handle: probes.InodePermissionRet, required: true},
+					},
+				},
+			},
+		},
+		sets: []string{"fs", "fs_file_ops"},
+		fields: []DataField{
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "dirfd"}},
+			{DecodeAs: data.STR_T, ArgMeta: trace.ArgMeta{Type: "string", Name: "pathname"}},
+			{DecodeAs: data.INT_T, ArgMeta: trace.ArgMeta{Type: "int32", Name: "flags"}},
+			{DecodeAs: data.BOOL_T, ArgMeta: trace.ArgMeta{Type: "bool", Name: "mount_read_only"}},
+			{DecodeAs: data.BOOL_T, ArgMeta: trace.ArgMeta{Type: "bool", Name: "filesystem_read_only"}},
+			{DecodeAs: data.LONG_T, ArgMeta: trace.ArgMeta{Type: "int64", Name: "returnValue"}},
 		},
 	},
 	SecurityInodeUnlink: {
