@@ -67,6 +67,8 @@ const (
 	MntGetWriteAccessRet
 	MntWantWrite
 	MntWantWriteRet
+	MntWantWriteInternal
+	MntWantWriteInternalRet
 	InodePermissionRet
 	SecurityInodeUnlink
 	SecurityInodeMknod

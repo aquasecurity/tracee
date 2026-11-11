@@ -69,9 +69,9 @@ Final open return value; this event is emitted only for
 do_file_open or do_filp_open (kprobe + kretprobe, required): Correlates
 the immutable pathname with the final open result
 .IP \[bu] 2
-mnt_get_write_access or __mnt_want_write (kprobe + kretprobe, required):
-Confirms the mount\-write permission decision and records the selected
-mount
+mnt_get_write_access, mnt_want_write, or __mnt_want_write (kprobe +
+kretprobe, required): Confirms the mount\-write permission decision and
+records the selected mount
 .IP \[bu] 2
 inode_permission (kretprobe, required): Captures filesystem\-wide
 read\-only denials that occur before mount write access is requested

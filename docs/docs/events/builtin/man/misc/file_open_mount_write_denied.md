@@ -47,7 +47,7 @@ The classification fields are snapshots taken after the permission helper return
 **Kernel Probe:**
 
 - do_file_open or do_filp_open (kprobe + kretprobe, required): Correlates the immutable pathname with the final open result
-- mnt_get_write_access or __mnt_want_write (kprobe + kretprobe, required): Confirms the mount-write permission decision and records the selected mount
+- mnt_get_write_access, mnt_want_write, or __mnt_want_write (kprobe + kretprobe, required): Confirms the mount-write permission decision and records the selected mount
 - inode_permission (kretprobe, required): Captures filesystem-wide read-only denials that occur before mount write access is requested
 
 ## USE CASES

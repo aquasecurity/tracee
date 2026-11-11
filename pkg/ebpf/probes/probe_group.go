@@ -233,6 +233,8 @@ func NewDefaultProbeGroup(module *bpf.Module, netEnabled bool, defaultAutoload b
 		MntGetWriteAccessRet:       NewTraceProbe(KretProbe, "mnt_get_write_access", "trace_ret_mnt_get_write_access"),
 		MntWantWrite:               NewTraceProbe(KProbe, "mnt_want_write", "trace_mnt_get_write_access"),
 		MntWantWriteRet:            NewTraceProbe(KretProbe, "mnt_want_write", "trace_ret_mnt_get_write_access"),
+		MntWantWriteInternal:       NewTraceProbe(KProbe, "__mnt_want_write", "trace_mnt_get_write_access"),
+		MntWantWriteInternalRet:    NewTraceProbe(KretProbe, "__mnt_want_write", "trace_ret_mnt_get_write_access"),
 		InodePermissionRet:         NewTraceProbe(KretProbe, "inode_permission", "trace_ret_inode_permission"),
 		SecurityFilePermission:     NewTraceProbe(KProbe, "security_file_permission", "trace_security_file_permission"),
 		SecuritySocketCreate:       NewTraceProbe(KProbe, "security_socket_create", "trace_security_socket_create"),
