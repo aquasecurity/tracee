@@ -37,6 +37,17 @@ struct args_map {
 
 typedef struct args_map args_map_t;
 
+// Correlate the immutable kernel pathname and final open result with the
+// mount-write decision. A small stack preserves nested opens in one task.
+struct file_open_state_map {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 10240);
+    __type(key, u64);
+    __type(value, file_open_state_t);
+} file_open_state_map SEC(".maps");
+
+typedef struct file_open_state_map file_open_state_map_t;
+
 // map 32bit to 64bit syscalls
 struct sys_32_to_64_map {
     __uint(type, BPF_MAP_TYPE_HASH);

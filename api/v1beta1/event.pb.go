@@ -570,6 +570,7 @@ const (
 	EventId_chmod_common                    EventId = 1091
 	EventId_security_sb_umount              EventId = 1092
 	EventId_security_task_prctl             EventId = 1093
+	EventId_file_open_mount_write_denied    EventId = 1094
 	// Events originated from user-space
 	EventId_net_packet_ipv4          EventId = 2000
 	EventId_net_packet_ipv6          EventId = 2001
@@ -1143,6 +1144,7 @@ var (
 		1091: "chmod_common",
 		1092: "security_sb_umount",
 		1093: "security_task_prctl",
+		1094: "file_open_mount_write_denied",
 		2000: "net_packet_ipv4",
 		2001: "net_packet_ipv6",
 		2002: "net_packet_tcp",
@@ -1711,6 +1713,7 @@ var (
 		"chmod_common":                    1091,
 		"security_sb_umount":              1092,
 		"security_task_prctl":             1093,
+		"file_open_mount_write_denied":    1094,
 		"net_packet_ipv4":                 2000,
 		"net_packet_ipv6":                 2001,
 		"net_packet_tcp":                  2002,
@@ -2787,7 +2790,7 @@ const file_api_v1beta1_event_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\rR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12.\n" +
 	"\x04data\x18\x03 \x03(\v2\x1a.tracee.v1beta1.EventValueR\x04data\x124\n" +
-	"\x06parent\x18\x04 \x01(\v2\x1c.tracee.v1beta1.DetectedFromR\x06parent*\xabM\n" +
+	"\x06parent\x18\x04 \x01(\v2\x1c.tracee.v1beta1.DetectedFromR\x06parent*\xceM\n" +
 	"\aEventId\x12\x0f\n" +
 	"\vunspecified\x10\x00\x12\b\n" +
 	"\x04read\x10\x01\x12\t\n" +
@@ -3425,7 +3428,8 @@ const file_api_v1beta1_event_proto_rawDesc = "" +
 	"\x12security_settime64\x10\xc2\b\x12\x11\n" +
 	"\fchmod_common\x10\xc3\b\x12\x17\n" +
 	"\x12security_sb_umount\x10\xc4\b\x12\x18\n" +
-	"\x13security_task_prctl\x10\xc5\b\x12\x14\n" +
+	"\x13security_task_prctl\x10\xc5\b\x12!\n" +
+	"\x1cfile_open_mount_write_denied\x10\xc6\b\x12\x14\n" +
 	"\x0fnet_packet_ipv4\x10\xd0\x0f\x12\x14\n" +
 	"\x0fnet_packet_ipv6\x10\xd1\x0f\x12\x13\n" +
 	"\x0enet_packet_tcp\x10\xd2\x0f\x12\x13\n" +

@@ -135,6 +135,7 @@ typedef struct event_context {
     X(CHMOD_COMMON, )                                                                              \
     X(SECURITY_SB_UMOUNT, )                                                                        \
     X(SECURITY_TASK_PRCTL, )                                                                       \
+    X(FILE_OPEN_MOUNT_WRITE_DENIED, )                                                              \
     // ...
 
 #define EVENT_ID_LIST_LAST                                                                         \
@@ -217,6 +218,25 @@ typedef enum tail_call_id_e {
 typedef struct args {
     unsigned long args[6];
 } args_t;
+
+#define FILE_OPEN_STATE_MAX_DEPTH 4
+
+typedef struct file_open_frame {
+    u64 pathname;
+    u64 pending_mount;
+    s32 dirfd;
+    s32 flags;
+    bool write_like;
+    bool mount_write_denied;
+    bool mount_read_only;
+    bool filesystem_read_only;
+} file_open_frame_t;
+
+typedef struct file_open_state {
+    u32 depth;
+    u32 overflow;
+    file_open_frame_t frames[FILE_OPEN_STATE_MAX_DEPTH];
+} file_open_state_t;
 
 // NOTE: If any fields are added to argument_type_e, the array type_size_table
 // (and related defines) must be updated accordingly. Corresponds to the DecodeAs enum in
